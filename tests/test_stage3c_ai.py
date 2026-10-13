@@ -179,9 +179,18 @@ def test_provider_factory_and_abstraction(asettings):
         tree = ast.parse((PROJECT_ROOT / "app" / "ai" / mod).read_text(encoding="utf-8"))
         names = {n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
         assert not {"app.ai.providers.gemini", "app.ai.providers.openai_compatible", "app.ai.providers.mock"} & names
-    # no vendor SDK dependency
-    reqs = (PROJECT_ROOT / "requirements.txt").read_text().lower()
-    assert not any(sdk in reqs for sdk in ("openai", "google-generativeai", "google-genai", "anthropic", "groq"))
+    approved_requirements = {"fastapi", "uvicorn", "sqlalchemy", "alembic", "pydantic", "pydantic-settings",
+                             "python-dotenv", "httpx", "pyjwt", "beautifulsoup4", "apscheduler", "filelock",
+                             "python-multipart", "tzdata", "pdfplumber", "reportlab", "pytest", "pytest-asyncio"}
+    declared = set()
+    for raw in (PROJECT_ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines():
+        item = raw.split("#", 1)[0].strip().lower()
+        if not item:
+            continue
+        for separator in (";", "[", "<", ">", "=", "!", "~"):
+            item = item.split(separator, 1)[0]
+        declared.add(item)
+    assert declared <= approved_requirements, f"unapproved Python requirements: {sorted(declared - approved_requirements)}"
 
 
 def test_mock_provider_keyword_mode_and_script(asettings, session_factory, clock, db):

@@ -818,15 +818,25 @@ def test_no_network_and_no_file_access_needed(db, fservice, monkeypatch, fsettin
 
 
 def test_no_llm_or_pdf_dependency_in_stage3b():
-    banned = {"openai", "anthropic", "groq", "langchain", "google", "cohere", "transformers", "torch",
-              "pdfplumber", "pdfminer", "fitz", "pytesseract", "httpx", "requests"}
+    allowed_import_roots = {"__future__", "app", "collections", "dataclasses", "datetime", "decimal", "enum",
+                            "json", "logging", "math", "os", "re", "socket", "sqlalchemy", "threading", "time",
+                            "uuid", "zoneinfo"}
     for path in (PROJECT_ROOT / "app" / "fields").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             names = [a.name for a in node.names] if isinstance(node, ast.Import) else (
                 [node.module or ""] if isinstance(node, ast.ImportFrom) else [])
             for n in names:
-                assert n.split(".")[0] not in banned, f"{path.name} imports {n}"                        # 67
-    req = (PROJECT_ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
-    for pkg in ("openai", "anthropic", "groq", "langchain", "google-generativeai"):
-        assert pkg not in req
+                assert n.split(".")[0] in allowed_import_roots, f"{path.name} imports unapproved dependency {n}"  # 67
+    approved_requirements = {"fastapi", "uvicorn", "sqlalchemy", "alembic", "pydantic", "pydantic-settings",
+                             "python-dotenv", "httpx", "pyjwt", "beautifulsoup4", "apscheduler", "filelock",
+                             "python-multipart", "tzdata", "pdfplumber", "reportlab", "pytest", "pytest-asyncio"}
+    declared = set()
+    for raw in (PROJECT_ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines():
+        item = raw.split("#", 1)[0].strip().lower()
+        if not item:
+            continue
+        for separator in (";", "[", "<", ">", "=", "!", "~"):
+            item = item.split(separator, 1)[0]
+        declared.add(item)
+    assert declared <= approved_requirements, f"unapproved Python requirements: {sorted(declared - approved_requirements)}"

@@ -19,6 +19,9 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
     if not run:raise ValueError("No successful forecast")
     rev,a,docs=_attributes(db,seller_id);peak=max(w.expected_shortfall_paise for w in db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id)))
     facts={"UDYAM_REGISTERED":bool(a.get("udyam_number")),"UDYAM_CATEGORY_IN":a.get("udyam_category"),"UDYAM_CERTIFICATE_PRESENT":True if "UDYAM_CERTIFICATE" in docs else None,"GST_REGISTERED":bool(a.get("gstin")),"BUSINESS_VINTAGE_MIN_MONTHS":150,"TURNOVER_RANGE":a.get("last_fy_turnover_paise"),"AMOUNT_WITHIN_LIMIT":peak,"LIMIT_HEADROOM_MIN":int(a.get("bank_od_limit_paise") or 0)-int(a.get("bank_od_utilised_paise") or 0),"SUPPLIER_RELATIONSHIP_MIN_MONTHS":None,"SUPPLIER_ON_TIME_RATIO_MIN":None,"DOCUMENT_PRESENT":None}
+    for kind,key in [("NON_CORPORATE","non_corporate"),("NON_FARM","non_farm"),("INCOME_GENERATING","income_generating"),("MICRO_SMALL_ENTERPRISE","micro_small_enterprise"),("TARUN_AVAILED_AND_REPAID","tarun_availed_and_repaid")]:
+        value=a.get(key)
+        facts[kind]=None if value is None else str(value).lower() in {"true","1","1.0","yes"}
     evaluation=KoshFinancingEvaluation(seller_id=seller_id,forecast_run_id=run.id,input_fingerprint=run.input_fingerprint);db.add(evaluation);db.flush()
     for product in load_catalogue():
         scopes=[(None,facts,product["max_amount_paise"])]

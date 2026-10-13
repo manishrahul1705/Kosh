@@ -34,4 +34,9 @@ def extract_invoice_pdf(path:Path)->dict:
     gstin=find(r"buyer\s*gstin\s*[:\-]?\s*([0-9A-Z]{15})")
     if gstin and not validate_gstin(gstin):reasons.append("INVALID_GSTIN")
     if INJECTION.search(text):reasons.append("INSTRUCTION_TEXT_DETECTED")
-    return {"invoice_number":number,"invoice_date":invoice_date,"due_date":due_date,"buyer_gstin":gstin,"amounts":amounts,"text":text,"source_location":{"page":1,"quote":(number or "")},"method":"NATIVE","reasons":reasons}
+    buyer=find(r"buyer\s*[:\-]\s*([^\n\r]+)")
+    seller=find(r"seller\s*[:\-]\s*([^\n\r]+)")
+    if not seller:
+        first=next((line.strip() for line in text.splitlines() if line.strip()),None)
+        seller=first if first and "invoice" not in first.lower() else None
+    return {"invoice_number":number,"invoice_date":invoice_date,"due_date":due_date,"buyer_gstin":gstin,"buyer_name":buyer,"seller_name":seller,"amounts":amounts,"text":text,"source_location":{"page":1,"quote":(number or "")},"method":"NATIVE","reasons":reasons}

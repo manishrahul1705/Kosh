@@ -20,12 +20,21 @@ def process_private_document(session:Session,*,document:KoshPrivateDocument,vers
         if not result["invoice_date"]:reasons.append("MISSING_INVOICE_DATE")
         if result["amounts"]["total"] is None:reasons.append("MISSING_TOTAL")
         if result["invoice_number"] and result["invoice_date"] and result["amounts"]["total"] is not None:
-            kind="CUSTOMER" if document.kind=="SALES_INVOICE" else "SUPPLIER";name="Extracted customer" if kind=="CUSTOMER" else "Extracted supplier"
-            party=session.scalar(select(KoshCounterparty).where(KoshCounterparty.seller_id==document.seller_id,KoshCounterparty.name==name,KoshCounterparty.kind==kind))
-            if not party:party=KoshCounterparty(seller_id=document.seller_id,name=name,kind=kind);session.add(party);session.flush()
-            invoice=session.scalar(select(KoshInvoice).where(KoshInvoice.seller_id==document.seller_id,KoshInvoice.direction==("RECEIVABLE" if kind=="CUSTOMER" else "PAYABLE"),KoshInvoice.counterparty_id==party.id,KoshInvoice.invoice_number==result["invoice_number"]))
-            if not invoice:
-                invoice=KoshInvoice(seller_id=document.seller_id,counterparty_id=party.id,direction="RECEIVABLE" if kind=="CUSTOMER" else "PAYABLE",invoice_number=result["invoice_number"],invoice_date=result["invoice_date"],due_date=result["due_date"] or result["invoice_date"],amount_paise=result["amounts"]["total"],status="REVIEW" if reasons else "OPEN",source_document_version_id=version.id,source_location=json.dumps({**result["source_location"],"method":result["method"],"reasons":reasons}));session.add(invoice);summary={"created":1,"review":int(bool(reasons))}
+            direction="RECEIVABLE" if document.kind=="SALES_INVOICE" else "PAYABLE"
+            invoice=session.scalar(select(KoshInvoice).where(KoshInvoice.seller_id==document.seller_id,KoshInvoice.direction==direction,KoshInvoice.invoice_number==result["invoice_number"],KoshInvoice.invoice_date==result["invoice_date"],KoshInvoice.amount_paise.between(result["amounts"]["total"]-100,result["amounts"]["total"]+100)))
+            if invoice:
+                invoice.source_document_version_id=version.id;invoice.source_location=json.dumps({**result["source_location"],"method":result["method"],"reasons":reasons,"linked_books_invoice":True});summary={"created":0,"review":int(bool(reasons)),"linked":1}
+                if reasons:invoice.status="REVIEW"
+            kind="CUSTOMER" if document.kind=="SALES_INVOICE" else "SUPPLIER";name=result["buyer_name"] if kind=="CUSTOMER" else result["seller_name"]
+            if not name:
+                reasons.append("MISSING_PARTY_NAME")
+            if invoice or not name:pass
+            else:
+                party=session.scalar(select(KoshCounterparty).where(KoshCounterparty.seller_id==document.seller_id,KoshCounterparty.name==name,KoshCounterparty.kind==kind))
+                if not party:party=KoshCounterparty(seller_id=document.seller_id,name=name,kind=kind);session.add(party);session.flush()
+                invoice=session.scalar(select(KoshInvoice).where(KoshInvoice.seller_id==document.seller_id,KoshInvoice.direction==direction,KoshInvoice.counterparty_id==party.id,KoshInvoice.invoice_number==result["invoice_number"]))
+                if not invoice:
+                    invoice=KoshInvoice(seller_id=document.seller_id,counterparty_id=party.id,direction=direction,invoice_number=result["invoice_number"],invoice_date=result["invoice_date"],due_date=result["due_date"] or result["invoice_date"],amount_paise=result["amounts"]["total"],status="REVIEW" if reasons else "OPEN",source_document_version_id=version.id,source_location=json.dumps({**result["source_location"],"method":result["method"],"reasons":reasons}));session.add(invoice);summary={"created":1,"review":int(bool(reasons))}
     else:reasons=["UNSUPPORTED_PROCESSOR"]
     if reasons:summary["review"]=max(1,summary.get("review",0))
     document.status="REVIEW" if reasons or summary.get("review") else "PROCESSED";document.status_reason=";".join(reasons) or ("ROW_REVIEW_REQUIRED" if summary.get("review") else None)

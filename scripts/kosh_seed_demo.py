@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app.consent.service import create_consent,get_active_consent
 from app.database.auth_models import AppUser,SellerMembership
 from app.database.kosh_models import KoshCounterparty,KoshObligation,KoshPrivateDocument,KoshPrivateDocumentVersion
-from app.database.models import Seller
+from app.database.models import Seller,SellerAttribute,SellerRevision
 from app.database.session import build_engine,build_session_factory
 from app.finance.intake.private_store import store_private_document
 from app.finance.intake.service import process_private_document
@@ -26,6 +26,10 @@ def seed(database_url:str,data_dir:Path,storage:Path)->dict:
         if not seller:seller=Seller(name="Meenakshi Precision Components");session.add(seller);session.flush()
         membership=session.scalar(select(SellerMembership).where(SellerMembership.user_id==user.id,SellerMembership.seller_id==seller.id))
         if not membership:session.add(SellerMembership(user_id=user.id,seller_id=seller.id,role="OWNER",status="ACTIVE"));session.flush()
+        revision=session.scalar(select(SellerRevision).where(SellerRevision.seller_id==seller.id,SellerRevision.is_active.is_(True)).order_by(SellerRevision.revision_number.desc()).limit(1))
+        if not revision:revision=SellerRevision(seller_id=seller.id,revision_number=1,fingerprint=hashlib.sha256(b"kosh-demo-profile-v1").hexdigest(),comment="Fictional demonstration profile",is_active=True);session.add(revision);session.flush()
+        buffer=session.scalar(select(SellerAttribute).where(SellerAttribute.revision_id==revision.id,SellerAttribute.key=="cash_buffer_paise"))
+        if not buffer:session.add(SellerAttribute(revision_id=revision.id,key="cash_buffer_paise",value_type="NUMBER",value_number=100_000_000,value_text="100000000"))
         consent=get_active_consent(session,seller.id,"BOOKS_EXPORT")
         if not consent:consent=create_consent(session,seller_id=seller.id,granted_by_user_id=user.id,purpose="Fictional Kosh demonstration",data_types=["BANK_STATEMENT","SALES_INVOICES","PURCHASE_BILLS","BOOKS_EXPORT","BUSINESS_PROFILE"],data_from=date(2024,1,1),data_to=date(2026,12,31),expires_at=datetime.utcnow()+timedelta(days=365))
         processed=review=0

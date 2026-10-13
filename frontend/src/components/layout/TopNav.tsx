@@ -10,6 +10,7 @@ const TITLES: Record<string, string> = {
   '/tenders': 'Tender Details',
   '/profile': 'Seller Profile',
   '/cash': 'Cash',
+  '/ledger': 'Ledger',
   '/plan': 'Plan',
   '/approvals': 'Approvals',
   '/audit': 'Audit',

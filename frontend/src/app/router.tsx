@@ -12,6 +12,7 @@ import { PlanPage } from '@/features/kosh/PlanPage'
 import { ApprovalsPage } from '@/features/kosh/ApprovalsPage'
 import { AuditPage } from '@/features/kosh/AuditPage'
 import { ConnectPage } from '@/features/kosh/ConnectPage'
+import { LedgerPage } from '@/features/kosh/LedgerPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
       { path: 'tenders/:tenderId', element: <TenderDetailPage /> },
       { path: 'profile', element: <ProfilePage /> },
       { path: 'cash', element: <CashPage /> },
+      { path: 'ledger', element: <LedgerPage /> },
       { path: 'plan', element: <PlanPage /> },
       { path: 'approvals', element: <ApprovalsPage /> },
       { path: 'audit', element: <AuditPage /> },

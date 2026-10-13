@@ -1,6 +1,6 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { ListChecks, Building2, ChevronLeft, ChevronRight, Gem, Wallet, Route, ShieldCheck, History, Plug } from 'lucide-react'
+import { ListChecks, Building2, ChevronLeft, ChevronRight, Gem, Wallet, Route, ShieldCheck, History, Plug, BookOpen } from 'lucide-react'
 import { clsx } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
 
 const KOSH_ITEMS = [
   { to: '/cash', icon: Wallet, label: 'Cash' },
+  { to: '/ledger', icon: BookOpen, label: 'Ledger' },
   { to: '/plan', icon: Route, label: 'Plan' },
   { to: '/approvals', icon: ShieldCheck, label: 'Approvals' },
   { to: '/audit', icon: History, label: 'Audit' },

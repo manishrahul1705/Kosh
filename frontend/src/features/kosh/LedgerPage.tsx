@@ -1,0 +1,13 @@
+import { useQuery,useQueryClient } from '@tanstack/react-query'
+import { useSeller } from '@/app/SellerContext'
+import { koshApi } from '@/lib/api/kosh'
+import { formatPaiseINR } from '@/lib/formatMoney'
+import { ErrorAlert } from '@/components/ui/ErrorAlert'
+import { PageLoader } from '@/components/ui/LoadingSpinner'
+
+export const LedgerPage=()=>{
+  const {activeSellerId}=useSeller();const qc=useQueryClient();const query=useQuery({queryKey:['kosh','ledger',activeSellerId],queryFn:()=>koshApi.ledger(activeSellerId!),enabled:activeSellerId!==null});const obligations=useQuery({queryKey:['kosh','obligations',activeSellerId],queryFn:()=>koshApi.obligations(activeSellerId!),enabled:activeSellerId!==null})
+  if(query.isLoading)return <PageLoader/>;if(query.isError)return <ErrorAlert message="Unable to load the cash ledger."/>;if(!query.data)return <p>Select a seller.</p>
+  const t=query.data.totals
+  return <section aria-label="Ledger"><h2 className="text-xl font-semibold">Ledger</h2><div className="grid gap-3 my-4 sm:grid-cols-2 lg:grid-cols-5">{[['Open receivables',t.open_receivables_paise],['Open payables',t.open_payables_paise],['Overdue',t.overdue_receivables_paise],['Bank balance',t.latest_bank_balance_paise]].map(([label,value])=><div className="rounded border bg-white p-3" key={String(label)}><p className="text-xs text-gray-500">{label}</p><strong>{formatPaiseINR(value as number|null)}</strong></div>)}<div className="rounded border bg-white p-3"><p className="text-xs text-gray-500">Review</p><strong>{t.review_count}</strong></div></div>{query.data.items.length===0?<p>No ledger entries yet.</p>:<div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr><th>Party</th><th>Invoice</th><th>Due</th><th>Amount</th><th>Status</th><th>Source</th></tr></thead><tbody>{query.data.items.map(row=><tr key={row.id} className={row.status==='REVIEW'?'bg-amber-50':''}><td>{row.party}</td><td>{row.invoice_number}</td><td>{row.due_date}</td><td>{formatPaiseINR(row.amount_paise)}</td><td>{row.status}{row.status==='REVIEW'&&<button className="ml-2 underline" onClick={()=>koshApi.patchInvoice(activeSellerId!,row.id,{}).then(()=>qc.invalidateQueries({queryKey:['kosh','ledger']}))}>Confirm</button>}</td><td><details><summary>Evidence</summary><pre className="max-w-xs whitespace-pre-wrap">{row.source_location||'No source quote'}</pre></details></td></tr>)}</tbody></table></div>}<h3 className="mt-6 font-semibold">Obligations</h3>{obligations.data?.length?<ul>{obligations.data.map((row,index)=><li key={index}>{String(row.label)} - {formatPaiseINR(Number(row.amount_paise))}</li>)}</ul>:<p>No obligations recorded.</p>}</section>
+}

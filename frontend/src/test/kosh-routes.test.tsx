@@ -70,6 +70,8 @@ describe('Kosh protected routes', () => {
         expect(screen.getByRole('columnheader', { name: 'Days' })).toBeInTheDocument()
         expect(screen.getByRole('columnheader', { name: 'Absolute cost' })).toBeInTheDocument()
         expect(screen.getByText('Cheapest available capacity arriving before the alert.')).toBeInTheDocument()
+        expect(screen.getByText('Safety target not verified; build a new plan.')).toBeInTheDocument()
+        expect(screen.getByText('NBFC baseline insufficient or not verified; savings unavailable.')).toBeInTheDocument()
       }
       cleanup()
       client.clear()

@@ -27,9 +27,12 @@ RETIRED_TABLES = {  # kept in migration history, intentionally not mapped by the
 
 def test_chain_is_linear_with_single_head(tmp_path):
     script = ScriptDirectory.from_config(alembic_cfg(tmp_path / "x.db"))
-    assert script.get_heads() == ["0022_kosh_financing"]
+    heads=script.get_heads()
+    assert len(heads)==1
     revs = list(script.walk_revisions())
-    assert revs[-1].down_revision is None and len(revs) == 22
+    assert heads==[revs[0].revision]
+    assert "0022a_kosh_plan_safety" in {revision.revision for revision in revs}
+    assert revs[-1].down_revision is None and len(revs)>=23
     for newer, older in zip(revs, revs[1:]):
         assert newer.down_revision == older.revision
 

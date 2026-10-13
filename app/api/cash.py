@@ -1,14 +1,20 @@
 """Seller-scoped ledger, obligations and audit reads/writes."""
 from datetime import date
 from fastapi import APIRouter,Depends,HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel,Field
 from sqlalchemy import func,select
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.api.seller_authorization import AuthorizedSeller,require_seller_edit,require_seller_read
 from app.audit.ledger import append_event
 from app.audit.verify import verify_chain
-from app.database.kosh_models import KoshAuditEntry,KoshBankTransaction,KoshCounterparty,KoshInvoice,KoshObligation
+from app.database.kosh_models import KoshAlert,KoshAuditEntry,KoshBacktest,KoshBankTransaction,KoshCounterparty,KoshForecastRun,KoshForecastWeek,KoshInvoice,KoshObligation
+from app.core.config import get_settings
+from app.finance.forecast import buffer_for_seller,fingerprint,load_inputs,simulate
+from app.finance.alerts import build_alert
+from app.finance.analysis import business_analysis
+from app.finance.backtest import run_backtest
+from app.utils.dates import utcnow
 from app.schemas.kosh import ForecastResponse,AlertsResponse,PlanResponse,ApprovalsResponse
 
 router=APIRouter(prefix="/api/kosh/sellers/{seller_id}",tags=["kosh"])
@@ -64,10 +70,70 @@ def get_audit(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=D
 def verify_audit(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
     result=verify_chain(db);return result.__dict__
 
-@router.get("/forecast/latest",response_model=ForecastResponse)
-def forecast(seller_id:int,access:AuthorizedSeller=Depends(require_seller_read)):return ForecastResponse(seller_id=seller_id)
-@router.get("/alerts",response_model=AlertsResponse)
-def alerts(seller_id:int,access:AuthorizedSeller=Depends(require_seller_read)):return AlertsResponse(seller_id=seller_id)
+def _as_of()->date:
+    value=get_settings().kosh_as_of_date
+    return date.fromisoformat(value) if value else date.today()
+
+def _week_out(row):return {column.name:getattr(row,column.name) for column in row.__table__.columns if column.name!="id"}
+def _alert_out(row):return None if not row else {column.name:getattr(row,column.name) for column in row.__table__.columns}
+def _latest(db,seller_id):return db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.created_at.desc(),KoshForecastRun.id.desc()).limit(1))
+def _forecast_out(db,run):
+    weeks=db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id).order_by(KoshForecastWeek.week_index)).all();alert=db.scalar(select(KoshAlert).where(KoshAlert.run_id==run.id).order_by(KoshAlert.id.desc()).limit(1))
+    review=db.scalar(select(func.coalesce(func.sum(KoshInvoice.amount_paise-func.coalesce(KoshInvoice.paid_amount_paise,0)),0)).where(KoshInvoice.seller_id==run.seller_id,KoshInvoice.status=="REVIEW"))
+    return {"seller_id":run.seller_id,"run":{"id":run.id,"as_of_date":run.as_of_date,"horizon_weeks":run.horizon_weeks,"n_paths":run.n_paths,"seed":run.seed,"input_fingerprint":run.input_fingerprint,"include_forecast_sales":run.include_forecast_sales,"buffer_paise":run.buffer_paise,"status":run.status,"created_at":run.created_at},"weeks":[_week_out(row) for row in weeks],"under_review_paise":review,"alert":_alert_out(alert)}
+
+class ForecastRunIn(BaseModel):
+    include_forecast_sales:bool=True;n_paths:int=Field(default=2000,ge=1,le=10000);seed:int=42
+class WhatIfIn(BaseModel):
+    customer_delay_shift_days:dict[int,int]={};exclude_counterparties:list[int]=[];extra_inflows:list[dict]=[]
+
+@router.post("/forecast/run")
+def run_forecast(seller_id:int,payload:ForecastRunIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
+    as_of=_as_of();inputs=load_inputs(db,seller_id,as_of);buffer=buffer_for_seller(db,seller_id);params=payload.model_dump();digest=fingerprint(inputs,{**params,"as_of_date":as_of,"buffer_paise":buffer})
+    result=simulate(inputs,as_of=as_of,n_paths=payload.n_paths,seed=payload.seed,include_forecast_sales=payload.include_forecast_sales,buffer_paise=buffer)
+    run=KoshForecastRun(seller_id=seller_id,as_of_date=as_of,horizon_weeks=13,n_paths=payload.n_paths,seed=payload.seed,params=params,input_fingerprint=digest,include_forecast_sales=payload.include_forecast_sales,buffer_paise=buffer,status="SUCCESS",created_by_user_id=access.user_id);db.add(run);db.flush()
+    for week in result["weeks"]:db.add(KoshForecastWeek(run_id=run.id,**week))
+    for old in db.scalars(select(KoshAlert).where(KoshAlert.seller_id==seller_id,KoshAlert.status=="OPEN")):old.status="SUPERSEDED"
+    proposed=build_alert(inputs,result,as_of=as_of,threshold=get_settings().kosh_alert_threshold)
+    if proposed:db.add(KoshAlert(seller_id=seller_id,run_id=run.id,status="OPEN",**{key:proposed[key] for key in ("week_index","probability","expected_shortfall_paise","peak_expected_shortfall_paise","causes")}))
+    append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="forecast.run",tier="T0_READ",payload={"run_id":run.id,"input_fingerprint":digest},policy_decision="ALLOW");db.commit();return {"run_id":run.id}
+
+@router.get("/forecast/latest")
+def forecast(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
+    run=_latest(db,seller_id)
+    if not run:return {"seller_id":seller_id,"status":"NOT_IMPLEMENTED","items":[]}
+    return _forecast_out(db,run)
+
+@router.post("/forecast/whatif")
+def whatif(seller_id:int,payload:WhatIfIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
+    run=_latest(db,seller_id)
+    if not run:raise HTTPException(404,"No forecast run")
+    result=simulate(load_inputs(db,seller_id,run.as_of_date),as_of=run.as_of_date,n_paths=run.n_paths,seed=run.seed,include_forecast_sales=run.include_forecast_sales,buffer_paise=run.buffer_paise,customer_delay_shift_days=payload.customer_delay_shift_days,exclude_counterparties=set(payload.exclude_counterparties),extra_inflows=payload.extra_inflows)
+    return {"seller_id":seller_id,"run":{"id":run.id,"as_of_date":run.as_of_date,"buffer_paise":run.buffer_paise},"weeks":result["weeks"],"under_review_paise":result["under_review_paise"],"alert":build_alert(load_inputs(db,seller_id,run.as_of_date),result,as_of=run.as_of_date,threshold=get_settings().kosh_alert_threshold)}
+
+@router.get("/alerts")
+def alerts(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
+    rows=db.scalars(select(KoshAlert).where(KoshAlert.seller_id==seller_id).order_by(KoshAlert.created_at.desc())).all()
+    return [_alert_out(row) for row in rows] if rows else {"seller_id":seller_id,"status":"NOT_IMPLEMENTED","items":[]}
+
+@router.post("/alerts/{alert_id}/acknowledge")
+def acknowledge(seller_id:int,alert_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
+    row=db.scalar(select(KoshAlert).where(KoshAlert.id==alert_id,KoshAlert.seller_id==seller_id))
+    if not row:raise HTTPException(404,"Alert not found")
+    row.status="ACKNOWLEDGED";row.acknowledged_by=access.user_id;row.acknowledged_at=utcnow();append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="alert.acknowledge",tier="T1_DRAFT",payload={"alert_id":alert_id},policy_decision="ALLOW");db.commit();return {"id":row.id,"status":row.status}
+
+@router.post("/forecast/backtest")
+def backtest(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
+    result=run_backtest(db,seller_id,_as_of());row=KoshBacktest(seller_id=seller_id,**result);db.add(row);append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="forecast.backtest",tier="T0_READ",payload={"as_of_date":result["as_of_date"]},policy_decision="ALLOW");db.commit();return {"id":row.id}
+
+@router.get("/forecast/backtest/latest")
+def latest_backtest(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
+    row=db.scalar(select(KoshBacktest).where(KoshBacktest.seller_id==seller_id).order_by(KoshBacktest.created_at.desc(),KoshBacktest.id.desc()).limit(1))
+    if not row:raise HTTPException(404,"No backtest")
+    return {column.name:getattr(row,column.name) for column in row.__table__.columns}
+
+@router.get("/analysis")
+def analysis(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):return business_analysis(db,seller_id,_as_of())
 @router.get("/plan",response_model=PlanResponse)
 def plan(seller_id:int,access:AuthorizedSeller=Depends(require_seller_read)):return PlanResponse(seller_id=seller_id)
 @router.get("/approvals",response_model=ApprovalsResponse)

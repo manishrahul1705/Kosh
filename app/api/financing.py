@@ -10,6 +10,7 @@ from app.audit.ledger import append_event
 from app.core.config import get_settings
 from app.database.kosh_models import KoshFinancingEvaluation,KoshFinancingResult,KoshPlan,KoshPlanLine
 from app.finance.plan import propose_plan
+from app.finance.costs import financing_quote
 from app.lending.catalogue import load_catalogue
 from app.lending.service import run_evaluation
 
@@ -18,7 +19,7 @@ SORT_RULE="sorted by effective annual cost, lowest first; no provider pays for p
 def _as_of():return date.fromisoformat(get_settings().kosh_as_of_date or date.today().isoformat())
 def _latest_eval(db,seller):return db.scalar(select(KoshFinancingEvaluation).where(KoshFinancingEvaluation.seller_id==seller).order_by(KoshFinancingEvaluation.id.desc()).limit(1))
 def _result(row,products):
-    product=products[row.product_id];return {"product_id":row.product_id,"display_name":product["display_name"],"provider_label":product["provider_label"],"scope":row.scope,"status":row.status,"max_amount_paise":row.max_amount_paise,"effective_annual_rate":row.effective_annual_rate,"arrival_business_days":row.arrival_business_days,"reasons":row.reasons,"evidence":row.evidence,"assumption":product["cost_model"].get("assumption",False),"verify_before_relying":any(not c.get("source",{}).get("verified",False) for c in product["criteria"])}
+    product=products[row.product_id];return {"product_id":row.product_id,"display_name":product["display_name"],"provider_label":product["provider_label"],"scope":row.scope,"status":row.status,"max_amount_paise":row.max_amount_paise,"effective_annual_rate":row.effective_annual_rate,"arrival_business_days":row.arrival_business_days,"reasons":row.reasons,"evidence":row.evidence,"assumption":product["cost_model"].get("assumption",False),**financing_quote(product,row.max_amount_paise),"cost_assumption":product["cost_model"].get("assumption_label","Illustrative catalogue terms"),"verify_before_relying":any(not c.get("source",{}).get("verified",False) for c in product["criteria"])}
 @router.post("/financing/evaluate")
 def evaluate(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
     try:row=run_evaluation(db,seller_id,_as_of())

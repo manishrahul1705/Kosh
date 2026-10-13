@@ -6,6 +6,7 @@ from sqlalchemy import select
 from app.database.models import SellerAttribute,SellerDocument,SellerRevision
 from app.database.kosh_models import KoshCounterparty,KoshFinancingEvaluation,KoshFinancingResult,KoshForecastRun,KoshForecastWeek,KoshInvoice
 from app.lending.catalogue import load_catalogue
+from app.finance.costs import financing_quote
 from app.lending.evaluator import evaluate_product
 
 def _attributes(db,seller_id):
@@ -34,6 +35,7 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
         for scope,local,cap in scopes:
             result=evaluate_product(product,{**local,"product_max":product["max_amount_paise"]},as_of=as_of);rate=product["cost_model"]["annual_rate"]
             if product["id"]=="BANK_OD_DRAWDOWN":cap=facts["LIMIT_HEADROOM_MIN"]
+            rate=financing_quote(product,min(int(cap),int(product["max_amount_paise"])))["effective_annual_rate"]
             db.add(KoshFinancingResult(evaluation_id=evaluation.id,product_id=product["id"],scope=scope,status=result["status"],max_amount_paise=min(int(cap),int(product["max_amount_paise"])),effective_annual_rate=rate,arrival_business_days=product["arrival_business_days"],reasons=result["reasons"],evidence=[r.get("business_evidence") for r in result["reasons"] if r.get("business_evidence")]))
     return evaluation
 

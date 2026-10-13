@@ -21,6 +21,9 @@ export interface AuditResponse { seller_id:number; status:string; items:{sequenc
 export interface ForecastWeek { week_index:number;week_start:string;week_end:string;p10_closing_balance_paise:number;p50_closing_balance_paise:number;p90_closing_balance_paise:number;expected_inflow_committed_paise:number;expected_inflow_forecast_paise:number;expected_outflow_committed_paise:number;expected_outflow_forecast_paise:number;prob_below_buffer:number;expected_shortfall_paise:number }
 export interface ForecastAlert { id?:number;week_index:number;probability:number;expected_shortfall_paise:number;peak_expected_shortfall_paise:number;causes:{type:string;customer?:string;counterparty_id?:number;invoice_numbers?:string[];amount_paise:number;contribution_paise:number}[];summary?:string;status?:string }
 export interface Forecast { seller_id:number;run:{id:number;as_of_date:string;buffer_paise:number;include_forecast_sales?:boolean};weeks:ForecastWeek[];under_review_paise:number;alert:ForecastAlert|null }
+export interface FinancingOption { product_id:string;display_name:string;provider_label:string;scope:string|null;status:'MATCHED'|'NOT_MATCHED'|'REVIEW_REQUIRED';max_amount_paise:number;effective_annual_rate:string|null;arrival_business_days:number;reasons:{reason:string;reason_code:string;product_clause?:{quote?:string}}[];evidence:Record<string,unknown>[];assumption:boolean;verify_before_relying:boolean }
+export interface FinancingOptions { seller_id:number;sort_rule:string;items:FinancingOption[] }
+export interface FinancingPlan { id:number;status:string;method:string;total_cost_paise:number;baseline_cost_paise:number;before_probabilities:number[];after_probabilities:number[];lines:{id:number;product_id:string;amount_paise:number;arrival_week:number;cost_paise:number;required_tier:string}[] }
 
 export const koshApi = {
   ledger: (sellerId: number) =>
@@ -36,6 +39,10 @@ export const koshApi = {
     apiClient.get<KoshPlaceholder>(`/kosh/sellers/${sellerId}/alerts`).then((r) => r.data),
   plan: (sellerId: number) =>
     apiClient.get<KoshPlaceholder>(`/kosh/sellers/${sellerId}/plan`).then((r) => r.data),
+  financingOptions:(sellerId:number)=>apiClient.get<FinancingOptions>(`/kosh/sellers/${sellerId}/financing/options`).then(r=>r.data),
+  evaluateFinancing:(sellerId:number)=>apiClient.post(`/kosh/sellers/${sellerId}/financing/evaluate`).then(r=>r.data),
+  latestPlan:(sellerId:number)=>apiClient.get<FinancingPlan>(`/kosh/sellers/${sellerId}/plans/latest`).then(r=>r.data),
+  createPlan:(sellerId:number)=>apiClient.post(`/kosh/sellers/${sellerId}/plans`).then(r=>r.data),
   approvals: (sellerId: number) =>
     apiClient.get<KoshPlaceholder>(`/kosh/sellers/${sellerId}/approvals`).then((r) => r.data),
   audit: (sellerId: number) =>

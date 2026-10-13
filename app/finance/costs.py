@@ -17,8 +17,8 @@ def loan_apr(principal_paise:int, repayments:list[tuple[int,int]], fee_paise:int
     def npv(rate): return net-sum(Decimal(v)/((Decimal(1)+rate)**(Decimal(d)/Decimal(365))) for d,v in repayments)
     for _ in range(160):
         mid=(lo+hi)/2
-        if npv(mid)>0: lo=mid
-        else: hi=mid
+        if npv(mid)>0: hi=mid
+        else: lo=mid
     return (lo+hi)/2
 
 def effective_annual_cost(principal_paise:int,repayment_paise:int,days:int)->Decimal:

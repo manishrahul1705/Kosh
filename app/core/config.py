@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from decimal import Decimal
 from typing import Literal
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -243,6 +244,7 @@ class Settings(BaseSettings):
     kosh_max_upload_mb: int = Field(default=10, ge=1, le=100)
     kosh_as_of_date: str = ""
     kosh_alert_threshold: float = Field(default=0.5, ge=0, le=1)
+    kosh_plan_target_prob: Decimal = Field(default=Decimal("0.20"), ge=0, lt=1)
     kosh_plan_percentile: int = Field(default=25, ge=10, le=50)
 
     @field_validator("log_level")

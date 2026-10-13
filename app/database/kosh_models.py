@@ -295,6 +295,7 @@ class KoshPlan(Base):
     seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False,index=True)
     forecast_run_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("kosh_forecast_runs.id",ondelete="RESTRICT"),nullable=False)
     forecast_fingerprint:Mapped[str]=mapped_column(sa.CHAR(64),nullable=False)
+    planning_details:Mapped[dict[str,object]]=mapped_column(sa.JSON,nullable=False,default=dict)
     method:Mapped[str]=mapped_column(sa.String(24),nullable=False)
     status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
     total_cost_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)

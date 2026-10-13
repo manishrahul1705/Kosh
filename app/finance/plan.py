@@ -65,10 +65,13 @@ def plan_scenario(inputs,run,chosen,products):
     return simulate(inputs,as_of=run.as_of_date,n_paths=run.n_paths,seed=run.seed,include_forecast_sales=run.include_forecast_sales,buffer_paise=run.buffer_paise,extra_inflows=extras,invoice_amount_reductions=reductions)
 
 
-def validate_and_complete(chosen,levers,check,*,target_week,threshold):
+def validate_and_complete(chosen,levers,check,*,target_week,threshold,target_prob=None):
     """Check each extension with the same seed; return no false validity claim."""
     chosen=[dict(x) for x in chosen]
-    def valid(result):return result["weeks"][target_week-1]["prob_below_buffer"]<threshold
+    def valid(result):
+        probabilities=[Decimal(str(w["prob_below_buffer"])) for w in result["weeks"]]
+        if target_prob is None:return probabilities[target_week-1]<Decimal(str(threshold))
+        return probabilities[target_week-1]<=Decimal(str(target_prob)) and all(p<Decimal(str(threshold)) for p in probabilities)
     after=check(chosen)
     ordered=sorted((x for x in levers if x["status"]=="MATCHED" and x["cap"]>0),key=lambda x:(Decimal(str(x["unit_cost"]))/Decimal(str(x.get("net_factor",1))),x["product_id"],x.get("scope") or ""))
     for lever in ordered:
@@ -91,14 +94,16 @@ def validate_and_complete(chosen,levers,check,*,target_week,threshold):
             else:lo=mid+1
         line["amount"]=lo
     chosen=[x for x in chosen if x["amount"]>0];after=check(chosen)
-    return chosen,after,"PROPOSED" if valid(after) else "INSUFFICIENT"
+    return chosen,after,("VALID" if target_prob is not None else "PROPOSED") if valid(after) else "INSUFFICIENT"
 
 
-def propose_plan(db,seller_id:int)->KoshPlan:
+def propose_plan(db,seller_id:int,*,target_prob=None)->KoshPlan:
     run=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if not run:raise ValueError("No successful forecast")
     weeks=db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id).order_by(KoshForecastWeek.week_index)).all()
     threshold=get_settings().kosh_alert_threshold
+    target_prob=Decimal(str(target_prob if target_prob is not None else get_settings().kosh_plan_target_prob))
+    if not 0<=target_prob<Decimal(str(threshold)):raise ValueError("Plan target must be below the alert threshold")
     alert=next((w for w in weeks if w.prob_below_buffer>=threshold),None)
     target=alert.week_index if alert else 1
     percentile=get_settings().kosh_plan_percentile
@@ -117,11 +122,16 @@ def propose_plan(db,seller_id:int)->KoshPlan:
         levers.append({"product_id":row.product_id,"status":row.status,"cap":row.max_amount_paise if timely else 0,"unit_cost":Decimal(quote["cost_paise"])/row.max_amount_paise if row.max_amount_paise else Decimal(0),"net_factor":factor,"rate":Decimal(quote["effective_annual_rate"]),"scope":row.scope,"arrival_business_days":row.arrival_business_days})
     method,chosen=optimize_levers(required,levers)
     inputs=load_inputs(db,seller_id,run.as_of_date)
-    chosen,after,status=validate_and_complete(chosen,levers,lambda lines:plan_scenario(inputs,run,lines,products),target_week=target,threshold=threshold)
+    chosen,after,status=validate_and_complete(chosen,levers,lambda lines:plan_scenario(inputs,run,lines,products),target_week=target,threshold=threshold,target_prob=target_prob)
     before=[w.prob_below_buffer for w in weeks];after_p=[w["prob_below_buffer"] for w in after["weeks"]]
     total=sum(financing_quote(products[x["product_id"]],x["amount"])["cost_paise"] for x in chosen)
-    principal=sum(x["amount"] for x in chosen)
-    baseline=financing_quote(products["NBFC_UNSECURED_BUSINESS_LOAN"],principal)["cost_paise"]
+    # The comparison must meet the same safety target and horizon gate, using
+    # the same free collections capacity, fees, arrival and repayment cash flows.
+    baseline_levers=[x for x in levers if x["product_id"] in {"COLLECTIONS_PUSH","NBFC_UNSECURED_BUSINESS_LOAN"}]
+    _,baseline_chosen=optimize_levers(required,baseline_levers)
+    baseline_chosen,baseline_after,baseline_status=validate_and_complete(baseline_chosen,baseline_levers,lambda lines:plan_scenario(inputs,run,lines,products),target_week=target,threshold=threshold,target_prob=target_prob)
+    baseline=sum(financing_quote(products[x["product_id"]],x["amount"])["cost_paise"] for x in baseline_chosen) if baseline_status=="VALID" else 0
+    details={"target_probability":str(target_prob),"alert_threshold":str(threshold),"alert_week":target,"baseline_status":baseline_status,"baseline_after_probabilities":[w["prob_below_buffer"] for w in baseline_after["weeks"]],"baseline_lines":[{"product_id":x["product_id"],"amount_paise":x["amount"],"scope":x["scope"]} for x in baseline_chosen]}
     why=f"Lowest absolute cost per net paise arriving by alert week {target}, subject to documented caps. Only MATCHED options are eligible."
     selected={(x["product_id"],x["scope"]) for x in chosen}
     skipped=[]
@@ -130,11 +140,12 @@ def propose_plan(db,seller_id:int)->KoshPlan:
         reason="requires review or failed eligibility" if lever["status"]!="MATCHED" else "cannot arrive by the alert week" if lever["cap"]==0 else "costs more per net paise than the selected available capacity"
         skipped.append(f"{lever['product_id']}: {reason}.")
     why+=" "+" ".join(skipped)
-    why+=f" Same-seed forecast at week {target}: {after_p[target-1]:.4f}, required below {threshold:.4f}. Paid capacity trimmed to the smallest valid paise amount." if status=="PROPOSED" else " Available eligible capacity cannot bring the alert probability below the threshold; this plan is INSUFFICIENT."
-    plan=KoshPlan(seller_id=seller_id,forecast_run_id=run.id,forecast_fingerprint=run.input_fingerprint,method=method,status=status,total_cost_paise=total,baseline_cost_paise=baseline,before_probabilities=before,after_probabilities=after_p);db.add(plan);db.flush()
+    why+=f" Same-seed forecast at week {target}: {after_p[target-1]:.4f}, required at most {target_prob:.4f}; every horizon week below {threshold:.4f}. Paid capacity trimmed to the smallest valid paise amount." if status=="VALID" else " Available eligible capacity cannot bring the target and horizon safety conditions; this plan is INSUFFICIENT."
+    details["why_this_plan"]=why
+    plan=KoshPlan(seller_id=seller_id,forecast_run_id=run.id,forecast_fingerprint=run.input_fingerprint,method=method,status=status,planning_details=details,total_cost_paise=total,baseline_cost_paise=baseline,before_probabilities=before,after_probabilities=after_p);db.add(plan);db.flush()
     tiers={"COLLECTIONS_PUSH":"T2","SUPPLIER_TERM_EXTENSION":"T2"}
     for x in chosen:
         quote=financing_quote(products[x["product_id"]],x["amount"])
         arrival_week=(_arrival(run.as_of_date,x["arrival_business_days"])-week_bounds(run.as_of_date)[0]).days//7+1
-        db.add(KoshPlanLine(plan_id=plan.id,product_id=x["product_id"],scope_ids=[int(x["scope"].split(":")[1])] if x["scope"] and ":" in x["scope"] else [],amount_paise=x["amount"],arrival_week=arrival_week,cost_paise=quote["cost_paise"],effective_annual_rate=quote["effective_annual_rate"],required_tier=tiers.get(x["product_id"],"T3"),evidence=[{"why_this_plan":why,"target_week":target,"threshold":threshold}],status=status))
+        db.add(KoshPlanLine(plan_id=plan.id,product_id=x["product_id"],scope_ids=[int(x["scope"].split(":")[1])] if x["scope"] and ":" in x["scope"] else [],amount_paise=x["amount"],arrival_week=arrival_week,cost_paise=quote["cost_paise"],effective_annual_rate=quote["effective_annual_rate"],required_tier=tiers.get(x["product_id"],"T3"),evidence=[{"why_this_plan":why,"target_week":target,"threshold":threshold,"target_probability":str(target_prob)}],status=status))
     return plan

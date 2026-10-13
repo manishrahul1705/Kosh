@@ -455,7 +455,8 @@ def test_app_startup_runs_stale_recovery(settings, session_factory, source, db):
 
     j = add_job(db, add_tender(db), status="RUNNING", attempt_count=1, started_at=utcnow(),
                 locked_by=f"{socket.gethostname()}:1:old")
-    app = create_app(settings, session_factory=session_factory, collector_factory=source)
+    cfg = settings.model_copy(update={"startup_recovery_enabled": True})
+    app = create_app(cfg, session_factory=session_factory, collector_factory=source)
     with TestClient(app):
         pass
     assert job(db, j.id).status == "RETRY"

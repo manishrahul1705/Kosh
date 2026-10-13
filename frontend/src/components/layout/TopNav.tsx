@@ -9,6 +9,11 @@ const TITLES: Record<string, string> = {
   '/': 'My Tenders',
   '/tenders': 'Tender Details',
   '/profile': 'Seller Profile',
+  '/cash': 'Cash',
+  '/plan': 'Plan',
+  '/approvals': 'Approvals',
+  '/audit': 'Audit',
+  '/connect': 'Connect',
 }
 
 export const TopNav: React.FC<{ sidebarWidth: number }> = () => {

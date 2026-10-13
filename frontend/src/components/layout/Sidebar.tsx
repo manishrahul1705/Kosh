@@ -1,11 +1,19 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { ListChecks, Building2, ChevronLeft, ChevronRight, Gem } from 'lucide-react'
+import { ListChecks, Building2, ChevronLeft, ChevronRight, Gem, Wallet, Route, ShieldCheck, History, Plug } from 'lucide-react'
 import { clsx } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { to: '/', icon: ListChecks, label: 'My Tenders', exact: true },
   { to: '/profile', icon: Building2, label: 'Seller Profile', exact: false },
+]
+
+const KOSH_ITEMS = [
+  { to: '/cash', icon: Wallet, label: 'Cash' },
+  { to: '/plan', icon: Route, label: 'Plan' },
+  { to: '/approvals', icon: ShieldCheck, label: 'Approvals' },
+  { to: '/audit', icon: History, label: 'Audit' },
+  { to: '/connect', icon: Plug, label: 'Connect' },
 ]
 
 interface SidebarProps {
@@ -45,6 +53,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => (
               isActive ? 'bg-white/15 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
             )
           }
+          title={collapsed ? item.label : undefined}
+        >
+          <item.icon size={16} aria-hidden={true} />
+          {!collapsed && <span className="hidden md:inline truncate">{item.label}</span>}
+        </NavLink>
+      ))}
+      {!collapsed && <p className="hidden md:block px-3 pt-5 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Kosh</p>}
+      {KOSH_ITEMS.map((item) => (
+        <NavLink key={item.to} to={item.to}
+          className={({ isActive }) => clsx(
+            'flex justify-center md:justify-start items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+            collapsed && 'justify-center',
+            isActive ? 'bg-white/15 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
+          )}
           title={collapsed ? item.label : undefined}
         >
           <item.icon size={16} aria-hidden={true} />

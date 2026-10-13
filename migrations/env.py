@@ -12,6 +12,7 @@ from app.database.models import Base
 import app.database.auth_models  # Register authentication ORM tables
 import app.database.platform_auth_models  # Register platform operator ORM tables
 import app.database.matching_models  # Register seller-tender matching tables
+import app.database.kosh_models  # Register additive business tables
 
 config = context.config
 

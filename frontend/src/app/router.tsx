@@ -7,6 +7,11 @@ import { MyTendersPage } from '@/features/portal/MyTendersPage'
 import { TenderDetailPage } from '@/features/portal/TenderDetailPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { CashPage } from '@/features/kosh/CashPage'
+import { PlanPage } from '@/features/kosh/PlanPage'
+import { ApprovalsPage } from '@/features/kosh/ApprovalsPage'
+import { AuditPage } from '@/features/kosh/AuditPage'
+import { ConnectPage } from '@/features/kosh/ConnectPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -23,6 +28,11 @@ export const router = createBrowserRouter([
       { index: true, element: <MyTendersPage /> },
       { path: 'tenders/:tenderId', element: <TenderDetailPage /> },
       { path: 'profile', element: <ProfilePage /> },
+      { path: 'cash', element: <CashPage /> },
+      { path: 'plan', element: <PlanPage /> },
+      { path: 'approvals', element: <ApprovalsPage /> },
+      { path: 'audit', element: <AuditPage /> },
+      { path: 'connect', element: <ConnectPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

@@ -14,9 +14,10 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.ai.job_worker import AIAnalysisJobWorker
-from app.api import ai_analysis, collection, corpus, dev_login, documents, eligibility, extractions, health, portal, sellers, stats, tender_fields, tenders, user_provisioning
+from app.api import business_documents, cash, ai_analysis, collection, corpus, dev_login, documents, eligibility, extractions, health, portal, sellers, stats, tender_fields, tenders, user_provisioning
 import app.database.auth_models  # noqa: F401  (register ORM tables)
 import app.database.matching_models  # noqa: F401
+import app.database.kosh_models  # noqa: F401
 import app.database.platform_auth_models  # noqa: F401
 from app.collectors.base import Collector
 from app.collectors.gem_collector import build_collector
@@ -140,6 +141,8 @@ def create_app(
     app.include_router(user_provisioning.router)
     app.include_router(corpus.router)
     app.include_router(portal.router)
+    app.include_router(business_documents.router)
+    app.include_router(cash.router)
     dev_login.install(app, settings)  # no-op unless DEV_LOGIN_ENABLED=true (never in production)
 
     @app.get("/", include_in_schema=False)

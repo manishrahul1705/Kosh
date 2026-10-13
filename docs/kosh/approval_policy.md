@@ -36,3 +36,14 @@ visible only to the intended signed-in OWNER/APPROVER in development. Audit reco
 contain challenge identifiers and outcomes, never plaintext codes. Production
 approval secrets must contain at least 32 bytes. Process-secret rotation invalidates
 outstanding development tokens and inbox ciphertext.
+
+
+Outbound data sharing needs a separate sharing consent artifact with exact purpose,
+recipient identifier, allowed field list and future expiry. General document-intake
+consent does not authorize lender sharing. The policy rechecks the active scope at
+proposal, approval and token consumption; revocation or expiry blocks subsequent
+sharing even when an approval token exists. Scope matching is exact for purpose and
+recipient, and the requested fields must be a subset of the granted fields. Read
+checks never mutate an artifact without an audit event. Grants and revocations are
+seller-scoped, human-authorized and audited. Recipients currently use the catalogue's
+explicit sandbox identifiers; these are not real lender email addresses.

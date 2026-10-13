@@ -14,7 +14,10 @@ from app.utils.dates import utcnow
 PRODUCT_ACTIONS={"COLLECTIONS_PUSH":"COLLECTIONS_REMINDER","SUPPLIER_TERM_EXTENSION":"SUPPLIER_TERM_REQUEST","TREDS_INVOICE_DISCOUNTING":"TREDS_FINANCE","BANK_OD_DRAWDOWN":"OD_DRAWDOWN","CGTMSE_BACKED_WC_LOAN":"LOAN_APPLICATION","MUDRA_LOAN":"LOAN_APPLICATION","NBFC_UNSECURED_BUSINESS_LOAN":"LOAN_APPLICATION"}
 REGISTERED_MODULES={"collections","sales","procurement","pricing","customer_intelligence","revenue","reports","tender_to_cash"}
 
-def decision_for(db,intent,*,phase="propose",actor_role=None,approved=False,otp_verified=False,consent_valid=False):
+def decision_for(db,intent,*,phase="propose",actor_role=None,approved=False,otp_verified=False,consent_valid=None):
+    if consent_valid is None:
+        from app.consent.sharing import active
+        consent_valid=active(db,seller_id=intent.seller_id,purpose=intent.params.get("sharing_purpose"),recipient_id=intent.params.get("recipient_id"),fields=intent.params.get("sharing_fields",[])) is not None if intent.params.get("sharing_fields") else False
     return evaluate(intent.action_type,intent.params,context(db,intent.seller_id,day_used_paise=day_used(db,intent.seller_id,exclude_intent_id=intent.id),actor_role=actor_role,approved=approved,otp_verified=otp_verified,consent_valid=consent_valid),phase=phase,origin=intent.source)
 
 def create_from_plan_line(db,*,seller_id,plan_line_id,creator_id,source="PLANNER"):

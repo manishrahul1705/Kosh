@@ -152,6 +152,8 @@ def create_app(
     from app.api import sandbox
     app.include_router(sandbox.router)
     app.include_router(consents.router)
+    from app.api import sharing_consents
+    app.include_router(sharing_consents.router)
     dev_login.install(app, settings)  # no-op unless DEV_LOGIN_ENABLED=true (never in production)
 
     @app.get("/", include_in_schema=False)

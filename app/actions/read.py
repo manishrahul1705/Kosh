@@ -1,5 +1,5 @@
 """Read-only queries; no intent factory or execution imports."""
-from datetime import datetime,timezone
+from datetime import datetime,timezone,timedelta
 from zoneinfo import ZoneInfo
 from sqlalchemy import select,func,or_
 from app.database.kosh_models import KoshActionIntent
@@ -9,7 +9,7 @@ def day_used(db,seller_id,*,now=None,exclude_intent_id=None):
     now=now or utcnow()
     local=now.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("Asia/Kolkata"))
     start=local.replace(hour=0,minute=0,second=0,microsecond=0).astimezone(timezone.utc).replace(tzinfo=None)
-    rows=db.scalars(select(KoshActionIntent).where(KoshActionIntent.seller_id==seller_id,KoshActionIntent.status.in_(["APPROVED","EXECUTING","SUCCEEDED"]),KoshActionIntent.approved_at>=start,or_(KoshActionIntent.status!="APPROVED",KoshActionIntent.expires_at>now))).all()
+    rows=db.scalars(select(KoshActionIntent).where(KoshActionIntent.seller_id==seller_id,KoshActionIntent.status.in_(["APPROVED","EXECUTING","SUCCEEDED"]),KoshActionIntent.approved_at>=start,KoshActionIntent.approved_at<start+timedelta(days=1),or_(KoshActionIntent.status!="APPROVED",KoshActionIntent.expires_at>now))).all()
     return sum(row.params.get("amount_paise",0) for row in rows if row.id!=exclude_intent_id)
 
 def out(row):

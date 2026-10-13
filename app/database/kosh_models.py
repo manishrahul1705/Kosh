@@ -391,3 +391,18 @@ class KoshSandboxInbox(Base):
     encrypted_payload:Mapped[str]=mapped_column(sa.Text,nullable=False)
     created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
     expires_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+
+
+class KoshSharingConsent(Base):
+    __tablename__="kosh_sharing_consents"
+    __table_args__=(sa.CheckConstraint("status IN ('ACTIVE','REVOKED','EXPIRED')",name="sharing_consent_status"),)
+    id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False,index=True)
+    granted_by_user_id:Mapped[int]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id",ondelete="RESTRICT"),nullable=False)
+    purpose:Mapped[str]=mapped_column(sa.String(48),nullable=False)
+    recipient_id:Mapped[str]=mapped_column(sa.String(64),nullable=False)
+    fields:Mapped[list[str]]=mapped_column(sa.JSON,nullable=False)
+    expires_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False)
+    status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
+    revoked_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)

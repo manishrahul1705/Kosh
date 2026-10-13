@@ -9,9 +9,10 @@ from app.utils.dates import utcnow,to_utc_naive
 PURPOSES={"TREDS_FINANCE","OD_DRAWDOWN","LOAN_APPLICATION","SHARE_DATA_PACK"}
 FIELDS={"invoice_id","amount_paise","due_date","invoice_number","invoice_date","buyer_name","gstin","udyam_number","last_fy_turnover_paise","incorporation_date","cash_report_pdf","forecast","plan","options","audit_hash"}
 
-def active(db,*,seller_id,purpose,recipient_id,fields,at=None):
+def active(db,*,seller_id,purpose,recipient_id,fields,at=None,lock=False):
     at=to_utc_naive(at) if at is not None else utcnow()
-    rows=db.scalars(select(KoshSharingConsent).where(KoshSharingConsent.seller_id==seller_id,KoshSharingConsent.status=="ACTIVE",KoshSharingConsent.purpose==purpose,KoshSharingConsent.recipient_id==recipient_id,KoshSharingConsent.expires_at>at).order_by(KoshSharingConsent.id.desc())).all()
+    stmt=select(KoshSharingConsent).where(KoshSharingConsent.seller_id==seller_id,KoshSharingConsent.status=="ACTIVE",KoshSharingConsent.purpose==purpose,KoshSharingConsent.recipient_id==recipient_id,KoshSharingConsent.expires_at>at).order_by(KoshSharingConsent.id.desc())
+    rows=db.scalars(stmt.with_for_update() if lock else stmt).all()
     return next((row for row in rows if set(fields)<=set(row.fields)),None)
 
 def grant(db,*,seller_id,actor_id,purpose,recipient_id,fields,expires_at):

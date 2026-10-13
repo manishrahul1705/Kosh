@@ -325,6 +325,7 @@ class KoshPolicyControl(Base):
     scope_key:Mapped[str]=mapped_column(sa.String(64),nullable=False,unique=True)
     seller_id:Mapped[int|None]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"))
     kill_switch:Mapped[bool]=mapped_column(sa.Boolean,nullable=False,default=False)
+    sandbox_fail_next:Mapped[bool]=mapped_column(sa.Boolean,nullable=False,default=False)
     max_action_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
     max_day_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
     allowlist:Mapped[list[dict]]=mapped_column(sa.JSON,nullable=False,default=list)
@@ -405,4 +406,50 @@ class KoshSharingConsent(Base):
     expires_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False)
     status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
     revoked_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+
+
+class KoshSandboxExecution(Base):
+    __tablename__="kosh_sandbox_executions"
+    __table_args__=(sa.CheckConstraint("status IN ('PENDING','SUBMITTED','SETTLED','FAILED')",name="sandbox_execution_status"),)
+    id:Mapped[str]=mapped_column(sa.String(36),primary_key=True)
+    intent_id:Mapped[str]=mapped_column(sa.String(36),sa.ForeignKey("kosh_action_intents.id",ondelete="RESTRICT"),nullable=False,unique=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False)
+    idempotency_key:Mapped[str]=mapped_column(sa.String(128),nullable=False,unique=True)
+    params_hash:Mapped[str]=mapped_column(sa.CHAR(64),nullable=False)
+    adapter:Mapped[str]=mapped_column(sa.String(16),nullable=False)
+    status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
+    expected_entries:Mapped[list]=mapped_column(sa.JSON,nullable=False,default=list)
+    result:Mapped[dict]=mapped_column(sa.JSON,nullable=False,default=dict)
+    history:Mapped[list]=mapped_column(sa.JSON,nullable=False,default=list)
+    error:Mapped[str|None]=mapped_column(sa.Text)
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+    updated_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+
+class KoshSandboxLedgerEntry(Base):
+    __tablename__="kosh_sandbox_ledger"
+    __table_args__=(sa.UniqueConstraint("execution_id","entry_key",name="uq_sandbox_execution_entry"),sa.CheckConstraint("label='SANDBOX'",name="sandbox_ledger_label"),sa.CheckConstraint("status IN ('POSTED','SCHEDULED')",name="sandbox_ledger_status"))
+    id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
+    execution_id:Mapped[str]=mapped_column(sa.String(36),sa.ForeignKey("kosh_sandbox_executions.id",ondelete="RESTRICT"),nullable=False)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False)
+    entry_key:Mapped[str]=mapped_column(sa.String(48),nullable=False)
+    entry_date:Mapped[date]=mapped_column(sa.Date,nullable=False)
+    amount_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
+    kind:Mapped[str]=mapped_column(sa.String(32),nullable=False)
+    invoice_id:Mapped[int|None]=mapped_column(PK,sa.ForeignKey("kosh_invoices.id",ondelete="RESTRICT"))
+    receivable_reduction_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False,default=0)
+    status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
+    label:Mapped[str]=mapped_column(sa.String(16),nullable=False,default="SANDBOX")
+    posted_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+
+class KoshSandboxOutbox(Base):
+    __tablename__="kosh_sandbox_outbox"
+    id:Mapped[str]=mapped_column(sa.String(36),primary_key=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False)
+    execution_id:Mapped[str]=mapped_column(sa.String(36),sa.ForeignKey("kosh_sandbox_executions.id",ondelete="RESTRICT"),nullable=False,unique=True)
+    intent_id:Mapped[str]=mapped_column(sa.String(36),sa.ForeignKey("kosh_action_intents.id",ondelete="RESTRICT"),nullable=False)
+    channel:Mapped[str]=mapped_column(sa.String(16),nullable=False)
+    recipient_ref:Mapped[str]=mapped_column(sa.String(128),nullable=False)
+    body:Mapped[str]=mapped_column(sa.Text,nullable=False)
+    status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
     created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)

@@ -1,1 +1,1 @@
-"""Sandbox interfaces for bank, receivables, lender and messaging adapters."""
+"""Local, deterministic sandbox adapters with no external transport."""

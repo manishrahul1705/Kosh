@@ -47,3 +47,18 @@ recipient, and the requested fields must be a subset of the granted fields. Read
 checks never mutate an artifact without an audit event. Grants and revocations are
 seller-scoped, human-authorized and audited. Recipients currently use the catalogue's
 explicit sandbox identifiers; these are not real lender email addresses.
+
+
+Sandbox adapters have no external transport. Every execution is keyed by intent ID
+and exact parameter hash; retries reuse the same transaction, ledger entries and
+outbox record. TReDS simulates upload, illustrative bids, best-bid acceptance and
+T+1 business-day settlement of the financed part only. Submission is scheduled one
+business day before the approved funding date; the approved maturity determines
+cost days. OD posts a labelled draw and a scheduled repayment liability; headroom
+is rechecked. Lender submission reports SUBMITTED and does not invent a disbursement.
+Messages only write the sandbox outbox, never a customer receipt. Sharing rechecks
+and locks its active consent scope and audits the exact artifact used. Failure
+injection is OWNER-only and development-only, failing before cash/outbox posting.
+Reconciliation compares the ledger to canonical intent-derived expected entries
+and flags amount, date, status or parameter-binding mismatches. Balances remain
+unknown if no base bank balance evidence exists, even when sandbox deltas are known.

@@ -25,3 +25,14 @@ Global controls additionally require OWNER membership for every seller, preservi
 tenant isolation. Newly allowlisted counterparties, recipients and payees require
 24 hours of cool-off. Limits use integer paise; daily reservations use the
 Asia/Kolkata business day and approved/executing/succeeded intent amounts.
+
+
+OTP step-up is simulated and unavailable in production. Six-digit challenges
+expire after five minutes and permit at most three verification attempts. Resends
+are limited to one per 30 seconds and ten per hour per seller/approver; a locked
+challenge cannot be bypassed by resending before its expiry. Challenge storage
+contains only keyed hashes. Delivery is encrypted into the local sandbox inbox,
+visible only to the intended signed-in OWNER/APPROVER in development. Audit records
+contain challenge identifiers and outcomes, never plaintext codes. Production
+approval secrets must contain at least 32 bytes. Process-secret rotation invalidates
+outstanding development tokens and inbox ciphertext.

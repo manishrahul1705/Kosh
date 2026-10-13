@@ -259,8 +259,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_startup_safety(self) -> "Settings":
         self.assert_startup_safe()
-        if self.app_env == "production" and self.kosh_approval_secret is None:
-            raise ValueError("KOSH_APPROVAL_SECRET is required in production")
+        if self.app_env.strip().lower() == "production" and (self.kosh_approval_secret is None or len(self.kosh_approval_secret.get_secret_value().encode("utf-8"))<32):
+            raise ValueError("KOSH_APPROVAL_SECRET is required in production with at least 32 bytes")
         return self
 
     def assert_startup_safe(self) -> None:

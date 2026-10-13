@@ -52,6 +52,7 @@ def detail(seller_id:int,intent_id:str,db:Session=Depends(get_db),access:Authori
 
 class ApprovalIn(BaseModel):
     model_config=ConfigDict(extra="forbid")
+    otp_code:str|None=Field(default=None,max_length=6)
 
 def action_error(db,exc):
     db.commit()
@@ -59,7 +60,12 @@ def action_error(db,exc):
 
 @router.post("/{intent_id}/approve")
 def approve_route(seller_id:int,intent_id:str,payload:ApprovalIn=ApprovalIn(),db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_approval)):
-    try:artifact,token=approve(db,seller_id=seller_id,intent_id=intent_id,actor_id=access.user_id)
+    try:
+        verified=False
+        if payload.otp_code is not None:
+            from app.actions.step_up import verify
+            verified=verify(db,seller_id=seller_id,intent_id=intent_id,actor_id=access.user_id,code=payload.otp_code)
+        artifact,token=approve(db,seller_id=seller_id,intent_id=intent_id,actor_id=access.user_id,otp_verified=verified)
     except ActionError as exc:action_error(db,exc)
     db.commit();return {"intent_id":intent_id,"approval_token":token,"expires_at":artifact.expires_at.isoformat()+"Z","jti":artifact.jti}
 
@@ -70,7 +76,15 @@ def reject_route(seller_id:int,intent_id:str,db:Session=Depends(get_db),access:A
     db.commit();return out(row)
 
 @router.post("/{intent_id}/recheck")
-def recheck_route(seller_id:int,intent_id:str,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
+def recheck_route(seller_id:int,intent_id:str,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_approval)):
     try:row=recheck(db,seller_id=seller_id,intent_id=intent_id,actor_id=access.user_id)
     except ActionError as exc:action_error(db,exc)
     db.commit();return out(row)
+
+
+@router.post("/{intent_id}/otp")
+def otp_route(seller_id:int,intent_id:str,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_approval)):
+    from app.actions.step_up import request
+    try:challenge=request(db,seller_id=seller_id,intent_id=intent_id,actor_id=access.user_id)
+    except ActionError as exc:action_error(db,exc)
+    db.commit();return {"challenge_id":challenge.id,"expires_at":challenge.expires_at.isoformat()+"Z","delivery":"SANDBOX_INBOX"}

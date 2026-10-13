@@ -364,3 +364,30 @@ class KoshActionApproval(Base):
     used_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
     revoked_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
     otp_verified:Mapped[bool]=mapped_column(sa.Boolean,nullable=False,default=False)
+
+
+class KoshOtpChallenge(Base):
+    __tablename__="kosh_otp_challenges"
+    __table_args__=(sa.CheckConstraint("attempts BETWEEN 0 AND 3",name="otp_attempt_limit"),)
+    id:Mapped[str]=mapped_column(sa.String(36),primary_key=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False)
+    intent_id:Mapped[str]=mapped_column(sa.String(36),sa.ForeignKey("kosh_action_intents.id",ondelete="RESTRICT"),nullable=False)
+    approver_id:Mapped[int]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id",ondelete="RESTRICT"),nullable=False)
+    params_hash:Mapped[str]=mapped_column(sa.CHAR(64),nullable=False)
+    code_hash:Mapped[str]=mapped_column(sa.CHAR(64),nullable=False)
+    attempts:Mapped[int]=mapped_column(sa.Integer,nullable=False,default=0)
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+    expires_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False)
+    verified_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+    consumed_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+
+class KoshSandboxInbox(Base):
+    __tablename__="kosh_sandbox_inbox"
+    id:Mapped[str]=mapped_column(sa.String(36),primary_key=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False)
+    recipient_user_id:Mapped[int]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id",ondelete="RESTRICT"),nullable=False)
+    kind:Mapped[str]=mapped_column(sa.String(16),nullable=False)
+    intent_id:Mapped[str]=mapped_column(sa.String(36),sa.ForeignKey("kosh_action_intents.id",ondelete="RESTRICT"),nullable=False)
+    encrypted_payload:Mapped[str]=mapped_column(sa.Text,nullable=False)
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+    expires_at:Mapped[datetime|None]=mapped_column(sa.DateTime)

@@ -20,7 +20,7 @@ class ActionError(RuntimeError):
 
 def secret():
     configured=get_settings().kosh_approval_secret
-    return configured.get_secret_value().encode("utf-8") if configured else _DEV_SECRET
+    return configured.get_secret_value().encode("utf-8") if configured and configured.get_secret_value() else _DEV_SECRET
 
 def epoch(value):return int(value.replace(tzinfo=timezone.utc).timestamp())
 
@@ -51,7 +51,7 @@ def revoke_unused(db,intent_id,now):
     for artifact in db.scalars(select(KoshActionApproval).where(KoshActionApproval.intent_id==intent_id,KoshActionApproval.used_at.is_(None),KoshActionApproval.revoked_at.is_(None))):artifact.revoked_at=now
 
 def recheck(db,*,seller_id,intent_id,actor_id):
-    intent,role=locked(db,seller_id,intent_id,actor_id,approval_role=False)
+    intent,role=locked(db,seller_id,intent_id,actor_id)
     if intent.status not in {"BLOCKED","EXPIRED","FAILED"}:denied(db,intent,actor_id,"RECHECK_STATE","Only blocked, expired or failed intents can be rechecked.",status_code=409)
     decision=decision_for(db,intent)
     intent.policy_decision=decision.as_dict()

@@ -52,7 +52,7 @@ def generate(seed:int,out:Path,as_of:date|None=None)->dict:
         if payroll<=as_of:bank.append((payroll,f"O-{cursor:%Y%m}-PAYROLL","Payroll",120_000_000,"DEBIT"))
         cursor=(cursor.replace(day=28)+timedelta(days=4)).replace(day=1)
     for index,(customer,_) in enumerate(CUSTOMERS[2:7]):
-        issued=as_of-timedelta(days=10-index);rupees=1_000
+        issued=as_of-timedelta(days=10-index);rupees=980
         sales.append({"voucher_type":"Sales","invoice_number":f"MPC-S-{invoice_no:05d}","invoice_date":issued.isoformat(),"party_name":customer,"party_gstin":"","due_date":(issued+timedelta(days=45)).isoformat(),"credit_days":45,"amount":f"{rupees:.2f}","paid_date":"","paid_amount":""});invoice_no+=1
     fields=["voucher_type","invoice_number","invoice_date","party_name","party_gstin","due_date","credit_days","amount","paid_date","paid_amount"]
     for name,rows in (("sales_register.csv",sales),("purchase_register.csv",purchases)):

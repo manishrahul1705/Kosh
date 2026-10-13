@@ -61,3 +61,7 @@ The capacity loop and paid-amount trimming recheck those conditions. A failure i
 INSUFFICIENT, not a valid plan. The NBFC baseline is forecast-verified at that same
 target, using the same free collections, timing, fees and repayment assumptions;
 an unattainable NBFC baseline is labelled INSUFFICIENT, without invented savings.
+
+Operational collections/supplier levers have no financing tenor or repayment
+obligation: plan days are 0 and repayment_date is null. Their options retain the
+90-day quote display basis for the consistent table, with zero monetary cost.

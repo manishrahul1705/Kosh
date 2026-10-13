@@ -142,12 +142,16 @@ def propose_plan(db,seller_id:int,*,target_prob=None,persist=True,loan_repayment
             if not invoice:continue
             repayment=invoice.due_date
             assumption="Invoice matures on its recorded due date; discounting tenor starts on the funding date."
-        days=(repayment-arrival).days
-        if days<=0:continue
+        relationship=row.product_id in {"COLLECTIONS_PUSH","SUPPLIER_TERM_EXTENSION"}
+        if relationship:
+            repayment=None;days=0
+            assumption="Timing-only operational lever; no financing tenor or repayment obligation."
+        else:days=(repayment-arrival).days
+        if days<=0 and not relationship:continue
         quote=financing_quote(product,row.max_amount_paise,days=days)
         factor=Decimal(quote["net_proceeds_paise"])/row.max_amount_paise if row.max_amount_paise else Decimal(0)
         timely=_arrival(run.as_of_date,row.arrival_business_days)<=w.week_end
-        levers.append({"product_id":row.product_id,"status":row.status,"cap":row.max_amount_paise if timely else 0,"unit_cost":Decimal(quote["cost_paise"])/row.max_amount_paise if row.max_amount_paise else Decimal(0),"net_factor":factor,"rate":Decimal(quote["effective_annual_rate"]),"scope":row.scope,"arrival_business_days":row.arrival_business_days,"days":days,"funding_date":arrival.isoformat(),"repayment_date":repayment.isoformat(),"repayment_assumption":assumption})
+        levers.append({"product_id":row.product_id,"status":row.status,"cap":row.max_amount_paise if timely else 0,"unit_cost":Decimal(quote["cost_paise"])/row.max_amount_paise if row.max_amount_paise else Decimal(0),"net_factor":factor,"rate":Decimal(quote["effective_annual_rate"]),"scope":row.scope,"arrival_business_days":row.arrival_business_days,"days":days,"funding_date":arrival.isoformat(),"repayment_date":repayment.isoformat() if repayment else None,"repayment_assumption":assumption})
     reserve_shared_invoice_capacity(levers)
     method,chosen=optimize_levers(required,levers)
     inputs=load_inputs(db,seller_id,run.as_of_date)

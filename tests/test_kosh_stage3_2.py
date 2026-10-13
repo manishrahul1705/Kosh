@@ -74,6 +74,15 @@ def test_sanctioned_od_draw_has_no_upfront_fee():
         assert quote["cost_paise"]==expected
 
 
+def test_operational_levers_have_no_invented_financing_tenor():
+    for product in load_catalogue():
+        if product["id"] in {"COLLECTIONS_PUSH","SUPPLIER_TERM_EXTENSION"}:
+            quote=financing_quote(product,100_000,days=0)
+            assert quote["days"]==0 and quote["cost_paise"]==0 and quote["effective_annual_rate"]=="0"
+        else:
+            with pytest.raises(ValueError):financing_quote(product,100_000,days=0)
+
+
 @pytest.mark.parametrize("kind",["INVOICE_DUE_AFTER_FUNDING","INVOICE_EVIDENCE_VERIFIED","INVOICE_OPEN_AMOUNT_POSITIVE"])
 @pytest.mark.parametrize("value,status",[(True,"MATCHED"),(False,"NOT_MATCHED"),(None,"REVIEW_REQUIRED")])
 def test_invoice_criterion_tri_state(kind,value,status):

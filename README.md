@@ -133,3 +133,9 @@ Local databases, documents, snapshot prerequisites, backups and validation outpu
 ## Licence
 
 The `kosh` branch includes the MIT licence in `LICENSE`. The copyright-holder placeholder must be completed before distribution. Third-party dependencies retain their own licences.
+## Cash forecast
+
+Stage 2 adds a deterministic, seeded 13-week cash forecast for each authorized seller. It keeps committed receivables, payables, obligations, and bootstrapped future trading flows separate; reports P10, P50, and P90 closing balances; and raises a cash-buffer alert from the first week whose shortfall probability reaches the configured threshold. Review-state invoices remain visible in the ledger but are excluded from cash flows.
+
+The Cash workspace includes the forecast band, buffer, alert causes, under-review total, rolling backtest coverage, cash-cycle analysis, and a non-persisted what-if view. Forecast runs, acknowledgements, and backtests use the existing seller authorization and append-only audit chain.
+

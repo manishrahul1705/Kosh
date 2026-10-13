@@ -13,6 +13,7 @@ from app.database.kosh_models import KoshAuditEntry,KoshPrivateDocumentVersion
 from app.database.kosh_models import KoshCounterparty,KoshInvoice
 from app.finance.intake.books_csv import import_books_csv
 from app.finance.intake.service import process_private_document
+from app.finance.intake.invoice_pdf import extract_invoice_pdf
 from app.finance.intake.invoice_ai import assist_missing_fields
 from app.ai.providers.mock import MockProvider
 from app.finance.intake.gstin import validate_gstin
@@ -80,7 +81,8 @@ def test_poisoned_pdf_keeps_invoice_and_records_security_event(db,tmp_path):
     doc,version,_=store_private_document(db,seller_id=seller.id,user_id=user_id,kind="PURCHASE_BILL",filename="invoice.pdf",content=content,storage_root=tmp_path,max_bytes=100000)
     result=process_private_document(db,document=doc,version=version,path=tmp_path/version.storage_key,actor_id=user_id)
     assert result["review"]==1 and doc.status=="REVIEW" and "INSTRUCTION_TEXT_DETECTED" in doc.status_reason
-    invoice=db.scalar(select(KoshInvoice).where(KoshInvoice.seller_id==seller.id,KoshInvoice.invoice_number=="SAFE-9"));assert invoice and invoice.amount_paise==48000000
+    invoice=db.scalar(select(KoshInvoice).where(KoshInvoice.seller_id==seller.id,KoshInvoice.invoice_number=="SAFE-9"));assert invoice is None
+    extracted=extract_invoice_pdf(tmp_path/version.storage_key);assert extracted["invoice_number"]=="SAFE-9" and extracted["amounts"]["total"]==48000000
     assert db.scalar(select(KoshAuditEntry).where(KoshAuditEntry.action=="security.injection_detected"))
 
 def test_invoice_assist_accepts_only_verbatim_grounded_quotes():

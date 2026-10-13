@@ -35,6 +35,7 @@ EXPECTED = {
                            "policy_decision", "approval_id", "prev_hash", "entry_hash", "recorded_at"},
 }
 STAGE1_TABLES = {"kosh_private_documents", "kosh_private_document_versions", "kosh_bank_transactions"}
+STAGE2_TABLES = {"kosh_forecast_runs", "kosh_forecast_weeks", "kosh_alerts", "kosh_backtests"}
 
 
 @pytest.fixture(autouse=True)
@@ -143,11 +144,11 @@ def test_downgrade_drops_only_new_tables(tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path / 'downgrade.db'}")
     before = set(inspect(engine).get_table_names())
     command.upgrade(cfg, "head")
-    assert set(inspect(engine).get_table_names()) == before | set(EXPECTED) | STAGE1_TABLES
+    assert set(inspect(engine).get_table_names()) == before | set(EXPECTED) | STAGE1_TABLES | STAGE2_TABLES
     command.downgrade(cfg, "0018_tender_status_and_seller_matching")
     assert set(inspect(engine).get_table_names()) == before
     command.upgrade(cfg, "head")
-    assert set(EXPECTED) | STAGE1_TABLES <= set(inspect(engine).get_table_names())
+    assert set(EXPECTED) | STAGE1_TABLES | STAGE2_TABLES <= set(inspect(engine).get_table_names())
     engine.dispose()
 
 

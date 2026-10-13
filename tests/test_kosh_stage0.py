@@ -145,11 +145,12 @@ def test_downgrade_drops_only_new_tables(tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path / 'downgrade.db'}")
     before = set(inspect(engine).get_table_names())
     command.upgrade(cfg, "head")
-    assert set(inspect(engine).get_table_names()) == before | set(EXPECTED) | STAGE1_TABLES | STAGE2_TABLES | STAGE3_TABLES
+    kosh_tables={name for name in Base.metadata.tables if name.startswith("kosh_")}
+    assert set(inspect(engine).get_table_names()) == before | kosh_tables
     command.downgrade(cfg, "0018_tender_status_and_seller_matching")
     assert set(inspect(engine).get_table_names()) == before
     command.upgrade(cfg, "head")
-    assert set(EXPECTED) | STAGE1_TABLES | STAGE2_TABLES | STAGE3_TABLES <= set(inspect(engine).get_table_names())
+    assert kosh_tables <= set(inspect(engine).get_table_names())
     engine.dispose()
 
 

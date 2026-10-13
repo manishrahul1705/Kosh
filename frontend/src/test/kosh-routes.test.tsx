@@ -25,6 +25,8 @@ vi.mock('@/lib/api/kosh', () => ({
     audit: vi.fn().mockResolvedValue({ seller_id: 7, status: 'READY', items: [] }),
     documents: vi.fn().mockResolvedValue([]),
     consents: vi.fn().mockResolvedValue([]),
+    securityEvents:vi.fn().mockResolvedValue({counts:{blocked_intents:0,failed_otps:0,token_replays:0,injection_detections:1}}),
+    exportAudit:vi.fn().mockResolvedValue(""),verifyAuditExport:vi.fn(),
     verifyAudit: vi.fn().mockResolvedValue({valid:true,entries:0}),
     processDocument: vi.fn(),uploadDocument:vi.fn(),createConsent:vi.fn(),revokeConsent:vi.fn(),patchInvoice:vi.fn(),obligations:vi.fn().mockResolvedValue([]),
   },
@@ -72,6 +74,10 @@ describe('Kosh protected routes', () => {
         expect(screen.getByText('Cheapest available capacity arriving before the alert.')).toBeInTheDocument()
         expect(screen.getByText('Safety target not verified; build a new plan.')).toBeInTheDocument()
         expect(screen.getByText('NBFC baseline insufficient or not verified; savings unavailable.')).toBeInTheDocument()
+      }
+      if (path === '/audit') {
+        expect(screen.getByRole('button', { name: 'Export JSONL' })).toBeInTheDocument()
+        expect(await screen.findByText('injection detections: 1')).toBeInTheDocument()
       }
       cleanup()
       client.clear()

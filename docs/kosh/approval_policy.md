@@ -77,3 +77,14 @@ inputs require signed integer paise and cannot impersonate the sandbox component
 
 Sandbox business days exclude weekends; no holiday calendar is claimed to be
 verified. Funding, maturity and repayment dates remain visible in the proof.
+
+
+Audit export is scoped to the authorized seller. Other sellers' links appear as
+opaque sequence/previous-hash/entry-hash anchors, never their payloads or identity
+metadata. Verification compares the export snapshot to the trusted persisted chain;
+foreign anchor contents cannot be independently reconstructed without that database.
+The authorized verify-export endpoint and verify_audit_chain.py --verify-jsonl
+--seller-id provide this check without disclosing foreign records. A local privileged
+CLI operator can still export the complete database chain using the existing mode.
+Security counters report blocked attempts, failed OTPs, token replays, injection
+detections and reconciliation mismatches from the append-only audit events.

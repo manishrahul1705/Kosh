@@ -1,4 +1,4 @@
-"""Permission tiers for future action policy; action mapping is not implemented."""
+"""Long-form permission tier names retained for business audit contracts."""
 
 from enum import Enum
 

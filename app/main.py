@@ -154,6 +154,8 @@ def create_app(
     app.include_router(consents.router)
     from app.api import sharing_consents
     app.include_router(sharing_consents.router)
+    from app.api import audit_export
+    app.include_router(audit_export.router)
     dev_login.install(app, settings)  # no-op unless DEV_LOGIN_ENABLED=true (never in production)
 
     @app.get("/", include_in_schema=False)

@@ -1,0 +1,26 @@
+﻿{
+    "id":  "MUDRA_LOAN",
+    "display_name":  "MUDRA loan",
+    "provider_label":  "Illustrative financing partner",
+    "cost_model":  {
+                       "annual_rate":  "0.105",
+                       "tenor_days":  90,
+                       "processing_fee_rate":  "0.01",
+                       "assumption":  true
+                   },
+    "arrival_business_days":  12,
+    "min_amount_paise":  100000,
+    "max_amount_paise":  200000000,
+    "criteria":  [
+                     {
+                         "type":  "AMOUNT_WITHIN_LIMIT",
+                         "source":  {
+                                        "title":  "Public scheme information",
+                                        "url":  "https://www.msme.gov.in/",
+                                        "verified":  false,
+                                        "as_of_date":  "2026-10-13",
+                                        "quote":  "Eligibility must be verified against current scheme and business evidence."
+                                    }
+                     }
+                 ]
+}

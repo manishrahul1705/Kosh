@@ -1,0 +1,26 @@
+﻿{
+    "id":  "BANK_OD_DRAWDOWN",
+    "display_name":  "Bank OD drawdown",
+    "provider_label":  "Illustrative financing partner",
+    "cost_model":  {
+                       "annual_rate":  "0.12",
+                       "tenor_days":  90,
+                       "processing_fee_rate":  "0.01",
+                       "assumption":  true
+                   },
+    "arrival_business_days":  0,
+    "min_amount_paise":  100000,
+    "max_amount_paise":  300000000,
+    "criteria":  [
+                     {
+                         "type":  "LIMIT_HEADROOM_MIN",
+                         "source":  {
+                                        "title":  "Public scheme information",
+                                        "url":  "https://www.msme.gov.in/",
+                                        "verified":  false,
+                                        "as_of_date":  "2026-10-13",
+                                        "quote":  "Eligibility must be verified against current scheme and business evidence."
+                                    }
+                     }
+                 ]
+}

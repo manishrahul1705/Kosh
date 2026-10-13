@@ -1,0 +1,36 @@
+﻿{
+    "id":  "NBFC_UNSECURED_BUSINESS_LOAN",
+    "display_name":  "Unsecured business loan",
+    "provider_label":  "Illustrative financing partner",
+    "cost_model":  {
+                       "annual_rate":  "0.24",
+                       "tenor_days":  90,
+                       "processing_fee_rate":  "0.01",
+                       "assumption":  true
+                   },
+    "arrival_business_days":  2,
+    "min_amount_paise":  100000,
+    "max_amount_paise":  1000000000,
+    "criteria":  [
+                     {
+                         "type":  "GST_REGISTERED",
+                         "source":  {
+                                        "title":  "Public scheme information",
+                                        "url":  "https://www.msme.gov.in/",
+                                        "verified":  false,
+                                        "as_of_date":  "2026-10-13",
+                                        "quote":  "Eligibility must be verified against current scheme and business evidence."
+                                    }
+                     },
+                     {
+                         "type":  "BUSINESS_VINTAGE_MIN_MONTHS",
+                         "source":  {
+                                        "title":  "Public scheme information",
+                                        "url":  "https://www.msme.gov.in/",
+                                        "verified":  false,
+                                        "as_of_date":  "2026-10-13",
+                                        "quote":  "Eligibility must be verified against current scheme and business evidence."
+                                    }
+                     }
+                 ]
+}

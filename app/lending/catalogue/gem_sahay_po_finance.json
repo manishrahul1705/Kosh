@@ -1,0 +1,26 @@
+﻿{
+    "id":  "GEM_SAHAY_PO_FINANCE",
+    "display_name":  "GeM Sahay PO finance",
+    "provider_label":  "Illustrative financing partner",
+    "cost_model":  {
+                       "annual_rate":  "0.16",
+                       "tenor_days":  90,
+                       "processing_fee_rate":  "0.01",
+                       "assumption":  true
+                   },
+    "arrival_business_days":  7,
+    "min_amount_paise":  100000,
+    "max_amount_paise":  1000000000,
+    "criteria":  [
+                     {
+                         "type":  "DOCUMENT_PRESENT",
+                         "source":  {
+                                        "title":  "Public scheme information",
+                                        "url":  "https://www.msme.gov.in/",
+                                        "verified":  false,
+                                        "as_of_date":  "2026-10-13",
+                                        "quote":  "Eligibility must be verified against current scheme and business evidence."
+                                    }
+                     }
+                 ]
+}

@@ -200,3 +200,69 @@ class KoshBankTransaction(Base):
     balance_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
     source_document_version_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("kosh_private_document_versions.id", ondelete="RESTRICT"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow)
+
+
+class KoshForecastRun(Base):
+    __tablename__ = "kosh_forecast_runs"
+    __table_args__ = (sa.CheckConstraint("status IN ('RUNNING', 'SUCCESS', 'FAILED')", name="forecast_run_status"), sa.Index("ix_kosh_forecast_runs_seller_created", "seller_id", "created_at"))
+    id: Mapped[int] = mapped_column(PK, primary_key=True, autoincrement=True)
+    seller_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("sellers.id", ondelete="RESTRICT"), nullable=False)
+    as_of_date: Mapped[date] = mapped_column(sa.Date, nullable=False)
+    horizon_weeks: Mapped[int] = mapped_column(sa.Integer, nullable=False, default=13)
+    n_paths: Mapped[int] = mapped_column(sa.Integer, nullable=False)
+    seed: Mapped[int] = mapped_column(sa.Integer, nullable=False)
+    params: Mapped[dict[str, object]] = mapped_column(sa.JSON, nullable=False)
+    input_fingerprint: Mapped[str] = mapped_column(sa.CHAR(64), nullable=False)
+    include_forecast_sales: Mapped[bool] = mapped_column(sa.Boolean, nullable=False)
+    buffer_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    status: Mapped[str] = mapped_column(sa.String(16), nullable=False)
+    created_by_user_id: Mapped[int] = mapped_column(sa.Integer, sa.ForeignKey("app_users.id", ondelete="RESTRICT"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow)
+
+
+class KoshForecastWeek(Base):
+    __tablename__ = "kosh_forecast_weeks"
+    __table_args__ = (sa.UniqueConstraint("run_id", "week_index", name="uq_kosh_forecast_week"),)
+    id: Mapped[int] = mapped_column(PK, primary_key=True, autoincrement=True)
+    run_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("kosh_forecast_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    week_index: Mapped[int] = mapped_column(sa.Integer, nullable=False)
+    week_start: Mapped[date] = mapped_column(sa.Date, nullable=False)
+    week_end: Mapped[date] = mapped_column(sa.Date, nullable=False)
+    p10_closing_balance_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    p50_closing_balance_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    p90_closing_balance_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    expected_inflow_committed_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    expected_inflow_forecast_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    expected_outflow_committed_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    expected_outflow_forecast_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    prob_below_buffer: Mapped[float] = mapped_column(sa.Float, nullable=False)
+    expected_shortfall_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+
+
+class KoshAlert(Base):
+    __tablename__ = "kosh_alerts"
+    __table_args__ = (sa.CheckConstraint("status IN ('OPEN', 'ACKNOWLEDGED', 'RESOLVED', 'SUPERSEDED')", name="kosh_alert_status"), sa.Index("ix_kosh_alerts_seller_status", "seller_id", "status"))
+    id: Mapped[int] = mapped_column(PK, primary_key=True, autoincrement=True)
+    seller_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("sellers.id", ondelete="RESTRICT"), nullable=False)
+    run_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("kosh_forecast_runs.id", ondelete="CASCADE"), nullable=False)
+    week_index: Mapped[int] = mapped_column(sa.Integer, nullable=False)
+    probability: Mapped[float] = mapped_column(sa.Float, nullable=False)
+    expected_shortfall_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    peak_expected_shortfall_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    causes: Mapped[list[dict[str, object]]] = mapped_column(sa.JSON, nullable=False)
+    status: Mapped[str] = mapped_column(sa.String(16), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow)
+    acknowledged_by: Mapped[int | None] = mapped_column(sa.Integer, sa.ForeignKey("app_users.id", ondelete="SET NULL"))
+    acknowledged_at: Mapped[datetime | None] = mapped_column(sa.DateTime)
+
+
+class KoshBacktest(Base):
+    __tablename__ = "kosh_backtests"
+    __table_args__ = (sa.Index("ix_kosh_backtests_seller_created", "seller_id", "created_at"),)
+    id: Mapped[int] = mapped_column(PK, primary_key=True, autoincrement=True)
+    seller_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("sellers.id", ondelete="RESTRICT"), nullable=False)
+    as_of_date: Mapped[date] = mapped_column(sa.Date, nullable=False)
+    windows: Mapped[list[dict[str, object]]] = mapped_column(sa.JSON, nullable=False)
+    coverage_by_horizon: Mapped[dict[str, float]] = mapped_column(sa.JSON, nullable=False)
+    mape_p50_inflow: Mapped[float] = mapped_column(sa.Float, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow)

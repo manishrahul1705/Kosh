@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
 import type { ReactNode } from 'react'
@@ -34,6 +34,19 @@ import { router } from '@/app/router'
 import { koshApi } from '@/lib/api/kosh'
 
 describe('Kosh protected routes', () => {
+  it('submits the owner selected safety target', async () => {
+    await router.navigate('/plan')
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>)
+    const target = await screen.findByRole('combobox', { name: 'Plan safety target' })
+    expect(target).toHaveValue('0.20')
+    fireEvent.change(target, { target: { value: '0.30' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Build plan' }))
+    await waitFor(() => expect(koshApi.createPlan).toHaveBeenCalledWith(7, '0.30'))
+    expect(screen.getByText('Safety vs cost')).toBeInTheDocument()
+    cleanup()
+    client.clear()
+  })
   it('renders Kosh pages in the existing layout and loads the active seller', async () => {
     const pages = [
       ['/cash', 'Cash forecast', null, koshApi.forecast],

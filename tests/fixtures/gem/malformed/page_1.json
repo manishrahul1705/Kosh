@@ -1,0 +1,340 @@
+{
+ "status": 1,
+ "code": 200,
+ "message": "Bid result",
+ "response": {
+  "response": {
+   "numFound": 5,
+   "start": 0,
+   "docs": [
+    {
+     "id": "9000101",
+     "b_id": [
+      9000101
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100101"
+     ],
+     "b_category_name": [
+      "Tender A - Desktop Computers"
+     ],
+     "bd_category_name": [
+      "Desktop Computers"
+     ],
+     "b_total_quantity": [
+      11
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-01T04:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-20T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Defence"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Military Affairs"
+     ]
+    },
+    {
+     "id": "9000201",
+     "b_id": [
+      9000201
+     ],
+     "b_category_name": [
+      "Broken item"
+     ],
+     "bd_category_name": [
+      "X"
+     ],
+     "b_total_quantity": [
+      1
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-01T04:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-20T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "M"
+     ],
+     "ba_official_details_deptName": [
+      "D"
+     ]
+    },
+    {
+     "id": "9000102",
+     "b_id": [
+      9000102
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100102"
+     ],
+     "b_category_name": [
+      "Tender B - Laser Printer"
+     ],
+     "bd_category_name": [
+      "Multifunction Machine MFM"
+     ],
+     "b_total_quantity": [
+      4
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-01T05:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-10T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Railways"
+     ],
+     "ba_official_details_deptName": [
+      "Railway Board"
+     ]
+    },
+    {
+     "id": "9000202",
+     "b_id": [
+      9000202
+     ],
+     "b_bid_number": [
+      "NOT-A-BID"
+     ],
+     "b_category_name": [
+      "Broken item 2"
+     ],
+     "bd_category_name": [
+      "X"
+     ],
+     "b_total_quantity": [
+      1
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-01T04:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-20T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "M"
+     ],
+     "ba_official_details_deptName": [
+      "D"
+     ]
+    },
+    {
+     "id": "9000103",
+     "b_id": [
+      9000103
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100103"
+     ],
+     "b_category_name": [
+      "Tender C - Office Chair"
+     ],
+     "bd_category_name": [
+      "Office Chair (V3)"
+     ],
+     "b_total_quantity": [
+      40
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-02T06:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-22T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Education"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Higher Education"
+     ]
+    }
+   ]
+  }
+ }
+}

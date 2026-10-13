@@ -1,0 +1,211 @@
+{
+ "status": 1,
+ "code": 200,
+ "message": "Bid result",
+ "response": {
+  "response": {
+   "numFound": 13,
+   "start": 0,
+   "docs": [
+    {
+     "id": "9000011",
+     "b_id": [
+      9000011
+     ],
+     "b_bid_number": [
+      "GEM/2026/R/8100011"
+     ],
+     "b_category_name": [
+      "Vehicle Hiring Service"
+     ],
+     "bd_category_name": [
+      "Monthly Basis Cab & Taxi Hiring Services"
+     ],
+     "b_total_quantity": [
+      2
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      2
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-03T08:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-16T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Coal"
+     ],
+     "ba_official_details_deptName": [
+      "Coal India Limited"
+     ]
+    },
+    {
+     "id": "9000012",
+     "b_id": [
+      9000012
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100012"
+     ],
+     "b_category_name": [
+      "Fire Extinguishers"
+     ],
+     "bd_category_name": [
+      "Fire Extinguishers (V2)"
+     ],
+     "b_total_quantity": [
+      30
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-01T03:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-17T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Petroleum and Natural Gas"
+     ],
+     "ba_official_details_deptName": [
+      "Indian Oil Corporation Limited"
+     ]
+    },
+    {
+     "id": "9000013",
+     "b_id": [
+      9000013
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100013"
+     ],
+     "b_category_name": [
+      "Air Conditioner"
+     ],
+     "bd_category_name": [
+      "Split Air Conditioner (V2)"
+     ],
+     "b_total_quantity": [
+      8
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-02T04:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-18T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Defence"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Military Affairs"
+     ]
+    }
+   ]
+  }
+ }
+}

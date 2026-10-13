@@ -1,0 +1,673 @@
+{
+ "status": 1,
+ "code": 200,
+ "message": "Bid result",
+ "response": {
+  "response": {
+   "numFound": 13,
+   "start": 0,
+   "docs": [
+    {
+     "id": "9000001",
+     "b_id": [
+      9000001
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100001"
+     ],
+     "b_category_name": [
+      "Desktop Computers"
+     ],
+     "bd_category_name": [
+      "Desktop Computers"
+     ],
+     "b_total_quantity": [
+      11
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-02T04:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-15T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Defence"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Military Affairs"
+     ]
+    },
+    {
+     "id": "9000002",
+     "b_id": [
+      9000002
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100002"
+     ],
+     "b_category_name": [
+      "Laser Printer"
+     ],
+     "bd_category_name": [
+      "Multifunction Machine MFM"
+     ],
+     "b_total_quantity": [
+      4
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-03T05:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-16T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Railways"
+     ],
+     "ba_official_details_deptName": [
+      "Railway Board"
+     ]
+    },
+    {
+     "id": "9000003",
+     "b_id": [
+      9000003
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100003"
+     ],
+     "b_category_name": [
+      "Office Chair"
+     ],
+     "bd_category_name": [
+      "Office Chair (V3)"
+     ],
+     "b_total_quantity": [
+      40
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-01T06:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-17T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Education"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Higher Education"
+     ]
+    },
+    {
+     "id": "9000004",
+     "b_id": [
+      9000004
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100004"
+     ],
+     "b_category_name": [
+      "Manpower Outsourcing Services"
+     ],
+     "bd_category_name": [
+      "Manpower Outsourcing Services - Minimum Wage"
+     ],
+     "b_total_quantity": [
+      1
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-02T07:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-18T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Home Affairs"
+     ],
+     "ba_official_details_deptName": [
+      "Central Reserve Police Force"
+     ]
+    },
+    {
+     "id": "9000005",
+     "b_id": [
+      9000005
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100005"
+     ],
+     "b_category_name": [
+      "LED Lights"
+     ],
+     "bd_category_name": [
+      "LED Luminaire for Street Lighting"
+     ],
+     "b_total_quantity": [
+      250
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-03T08:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-19T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Power"
+     ],
+     "ba_official_details_deptName": [
+      "NTPC Limited"
+     ]
+    },
+    {
+     "id": "9000006",
+     "b_id": [
+      9000006
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100006"
+     ],
+     "b_category_name": [
+      "Hand Sanitizer"
+     ],
+     "bd_category_name": [
+      "Hand Sanitizer (V2)"
+     ],
+     "b_total_quantity": [
+      500
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-01T03:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-20T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Health and Family Welfare"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Health and Family Welfare"
+     ]
+    },
+    {
+     "id": "9000007",
+     "b_id": [
+      9000007
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100007"
+     ],
+     "b_category_name": [
+      "Online UPS"
+     ],
+     "bd_category_name": [
+      "Online UPS (V2)"
+     ],
+     "b_total_quantity": [
+      6
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-02T04:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-21T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Finance"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Revenue"
+     ]
+    },
+    {
+     "id": "9000008",
+     "b_id": [
+      9000008
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100008"
+     ],
+     "b_category_name": [
+      "Water Purifier"
+     ],
+     "bd_category_name": [
+      "Water Purifier"
+     ],
+     "b_total_quantity": [
+      12
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-03T05:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-22T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Defence"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Defence Production"
+     ]
+    },
+    {
+     "id": "9000009",
+     "b_id": [
+      9000009
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100009"
+     ],
+     "b_category_name": [
+      "Steel Almirah"
+     ],
+     "bd_category_name": [
+      "Steel Almirah (V2)"
+     ],
+     "b_total_quantity": [
+      20
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-01T06:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-14T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Agriculture and Farmers Welfare"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Agriculture"
+     ]
+    },
+    {
+     "id": "9000010",
+     "b_id": [
+      9000010
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/8100010"
+     ],
+     "b_category_name": [
+      "Laptop - Notebook"
+     ],
+     "bd_category_name": [
+      "Laptop - Notebook"
+     ],
+     "b_total_quantity": [
+      15
+     ],
+     "b_status": [
+      1
+     ],
+     "b_bid_type": [
+      1
+     ],
+     "b_is_bunch": [
+      0
+     ],
+     "b_type": [
+      0
+     ],
+     "b_bid_to_ra": [
+      0
+     ],
+     "b_buyer_status": [
+      0
+     ],
+     "final_start_date_sort": [
+      "2026-10-02T07:30:00Z"
+     ],
+     "final_end_date_sort": [
+      "2026-10-15T09:30:00Z"
+     ],
+     "b_is_custom_item": [
+      0
+     ],
+     "is_high_value": [
+      false
+     ],
+     "b_is_inactive": [
+      0
+     ],
+     "qtr_dir": [
+      "OctQ326"
+     ],
+     "is_rc_bid": [
+      0
+     ],
+     "b_is_new_upload": [
+      3
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Electronics and Information Technology"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Electronics and Information Technology"
+     ]
+    }
+   ]
+  }
+ }
+}

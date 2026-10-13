@@ -1,0 +1,221 @@
+"""Stage 3C vocabulary (AI-assisted tender requirement interpretation).
+
+Bump PROMPT_VERSION when the prompt text changes and SCHEMA_VERSION when the
+structured output contract changes: a new current run is then produced on
+re-analysis; old runs stay as history.
+"""
+
+from __future__ import annotations
+
+from enum import Enum
+
+ANALYZER_NAME = "gem-ai-analysis"
+PROMPT_VERSION = "stage3c-prompt-v6"  # v6: logical source locations and OCR uncertainty
+SCHEMA_VERSION = "stage3c-schema-v1"
+CHUNKER_VERSION = "stage3c-chunks-v2"
+
+
+class RequirementType(str, Enum):
+    EXPERIENCE = "EXPERIENCE"
+    TURNOVER = "TURNOVER"
+    PAST_PERFORMANCE = "PAST_PERFORMANCE"
+    OEM_AUTHORIZATION = "OEM_AUTHORIZATION"
+    MANUFACTURER_AUTHORIZATION = "MANUFACTURER_AUTHORIZATION"
+    CERTIFICATE = "CERTIFICATE"
+    ISO = "ISO"
+    TECHNICAL_SPECIFICATION = "TECHNICAL_SPECIFICATION"
+    WARRANTY = "WARRANTY"
+    DELIVERY = "DELIVERY"
+    INSTALLATION = "INSTALLATION"
+    TRAINING = "TRAINING"
+    INSPECTION = "INSPECTION"
+    SAMPLE_REQUIREMENT = "SAMPLE_REQUIREMENT"
+    DEMONSTRATION = "DEMONSTRATION"
+    SERVICE_SUPPORT = "SERVICE_SUPPORT"
+    AMC = "AMC"
+    PAYMENT = "PAYMENT"
+    EMD = "EMD"
+    EPBG = "EPBG"
+    MSE = "MSE"
+    STARTUP = "STARTUP"
+    MII = "MII"
+    LOCAL_CONTENT = "LOCAL_CONTENT"
+    DOCUMENT_SUBMISSION = "DOCUMENT_SUBMISSION"
+    DECLARATION = "DECLARATION"
+    UNDERTAKING = "UNDERTAKING"
+    COMPLIANCE = "COMPLIANCE"
+    BUYER_ATC = "BUYER_ATC"
+    OTHER = "OTHER"
+
+
+REQUIREMENT_TYPES = tuple(t.value for t in RequirementType)
+
+# Output groups (derived deterministically from the type - never from the model).
+CATEGORY_BY_TYPE = {
+    "EXPERIENCE": "ELIGIBILITY", "TURNOVER": "ELIGIBILITY", "PAST_PERFORMANCE": "ELIGIBILITY",
+    "MSE": "ELIGIBILITY", "STARTUP": "ELIGIBILITY", "MII": "ELIGIBILITY", "LOCAL_CONTENT": "ELIGIBILITY",
+    "OEM_AUTHORIZATION": "DOCUMENTS", "MANUFACTURER_AUTHORIZATION": "DOCUMENTS", "CERTIFICATE": "DOCUMENTS",
+    "ISO": "DOCUMENTS", "DOCUMENT_SUBMISSION": "DOCUMENTS", "DECLARATION": "DOCUMENTS", "UNDERTAKING": "DOCUMENTS",
+    "TECHNICAL_SPECIFICATION": "TECHNICAL", "INSTALLATION": "TECHNICAL", "TRAINING": "TECHNICAL",
+    "INSPECTION": "TECHNICAL", "SAMPLE_REQUIREMENT": "TECHNICAL", "DEMONSTRATION": "TECHNICAL",
+    "PAYMENT": "COMMERCIAL", "EMD": "COMMERCIAL", "EPBG": "COMMERCIAL",
+    "DELIVERY": "DELIVERY_WARRANTY", "WARRANTY": "DELIVERY_WARRANTY", "SERVICE_SUPPORT": "DELIVERY_WARRANTY",
+    "AMC": "DELIVERY_WARRANTY",
+    "COMPLIANCE": "COMPLIANCE", "BUYER_ATC": "OTHER", "OTHER": "OTHER",
+}
+CATEGORIES = ("ELIGIBILITY", "DOCUMENTS", "TECHNICAL", "COMMERCIAL", "DELIVERY_WARRANTY", "COMPLIANCE", "OTHER")
+
+
+class ObligationLevel(str, Enum):
+    MANDATORY = "MANDATORY"
+    OPTIONAL = "OPTIONAL"
+    CONDITIONAL = "CONDITIONAL"
+    INFORMATIONAL = "INFORMATIONAL"
+    UNKNOWN = "UNKNOWN"
+
+
+OBLIGATION_LEVELS = tuple(x.value for x in ObligationLevel)
+
+
+class AppliesTo(str, Enum):
+    BIDDER = "BIDDER"
+    OEM = "OEM"
+    BIDDER_OR_OEM = "BIDDER_OR_OEM"
+    SUCCESSFUL_BIDDER = "SUCCESSFUL_BIDDER"
+    SELLER = "SELLER"
+    BUYER = "BUYER"
+    UNKNOWN = "UNKNOWN"
+
+
+APPLIES_TO = tuple(x.value for x in AppliesTo)
+
+
+class RiskFlag(str, Enum):
+    RESTRICTIVE = "RESTRICTIVE"
+    UNUSUAL = "UNUSUAL"
+    BRAND_SPECIFIC = "BRAND_SPECIFIC"
+    SHORT_TIMELINE = "SHORT_TIMELINE"
+    PHYSICAL_SUBMISSION = "PHYSICAL_SUBMISSION"
+    EXTERNAL_REFERENCE = "EXTERNAL_REFERENCE"
+    CONTRADICTS_BID_DETAILS = "CONTRADICTS_BID_DETAILS"
+    POSSIBLY_INVALID_PER_GTC = "POSSIBLY_INVALID_PER_GTC"
+    HIGH_COST = "HIGH_COST"
+    OTHER = "OTHER"
+
+
+RISK_FLAGS = tuple(x.value for x in RiskFlag)
+RESTRICTIVE_RISKS = {"RESTRICTIVE", "BRAND_SPECIFIC", "POSSIBLY_INVALID_PER_GTC", "CONTRADICTS_BID_DETAILS",
+                     "UNUSUAL", "PHYSICAL_SUBMISSION", "EXTERNAL_REFERENCE", "SHORT_TIMELINE"}
+
+
+class FlagType(str, Enum):
+    CROSS_DOCUMENT_CONFLICT = "CROSS_DOCUMENT_CONFLICT"
+    MISSING_REFERENCED_DOCUMENT = "MISSING_REFERENCED_DOCUMENT"
+    ANALYSIS_INCOMPLETE = "ANALYSIS_INCOMPLETE"
+    AI_DETERMINISTIC_CONFLICT = "AI_DETERMINISTIC_CONFLICT"   # AI reading disagrees with a Stage 3B fact
+    AI_SUPPLEMENTS_UNKNOWN = "AI_SUPPLEMENTS_UNKNOWN"         # Stage 3B UNKNOWN, AI found grounded text
+    AMBIGUOUS_ATC = "AMBIGUOUS_ATC"
+    CONTRADICTORY_REQUIREMENT = "CONTRADICTORY_REQUIREMENT"
+    RESTRICTIVE_CLAUSE = "RESTRICTIVE_CLAUSE"
+    REVIEW_REQUIRED = "REVIEW_REQUIRED"
+    EVIDENCE_REJECTED = "EVIDENCE_REJECTED"
+    INPUT_TRUNCATED = "INPUT_TRUNCATED"
+
+
+class Severity(str, Enum):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    HIGH = "HIGH"
+
+
+class ChunkKind(str, Enum):
+    BUYER_ATC = "BUYER_ATC"          # buyer-added terms (highest priority)
+    CLAUSE_TEXT = "CLAUSE_TEXT"      # free-text eligibility / preference clauses
+    TECHNICAL = "TECHNICAL"          # technical specification text
+    TABLE = "TABLE"                  # bid-detail tables rendered as "Label: value"
+    OTHER_TEXT = "OTHER_TEXT"
+    BOILERPLATE = "BOILERPLATE"      # GeM standard disclaimer / GTC text (excluded by default)
+
+
+CHUNK_PRIORITY = {"BUYER_ATC": 0, "CLAUSE_TEXT": 1, "TECHNICAL": 2, "TABLE": 3, "OTHER_TEXT": 4, "BOILERPLATE": 5}
+
+
+class RunStatus(str, Enum):
+    SUCCESS = "SUCCESS"
+    PARTIAL_SUCCESS = "PARTIAL_SUCCESS"
+
+
+class AIJobStatus(str, Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    PARTIAL_SUCCESS = "PARTIAL_SUCCESS"
+    RETRY = "RETRY"
+    FAILED = "FAILED"
+    BLOCKED = "BLOCKED"    # provider auth / configuration problem: never retried automatically
+    SKIPPED = "SKIPPED"
+
+
+QUEUED_AI_JOB_STATUSES = (AIJobStatus.PENDING.value, AIJobStatus.RETRY.value)
+
+
+class AIJobReason(str, Enum):
+    STAGE3B_COMPLETED = "STAGE3B_COMPLETED"
+    BACKFILL = "BACKFILL"
+    MANUAL = "MANUAL"
+    REANALYZE = "REANALYZE"
+
+
+class AIErrorCode(str, Enum):
+    # not ready / skipped
+    STAGE3B_NOT_FOUND = "STAGE3B_NOT_FOUND"
+    STAGE3B_NOT_CURRENT = "STAGE3B_NOT_CURRENT"
+    STAGE3B_NOT_USABLE = "STAGE3B_NOT_USABLE"
+    STAGE3A_NOT_USABLE = "STAGE3A_NOT_USABLE"
+    NO_EVIDENCE_CHUNKS = "NO_EVIDENCE_CHUNKS"
+    ALREADY_ANALYZED = "ALREADY_ANALYZED"
+    DAILY_LIMIT_REACHED = "DAILY_LIMIT_REACHED"
+    # provider (transient -> RETRY)
+    PROVIDER_TIMEOUT = "PROVIDER_TIMEOUT"
+    PROVIDER_RATE_LIMITED = "PROVIDER_RATE_LIMITED"
+    PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
+    # provider (permanent -> BLOCKED)
+    AI_NOT_CONFIGURED = "AI_NOT_CONFIGURED"
+    PROVIDER_AUTH_FAILED = "PROVIDER_AUTH_FAILED"
+    PROVIDER_CONFIG_ERROR = "PROVIDER_CONFIG_ERROR"
+    # response (-> FAILED, no automatic retry)
+    EMPTY_RESPONSE = "EMPTY_RESPONSE"
+    RESPONSE_TRUNCATED = "RESPONSE_TRUNCATED"
+    RESPONSE_BLOCKED = "RESPONSE_BLOCKED"
+    MALFORMED_JSON = "MALFORMED_JSON"
+    SCHEMA_VALIDATION_FAILED = "SCHEMA_VALIDATION_FAILED"
+    # run-level notes
+    EVIDENCE_REJECTED = "EVIDENCE_REJECTED"
+    INPUT_TRUNCATED = "INPUT_TRUNCATED"
+    REVIEW_FLAGS = "REVIEW_FLAGS"
+    ENGINE_ERROR = "ENGINE_ERROR"
+    DATABASE_ERROR = "DATABASE_ERROR"
+
+
+USABLE_STAGE3B_STATUSES = ("SUCCESS", "PARTIAL_SUCCESS")
+
+# Stage 3B boolean fields an AI requirement type corresponds to (for disagreement checks).
+STAGE3B_BOOL_FIELD_BY_TYPE = {
+    "EMD": "emd_required",
+    "EPBG": "epbg_required",
+    "INSPECTION": "inspection_required",
+    "OEM_AUTHORIZATION": "oem_authorization_required",
+    "MANUFACTURER_AUTHORIZATION": "manufacturer_authorization_required",
+    "EXPERIENCE": "experience_required",
+    "PAST_PERFORMANCE": "past_performance_required",
+    "TURNOVER": "bidder_turnover_required",
+    "WARRANTY": "warranty_required",
+}
+# Stage 3B quantity fields an AI value can be compared with: type -> (field, kind)
+STAGE3B_VALUE_FIELD_BY_TYPE = {
+    "WARRANTY": ("warranty_period", "DURATION"),
+    "DELIVERY": ("delivery_period", "DURATION"),
+    "EXPERIENCE": ("experience_years", "DURATION"),
+    "PAST_PERFORMANCE": ("past_performance_percentage", "PERCENT"),
+    "EPBG": ("epbg_percentage", "PERCENT"),
+}

@@ -1,0 +1,40 @@
+# Local configuration
+.env
+.env.*
+!.env.example
+*.local
+
+# Databases, documents and private local assets
+*.db
+*.db-*
+*.sqlite*
+backups/
+data/
+storage/
+private_storage/
+demo_data/
+/validation/
+private_notes/
+*.lock
+
+# Dependencies, builds and caches
+.venv/
+venv/
+node_modules/
+frontend/dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.tsbuildinfo
+coverage/
+.coverage*
+htmlcov/
+
+# Logs and scratch outputs
+*.log
+*.bak
+*.orig
+*.tmp
+debug/

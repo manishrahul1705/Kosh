@@ -1,0 +1,31 @@
+# Runtime
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30
+sqlalchemy>=2.0.30,<3
+alembic>=1.13,<2
+pydantic>=2.7,<3
+pydantic-settings>=2.3,<3
+python-dotenv>=1.0
+httpx>=0.27,<1
+PyJWT[crypto]>=2.10,<3
+beautifulsoup4>=4.12
+apscheduler>=3.10,<4
+filelock>=3.13
+# Form fields (seller profile endpoints)
+python-multipart>=0.0.9
+# IANA time zones on Windows (Asia/Kolkata parsing of GeM timestamps)
+tzdata>=2024.1
+
+# Stage 3A: local PDF text/table extraction (MIT; pulls pdfminer.six, pypdfium2, Pillow)
+pdfplumber>=0.11.4,<0.12
+
+# Optional Stage 3A OCR (OCR_ENABLED=true): local Tesseract CLI on PATH or OCR_EXECUTABLE.
+# Uses existing Pillow/pypdfium2; no cloud service or pytesseract dependency required.
+
+# Optional: browser fallback (COLLECTOR_MODE=browser or auto fallback)
+#   pip install playwright && python -m playwright install chromium
+# playwright>=1.45
+
+# Testing
+pytest>=8
+pytest-asyncio>=0.23

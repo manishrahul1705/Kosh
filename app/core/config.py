@@ -239,6 +239,8 @@ class Settings(BaseSettings):
     save_debug_snapshots: bool = False
     debug_dir: str = "data/debug"
     lock_file: str = "data/collection.lock"
+    kosh_private_storage_path: str = "private_storage"
+    kosh_max_upload_mb: int = Field(default=10, ge=1, le=100)
 
     @field_validator("log_level")
     @classmethod

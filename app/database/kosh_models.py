@@ -56,7 +56,7 @@ class KoshInvoice(Base):
     status: Mapped[str] = mapped_column(sa.String(16), nullable=False)
     paid_date: Mapped[date | None] = mapped_column(sa.Date, nullable=True)
     paid_amount_paise: Mapped[int | None] = mapped_column(sa.BigInteger, nullable=True)
-    source_document_version_id: Mapped[int | None] = mapped_column(PK, sa.ForeignKey("document_versions.id", ondelete="SET NULL"), nullable=True)
+    source_document_version_id: Mapped[int | None] = mapped_column(PK, sa.ForeignKey("kosh_private_document_versions.id", ondelete="SET NULL"), nullable=True)
     source_location: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     extraction_confidence: Mapped[float | None] = mapped_column(sa.Float, nullable=True)
     content_hash: Mapped[str | None] = mapped_column(sa.String(64), nullable=True)
@@ -136,3 +136,67 @@ class KoshAuditEntry(Base):
     recorded_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False)
     created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
+
+
+class KoshPrivateDocument(Base):
+    """Seller-owned document metadata, separate from public tender documents."""
+
+    __tablename__ = "kosh_private_documents"
+    __table_args__ = (
+        sa.CheckConstraint("kind IN ('BANK_STATEMENT', 'SALES_INVOICE', 'PURCHASE_BILL', 'BOOKS_EXPORT', 'OTHER')", name="private_document_kind"),
+        sa.CheckConstraint("status IN ('UPLOADED', 'PROCESSING', 'PROCESSED', 'REVIEW', 'REJECTED', 'FAILED')", name="private_document_status"),
+        sa.Index("ix_kosh_private_documents_seller_id", "seller_id"),
+    )
+
+    id: Mapped[int] = mapped_column(PK, primary_key=True, autoincrement=True)
+    seller_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("sellers.id", ondelete="RESTRICT"), nullable=False)
+    kind: Mapped[str] = mapped_column(sa.String(24), nullable=False)
+    original_filename: Mapped[str] = mapped_column(sa.String(255), nullable=False)
+    uploaded_by_user_id: Mapped[int] = mapped_column(sa.Integer, sa.ForeignKey("app_users.id", ondelete="RESTRICT"), nullable=False)
+    consent_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("kosh_consent_artifacts.id", ondelete="RESTRICT"), nullable=False)
+    status: Mapped[str] = mapped_column(sa.String(16), nullable=False, default="UPLOADED")
+    status_reason: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    current_version_id: Mapped[int | None] = mapped_column(PK, sa.ForeignKey("kosh_private_document_versions.id", ondelete="SET NULL", name="fk_kosh_private_documents_current_version"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
+
+
+class KoshPrivateDocumentVersion(Base):
+    """Immutable private bytes identified by seller and SHA-256."""
+
+    __tablename__ = "kosh_private_document_versions"
+    __table_args__ = (
+        sa.UniqueConstraint("seller_id", "sha256", name="uq_kosh_private_version_seller_sha"),
+        sa.Index("ix_kosh_private_document_versions_document_id", "document_id"),
+        sa.Index("ix_kosh_private_document_versions_seller_id", "seller_id"),
+    )
+
+    id: Mapped[int] = mapped_column(PK, primary_key=True, autoincrement=True)
+    document_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("kosh_private_documents.id", ondelete="CASCADE"), nullable=False)
+    seller_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("sellers.id", ondelete="RESTRICT"), nullable=False)
+    sha256: Mapped[str] = mapped_column(sa.CHAR(64), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    detected_format: Mapped[str] = mapped_column(sa.String(16), nullable=False)
+    storage_key: Mapped[str] = mapped_column(sa.String(160), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow)
+
+
+class KoshBankTransaction(Base):
+    """Normalized private bank transaction with integer-paise amounts."""
+
+    __tablename__ = "kosh_bank_transactions"
+    __table_args__ = (
+        sa.UniqueConstraint("seller_id", "txn_id", name="uq_kosh_bank_transaction_identity"),
+        sa.Index("ix_kosh_bank_transactions_seller_id", "seller_id"),
+    )
+
+    id: Mapped[int] = mapped_column(PK, primary_key=True, autoincrement=True)
+    seller_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("sellers.id", ondelete="RESTRICT"), nullable=False)
+    account_ref_masked: Mapped[str] = mapped_column(sa.String(8), nullable=False)
+    txn_id: Mapped[str] = mapped_column(sa.String(128), nullable=False)
+    txn_date: Mapped[date] = mapped_column(sa.Date, nullable=False)
+    narration: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    amount_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    balance_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    source_document_version_id: Mapped[int] = mapped_column(PK, sa.ForeignKey("kosh_private_document_versions.id", ondelete="RESTRICT"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow)

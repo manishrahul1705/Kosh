@@ -241,6 +241,8 @@ class Settings(BaseSettings):
     lock_file: str = "data/collection.lock"
     kosh_private_storage_path: str = "private_storage"
     kosh_max_upload_mb: int = Field(default=10, ge=1, le=100)
+    kosh_as_of_date: str = ""
+    kosh_alert_threshold: float = Field(default=0.5, ge=0, le=1)
 
     @field_validator("log_level")
     @classmethod

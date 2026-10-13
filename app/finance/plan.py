@@ -122,12 +122,13 @@ def propose_plan(db,seller_id:int,*,target_prob=None,persist=True,loan_repayment
     target_prob=Decimal(str(target_prob if target_prob is not None else get_settings().kosh_plan_target_prob))
     if not 0<=target_prob<Decimal(str(threshold)):raise ValueError("Plan target must be below the alert threshold")
     alert=next((w for w in weeks if w.prob_below_buffer>=threshold),None)
-    target=alert.week_index if alert else 1
+    critical=alert or max(weeks,key=lambda week:(week.prob_below_buffer,-week.week_index))
+    target=critical.week_index
     percentile=get_settings().kosh_plan_percentile
     w=weeks[target-1]
     weight=Decimal(percentile-10)/40
     balance=w.p50_closing_balance_paise if percentile==50 else int(Decimal(w.p10_closing_balance_paise)+Decimal(w.p50_closing_balance_paise-w.p10_closing_balance_paise)*weight)
-    required=max(0,run.buffer_paise-balance) if alert else 0
+    required=max(0,run.buffer_paise-balance) if Decimal(str(critical.prob_below_buffer))>target_prob else 0
     evaluation=db.scalar(select(KoshFinancingEvaluation).where(KoshFinancingEvaluation.seller_id==seller_id,KoshFinancingEvaluation.forecast_run_id==run.id).order_by(KoshFinancingEvaluation.id.desc()).limit(1))
     if not evaluation:raise ValueError("Evaluate financing against the latest forecast first")
     rows=db.scalars(select(KoshFinancingResult).where(KoshFinancingResult.evaluation_id==evaluation.id)).all()

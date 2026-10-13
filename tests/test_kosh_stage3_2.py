@@ -203,3 +203,14 @@ def test_nbfc_baseline_is_forecast_verified_at_same_target(db,monkeypatch):
     assert plan.planning_details["baseline_status"]=="VALID"
     assert plan.total_cost_paise==plan.baseline_cost_paise
     assert plan.after_probabilities==plan.planning_details["baseline_after_probabilities"]
+    # No 0.50 alert does not mean the tighter chosen target has been reached.
+    for week in db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id)):
+        week.prob_below_buffer=.3 if week.week_index==6 else 0
+    db.flush()
+    def below_threshold_not_target(inputs,run,chosen,products):
+        amount=sum(line["amount"] for line in chosen)
+        return {"weeks":[{"prob_below_buffer":(.3 if amount<100 else .1) if index==6 else 0} for index in range(1,14)]}
+    monkeypatch.setattr("app.finance.plan.plan_scenario",below_threshold_not_target)
+    tighter=propose_plan(db,seller.id)
+    assert tighter.planning_details["alert_week"]==6
+    assert tighter.status=="VALID" and tighter.after_probabilities[5]<=.2

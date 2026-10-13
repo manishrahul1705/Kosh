@@ -19,7 +19,7 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
     run=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if not run:raise ValueError("No successful forecast")
     rev,a,docs=_attributes(db,seller_id);peak=max(w.expected_shortfall_paise for w in db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id)))
-    facts={"UDYAM_REGISTERED":bool(a["udyam_number"]) if "udyam_number" in a else None,"UDYAM_CATEGORY_IN":a.get("udyam_category"),"UDYAM_CERTIFICATE_PRESENT":True if "UDYAM_CERTIFICATE" in docs else None,"GST_REGISTERED":bool(a["gstin"]) if "gstin" in a else None,"BUSINESS_VINTAGE_MIN_MONTHS":None,"TURNOVER_RANGE":a.get("last_fy_turnover_paise"),"AMOUNT_WITHIN_LIMIT":peak,"LIMIT_HEADROOM_MIN":int(a["bank_od_limit_paise"])-int(a["bank_od_utilised_paise"]) if a.get("bank_od_limit_paise") is not None and a.get("bank_od_utilised_paise") is not None else None,"SUPPLIER_RELATIONSHIP_MIN_MONTHS":None,"SUPPLIER_ON_TIME_RATIO_MIN":None,"DOCUMENT_PRESENT":None}
+    facts={"UDYAM_REGISTERED":True if a.get("udyam_number") else None,"UDYAM_CATEGORY_IN":a.get("udyam_category"),"UDYAM_CERTIFICATE_PRESENT":True if "UDYAM_CERTIFICATE" in docs else None,"GST_REGISTERED":True if a.get("gstin") else None,"BUSINESS_VINTAGE_MIN_MONTHS":None,"TURNOVER_RANGE":a.get("last_fy_turnover_paise"),"AMOUNT_WITHIN_LIMIT":peak,"LIMIT_HEADROOM_MIN":int(a["bank_od_limit_paise"])-int(a["bank_od_utilised_paise"]) if a.get("bank_od_limit_paise") is not None and a.get("bank_od_utilised_paise") is not None else None,"SUPPLIER_RELATIONSHIP_MIN_MONTHS":None,"SUPPLIER_ON_TIME_RATIO_MIN":None,"DOCUMENT_PRESENT":None}
     if a.get("incorporation_date"):
         try:
             incorporated=date.fromisoformat(a["incorporation_date"])
@@ -56,6 +56,7 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
                 cap=max(0,(facts["LIMIT_HEADROOM_MIN"] or 0)-int(used))
                 local={**local,"LIMIT_HEADROOM_MIN":cap if facts["LIMIT_HEADROOM_MIN"] is not None else None}
                 result=evaluate_product(product,local,as_of=as_of)
+            if product["id"]=="MUDRA_LOAN" and facts["TARUN_AVAILED_AND_REPAID"] is not True:cap=min(cap,100_000_000)
             rate=financing_quote(product,min(int(cap),int(product["max_amount_paise"])))["effective_annual_rate"]
             db.add(KoshFinancingResult(evaluation_id=evaluation.id,product_id=product["id"],scope=scope,status=result["status"],max_amount_paise=min(int(cap),int(product["max_amount_paise"])),effective_annual_rate=rate,arrival_business_days=product["arrival_business_days"],reasons=result["reasons"],evidence=[r.get("business_evidence") for r in result["reasons"] if r.get("business_evidence")]+([{"invoice_id":invoice.id,"invoice_number":invoice.invoice_number,"buyer":party.name,"due_date":invoice.due_date.isoformat()}] if scope and (invoice:=db.get(KoshInvoice,int(scope.split(":")[1]))) and (party:=db.get(KoshCounterparty,invoice.counterparty_id)) else [])))
     return evaluation

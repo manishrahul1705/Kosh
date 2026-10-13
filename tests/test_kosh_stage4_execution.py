@@ -89,3 +89,20 @@ def test_hypothetical_cash_api_rejects_fractional_paise_and_fake_sandbox_tags(cl
     for event in ({"date":"2026-10-13","amount_paise":1.5},{"date":"2026-10-13","amount_paise":True},{"date":"2026-10-13","amount_paise":100,"component":"sandbox"}):
         response=client.post(f"/api/kosh/sellers/{seller.id}/forecast/whatif",json={"extra_inflows":[event]})
         assert response.status_code==422
+
+
+def test_unproven_tarun_plus_cannot_supply_twenty_lakh_cap(db):
+    from app.database.models import SellerRevision,SellerAttribute
+    seller,user,intent=proposed(db)
+    revision=db.scalar(select(SellerRevision).where(SellerRevision.seller_id==seller.id,SellerRevision.is_active.is_(True)))
+    for key in ("non_corporate","non_farm","income_generating","micro_small_enterprise"):
+        db.add(SellerAttribute(revision_id=revision.id,key=key,value_type="BOOLEAN",value_text="TRUE"))
+    db.add(SellerAttribute(revision_id=revision.id,key="gstin",value_type="TEXT",value_text=None))
+    from app.database.kosh_models import KoshForecastWeek
+    run=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller.id))
+    db.add(KoshForecastWeek(run_id=run.id,week_index=1,week_start=date(2026,10,12),week_end=date(2026,10,18),p10_closing_balance_paise=0,p50_closing_balance_paise=0,p90_closing_balance_paise=0,expected_inflow_committed_paise=0,expected_inflow_forecast_paise=0,expected_outflow_committed_paise=0,expected_outflow_forecast_paise=0,prob_below_buffer=1,expected_shortfall_paise=50_000_000))
+    db.flush();evaluation=run_evaluation(db,seller.id,date(2026,10,13));db.flush()
+    mudra=db.scalar(select(KoshFinancingResult).where(KoshFinancingResult.evaluation_id==evaluation.id,KoshFinancingResult.product_id=="MUDRA_LOAN"))
+    assert mudra.status=="MATCHED" and mudra.max_amount_paise==100_000_000
+    nbfc=db.scalar(select(KoshFinancingResult).where(KoshFinancingResult.evaluation_id==evaluation.id,KoshFinancingResult.product_id=="NBFC_UNSECURED_BUSINESS_LOAN"))
+    assert any(reason["criterion"]=="GST_REGISTERED" and reason["status"]=="REVIEW_REQUIRED" for reason in nbfc.reasons)

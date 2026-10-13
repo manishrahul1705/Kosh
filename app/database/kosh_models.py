@@ -329,3 +329,24 @@ class KoshPolicyControl(Base):
     max_day_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
     allowlist:Mapped[list[dict]]=mapped_column(sa.JSON,nullable=False,default=list)
     updated_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+
+
+class KoshActionIntent(Base):
+    __tablename__="kosh_action_intents"
+    __table_args__=(sa.CheckConstraint("status IN ('PROPOSED','APPROVED','EXECUTING','SUCCEEDED','FAILED','REJECTED','EXPIRED','BLOCKED')",name="action_intent_status"),sa.CheckConstraint("source='PLANNER' OR source LIKE 'ADDON:%'",name="action_intent_source"),sa.CheckConstraint("tier IN ('T0','T1','T2','T3','T4')",name="action_intent_tier"),sa.UniqueConstraint("plan_line_id","action_type",name="uq_action_plan_line_type"),sa.Index("ix_kosh_action_intents_seller_status","seller_id","status"))
+    id:Mapped[str]=mapped_column(sa.String(36),primary_key=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False)
+    source:Mapped[str]=mapped_column(sa.String(64),nullable=False)
+    action_type:Mapped[str]=mapped_column(sa.String(48),nullable=False)
+    params:Mapped[dict]=mapped_column(sa.JSON,nullable=False)
+    plan_line_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("kosh_plan_lines.id",ondelete="RESTRICT"),nullable=False)
+    tier:Mapped[str]=mapped_column(sa.String(2),nullable=False)
+    params_hash:Mapped[str]=mapped_column(sa.CHAR(64),nullable=False)
+    status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
+    created_by_user_id:Mapped[int]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id",ondelete="RESTRICT"),nullable=False)
+    policy_decision:Mapped[dict]=mapped_column(sa.JSON,nullable=False,default=dict)
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+    updated_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow,onupdate=utcnow)
+    approved_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+    executed_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+    expires_at:Mapped[datetime|None]=mapped_column(sa.DateTime)

@@ -5,6 +5,7 @@ from app.core.config import get_settings
 from app.database.kosh_models import KoshPolicyControl
 from app.policy.rules import PolicyContext
 from app.utils.dates import utcnow
+from app.database.session import reserve_sqlite_writer
 
 
 def control(db,seller_id=None):
@@ -13,6 +14,7 @@ def control(db,seller_id=None):
 
 
 def editable_control(db,seller_id=None):
+    reserve_sqlite_writer(db,renew_read=True)
     row=control(db,seller_id)
     if row is None:
         settings=get_settings()

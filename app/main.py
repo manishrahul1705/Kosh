@@ -147,6 +147,8 @@ def create_app(
     app.include_router(financing.router)
     from app.api import policy
     app.include_router(policy.router)
+    from app.api import actions
+    app.include_router(actions.router)
     app.include_router(consents.router)
     dev_login.install(app, settings)  # no-op unless DEV_LOGIN_ENABLED=true (never in production)
 

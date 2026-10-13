@@ -15,7 +15,7 @@ from app.finance.alerts import build_alert
 from app.finance.analysis import business_analysis
 from app.finance.backtest import run_backtest
 from app.utils.dates import utcnow
-from app.schemas.kosh import ForecastResponse,AlertsResponse,PlanResponse,ApprovalsResponse
+from app.schemas.kosh import ForecastResponse,AlertsResponse,ApprovalsResponse
 
 router=APIRouter(prefix="/api/kosh/sellers/{seller_id}",tags=["kosh"])
 
@@ -134,7 +134,5 @@ def latest_backtest(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSe
 
 @router.get("/analysis")
 def analysis(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):return business_analysis(db,seller_id,_as_of())
-@router.get("/plan",response_model=PlanResponse)
-def plan(seller_id:int,access:AuthorizedSeller=Depends(require_seller_read)):return PlanResponse(seller_id=seller_id)
 @router.get("/approvals",response_model=ApprovalsResponse)
 def approvals(seller_id:int,access:AuthorizedSeller=Depends(require_seller_read)):return ApprovalsResponse(seller_id=seller_id)

@@ -143,6 +143,8 @@ def create_app(
     app.include_router(portal.router)
     app.include_router(business_documents.router)
     app.include_router(cash.router)
+    from app.api import financing
+    app.include_router(financing.router)
     app.include_router(consents.router)
     dev_login.install(app, settings)  # no-op unless DEV_LOGIN_ENABLED=true (never in production)
 

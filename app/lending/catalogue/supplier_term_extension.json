@@ -20,7 +20,8 @@
                                         "verified":  false,
                                         "as_of_date":  "2026-10-13",
                                         "quote":  "Eligibility must be verified against current scheme and business evidence."
-                                    }
+                                    },
+                         "value":  12
                      },
                      {
                          "type":  "SUPPLIER_ON_TIME_RATIO_MIN",
@@ -30,7 +31,8 @@
                                         "verified":  false,
                                         "as_of_date":  "2026-10-13",
                                         "quote":  "Eligibility must be verified against current scheme and business evidence."
-                                    }
+                                    },
+                         "value":  0.8
                      }
                  ]
 }

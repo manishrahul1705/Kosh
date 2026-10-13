@@ -10,7 +10,7 @@
                    },
     "arrival_business_days":  12,
     "min_amount_paise":  100000,
-    "max_amount_paise":  200000000,
+    "max_amount_paise":  50000000,
     "criteria":  [
                      {
                          "type":  "AMOUNT_WITHIN_LIMIT",
@@ -20,7 +20,8 @@
                                         "verified":  false,
                                         "as_of_date":  "2026-10-13",
                                         "quote":  "Eligibility must be verified against current scheme and business evidence."
-                                    }
+                                    },
+                         "max":  50000000
                      }
                  ]
 }

@@ -1,9 +1,9 @@
-"""Cost-minimizing, forecast-proven cash gap plans."""
+﻿"""Cost-minimizing, forecast-proven cash gap plans."""
 from __future__ import annotations
 from datetime import timedelta
 from decimal import Decimal,ROUND_HALF_UP
 from sqlalchemy import func,select
-from app.database.kosh_models import KoshFinancingResult,KoshForecastRun,KoshForecastWeek,KoshInvoice,KoshCounterparty,KoshPlan,KoshPlanLine
+from app.database.kosh_models import KoshFinancingEvaluation,KoshFinancingResult,KoshForecastRun,KoshForecastWeek,KoshInvoice,KoshCounterparty,KoshPlan,KoshPlanLine
 from app.finance.forecast import load_inputs,simulate
 
 def _cost(amount:int,rate:Decimal,days:int=90)->int:return int((Decimal(amount)*rate*Decimal(days)/Decimal(365)).quantize(Decimal("1"),rounding=ROUND_HALF_UP))
@@ -26,7 +26,7 @@ def propose_plan(db,seller_id:int)->KoshPlan:
     run=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if not run:raise ValueError("No successful forecast")
     weeks=db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id).order_by(KoshForecastWeek.week_index)).all();required=max(max(0,run.buffer_paise-w.p50_closing_balance_paise) for w in weeks)
-    evaluation_id=db.scalar(select(func.max(KoshFinancingResult.evaluation_id)))
+    evaluation_id=db.scalar(select(func.max(KoshFinancingResult.evaluation_id)).join(KoshFinancingEvaluation,KoshFinancingEvaluation.id==KoshFinancingResult.evaluation_id).where(KoshFinancingEvaluation.seller_id==seller_id))
     rows=db.scalars(select(KoshFinancingResult).where(KoshFinancingResult.evaluation_id==evaluation_id)).all() if evaluation_id else []
     levers=[{"product_id":r.product_id,"status":r.status,"cap":r.max_amount_paise,"unit_cost":float(Decimal(r.effective_annual_rate or "0")*Decimal(90)/Decimal(365)),"rate":Decimal(r.effective_annual_rate or "0"),"scope":r.scope} for r in rows]
     method,chosen=optimize_levers(required,levers);extras=[];accelerated=set()
@@ -41,3 +41,4 @@ def propose_plan(db,seller_id:int)->KoshPlan:
     tiers={"COLLECTIONS_PUSH":"T2","SUPPLIER_TERM_EXTENSION":"T2"}
     for x in chosen:db.add(KoshPlanLine(plan_id=plan.id,product_id=x["product_id"],scope_ids=[int(x["scope"].split(":")[1])] if x["scope"] and ":" in x["scope"] else [],amount_paise=x["amount"],arrival_week=1,cost_paise=_cost(x["amount"],x["rate"]),effective_annual_rate=str(x["rate"]),required_tier=tiers.get(x["product_id"],"T3"),evidence=[],status="PROPOSED"))
     return plan
+

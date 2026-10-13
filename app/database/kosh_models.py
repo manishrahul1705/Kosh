@@ -236,6 +236,8 @@ class KoshForecastWeek(Base):
     expected_inflow_forecast_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
     expected_outflow_committed_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
     expected_outflow_forecast_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    expected_inflow_sandbox_paise: Mapped[int] = mapped_column(sa.BigInteger,nullable=False,default=0)
+    expected_outflow_sandbox_paise: Mapped[int] = mapped_column(sa.BigInteger,nullable=False,default=0)
     prob_below_buffer: Mapped[float] = mapped_column(sa.Float, nullable=False)
     expected_shortfall_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
 

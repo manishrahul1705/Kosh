@@ -62,3 +62,18 @@ injection is OWNER-only and development-only, failing before cash/outbox posting
 Reconciliation compares the ledger to canonical intent-derived expected entries
 and flags amount, date, status or parameter-binding mismatches. Balances remain
 unknown if no base bank balance evidence exists, even when sandbox deltas are known.
+
+
+After successful execution, the labelled sandbox overlay enters the actual
+same-seed forecast, with separate sandbox inflow/outflow totals. Financed receivables
+are reduced only by the financed amount; existing books and bank statements remain
+unchanged. The original seed, path count, buffer and as-of date are preserved.
+Each execution stores before/after probabilities and its new forecast run. A plan
+whose executed cash effects do not meet its chosen target is marked INSUFFICIENT,
+with no claim that messaging caused a payment. A previous successful reminder with
+no confirmed outcome requires review before another immediate collections lever;
+re-evaluation can then select honest financing for the remaining gap. Scenario cash
+inputs require signed integer paise and cannot impersonate the sandbox component.
+
+Sandbox business days exclude weekends; no holiday calendar is claimed to be
+verified. Funding, maturity and repayment dates remain visible in the proof.

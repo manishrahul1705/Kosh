@@ -1,7 +1,7 @@
 """Seller-scoped ledger, obligations and audit reads/writes."""
 from datetime import date
 from fastapi import APIRouter,Depends,HTTPException
-from pydantic import BaseModel,Field
+from pydantic import BaseModel,Field,StrictInt,ConfigDict
 from sqlalchemy import func,select
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
@@ -84,8 +84,13 @@ def _forecast_out(db,run):
 
 class ForecastRunIn(BaseModel):
     include_forecast_sales:bool=True;n_paths:int=Field(default=2000,ge=1,le=10000);seed:int=42
+class ScenarioCashIn(BaseModel):
+    model_config=ConfigDict(extra="forbid")
+    date:date
+    amount_paise:StrictInt
+
 class WhatIfIn(BaseModel):
-    customer_delay_shift_days:dict[int,int]={};exclude_counterparties:list[int]=[];extra_inflows:list[dict]=[]
+    customer_delay_shift_days:dict[int,int]={};exclude_counterparties:list[int]=[];extra_inflows:list[ScenarioCashIn]=[]
 
 @router.post("/forecast/run")
 def run_forecast(seller_id:int,payload:ForecastRunIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
@@ -108,7 +113,7 @@ def forecast(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=De
 def whatif(seller_id:int,payload:WhatIfIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
     run=_latest(db,seller_id)
     if not run:raise HTTPException(404,"No forecast run")
-    result=simulate(load_inputs(db,seller_id,run.as_of_date),as_of=run.as_of_date,n_paths=run.n_paths,seed=run.seed,include_forecast_sales=run.include_forecast_sales,buffer_paise=run.buffer_paise,customer_delay_shift_days=payload.customer_delay_shift_days,exclude_counterparties=set(payload.exclude_counterparties),extra_inflows=payload.extra_inflows)
+    result=simulate(load_inputs(db,seller_id,run.as_of_date),as_of=run.as_of_date,n_paths=run.n_paths,seed=run.seed,include_forecast_sales=run.include_forecast_sales,buffer_paise=run.buffer_paise,customer_delay_shift_days=payload.customer_delay_shift_days,exclude_counterparties=set(payload.exclude_counterparties),extra_inflows=[item.model_dump(mode="json") for item in payload.extra_inflows])
     return {"seller_id":seller_id,"run":{"id":run.id,"as_of_date":run.as_of_date,"buffer_paise":run.buffer_paise},"weeks":result["weeks"],"under_review_paise":result["under_review_paise"],"alert":build_alert(load_inputs(db,seller_id,run.as_of_date),result,as_of=run.as_of_date,threshold=get_settings().kosh_alert_threshold)}
 
 @router.get("/alerts")

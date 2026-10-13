@@ -88,3 +88,20 @@ def otp_route(seller_id:int,intent_id:str,db:Session=Depends(get_db),access:Auth
     try:challenge=request(db,seller_id=seller_id,intent_id=intent_id,actor_id=access.user_id)
     except ActionError as exc:action_error(db,exc)
     db.commit();return {"challenge_id":challenge.id,"expires_at":challenge.expires_at.isoformat()+"Z","delivery":"SANDBOX_INBOX"}
+
+
+class ExecuteIn(BaseModel):
+    model_config=ConfigDict(extra="forbid")
+    approval_token:str=Field(min_length=1,max_length=4096)
+
+@router.post("/{intent_id}/execute")
+def execute_route(seller_id:int,intent_id:str,payload:dict,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_approval)):
+    from app.actions.execution import execute
+    if set(payload)!={"approval_token"}:
+        append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="security.intent_blocked",tier="T4",payload={"intent_id":intent_id,"rule_ids":["PARAMETER_OVERRIDE"]},policy_decision="DENY");db.commit()
+        raise HTTPException(403,detail={"rule_ids":["PARAMETER_OVERRIDE"],"reason":"Execution may not override approved parameters."})
+    try:request=ExecuteIn.model_validate(payload)
+    except ValidationError:raise HTTPException(422,"A valid approval token is required")
+    try:execution=execute(db,seller_id=seller_id,intent_id=intent_id,actor_id=access.user_id,token=request.approval_token)
+    except ActionError as exc:action_error(db,exc)
+    db.commit();return {c.name:getattr(execution,c.name) for c in execution.__table__.columns}

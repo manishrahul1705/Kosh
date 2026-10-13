@@ -29,6 +29,7 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
         value=a.get(key)
         facts[kind]=True if str(value).lower() in {"true","1","1.0","yes"} else False if str(value).lower() in {"false","0","0.0","no"} else None
     evaluation=KoshFinancingEvaluation(seller_id=seller_id,forecast_run_id=run.id,input_fingerprint=run.input_fingerprint);db.add(evaluation);db.flush()
+    from app.finance.sandbox_ledger import financed,reminder_sent
     for product in load_catalogue():
         scopes=[(None,facts,product["max_amount_paise"])]
         if product["id"] in {"TREDS_INVOICE_DISCOUNTING","COLLECTIONS_PUSH"}:
@@ -36,8 +37,8 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
             from app.finance.plan import _arrival
             funding=_arrival(as_of,product["arrival_business_days"])
             for invoice,party in db.execute(select(KoshInvoice,KoshCounterparty).join(KoshCounterparty,KoshCounterparty.id==KoshInvoice.counterparty_id).where(KoshInvoice.seller_id==seller_id,KoshInvoice.direction=="RECEIVABLE",KoshInvoice.status!="PAID").order_by(KoshInvoice.due_date,KoshInvoice.id)):
-                remaining=max(0,invoice.amount_paise-(invoice.paid_amount_paise or 0))
-                local={**facts,"BUYER_TREDS_ONBOARDED":party.treds_onboarded,"INVOICE_ACCEPTED":invoice.accepted_by_buyer,"INVOICE_NOT_OVERDUE":invoice.due_date>=as_of,"RECEIVABLE_OVERDUE_OR_DUE_WITHIN_DAYS":(invoice.due_date-as_of).days,"INVOICE_DUE_AFTER_FUNDING":invoice.due_date>funding,"INVOICE_EVIDENCE_VERIFIED":None if invoice.status=="REVIEW" else True,"INVOICE_OPEN_AMOUNT_POSITIVE":remaining>0}
+                remaining=max(0,invoice.amount_paise-(invoice.paid_amount_paise or 0)-financed(db,seller_id,invoice.id))
+                local={**facts,"BUYER_TREDS_ONBOARDED":party.treds_onboarded,"INVOICE_ACCEPTED":invoice.accepted_by_buyer,"INVOICE_NOT_OVERDUE":invoice.due_date>=as_of,"RECEIVABLE_OVERDUE_OR_DUE_WITHIN_DAYS":(invoice.due_date-as_of).days,"INVOICE_DUE_AFTER_FUNDING":invoice.due_date>funding,"INVOICE_EVIDENCE_VERIFIED":None if invoice.status=="REVIEW" else True,"INVOICE_OPEN_AMOUNT_POSITIVE":remaining>0,"COLLECTION_REPEAT_ATTEMPT":reminder_sent(db,seller_id,invoice.id),"COLLECTION_REPEAT_OUTCOME_PRESENT":None}
                 cap=remaining if product["id"]=="TREDS_INVOICE_DISCOUNTING" else remaining//2
                 scopes.append((f"invoice:{invoice.id}",local,cap))
         if not scopes:scopes=[(None,facts,0)]
@@ -46,8 +47,15 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
             if scope:
                 clauses.extend([{"type":"INVOICE_EVIDENCE_VERIFIED"},{"type":"INVOICE_OPEN_AMOUNT_POSITIVE"}])
                 if product["id"]=="TREDS_INVOICE_DISCOUNTING":clauses.append({"type":"INVOICE_DUE_AFTER_FUNDING"})
+                elif product["id"]=="COLLECTIONS_PUSH":clauses.append({"type":"COLLECTION_REPEAT_OUTCOME_PRESENT"})
             result=evaluate_product({**product,"criteria":clauses},{**local,"product_max":product["max_amount_paise"]},as_of=as_of);rate=product["cost_model"]["annual_rate"]
-            if product["id"]=="BANK_OD_DRAWDOWN":cap=max(0,facts["LIMIT_HEADROOM_MIN"] or 0)
+            if product["id"]=="BANK_OD_DRAWDOWN":
+                from app.database.kosh_models import KoshSandboxLedgerEntry
+                from sqlalchemy import func
+                used=db.scalar(select(func.coalesce(func.sum(KoshSandboxLedgerEntry.amount_paise),0)).where(KoshSandboxLedgerEntry.seller_id==seller_id,KoshSandboxLedgerEntry.kind=="OD_DRAWDOWN"))
+                cap=max(0,(facts["LIMIT_HEADROOM_MIN"] or 0)-int(used))
+                local={**local,"LIMIT_HEADROOM_MIN":cap if facts["LIMIT_HEADROOM_MIN"] is not None else None}
+                result=evaluate_product(product,local,as_of=as_of)
             rate=financing_quote(product,min(int(cap),int(product["max_amount_paise"])))["effective_annual_rate"]
             db.add(KoshFinancingResult(evaluation_id=evaluation.id,product_id=product["id"],scope=scope,status=result["status"],max_amount_paise=min(int(cap),int(product["max_amount_paise"])),effective_annual_rate=rate,arrival_business_days=product["arrival_business_days"],reasons=result["reasons"],evidence=[r.get("business_evidence") for r in result["reasons"] if r.get("business_evidence")]+([{"invoice_id":invoice.id,"invoice_number":invoice.invoice_number,"buyer":party.name,"due_date":invoice.due_date.isoformat()}] if scope and (invoice:=db.get(KoshInvoice,int(scope.split(":")[1]))) and (party:=db.get(KoshCounterparty,invoice.counterparty_id)) else [])))
     return evaluation

@@ -118,6 +118,22 @@ def test_collection_and_discount_caps_cannot_double_finance_same_invoice():
     assert unrelated["cap"]==100
 
 
+def test_optional_lp_receives_dimensionless_fractions(monkeypatch):
+    import sys
+    from types import ModuleType,SimpleNamespace
+    from app.finance.plan import optimize_levers
+    scipy=ModuleType("scipy");optimize=ModuleType("scipy.optimize");calls=[]
+    def linprog(c,**kwargs):
+        calls.append((c,kwargs))
+        assert kwargs["bounds"]==[(0,1)]
+        assert abs(kwargs["A_ub"][0][0])<=1 and abs(kwargs["b_ub"][0])<=1
+        return SimpleNamespace(success=True,x=[.5])
+    optimize.linprog=linprog;monkeypatch.setitem(sys.modules,"scipy",scipy);monkeypatch.setitem(sys.modules,"scipy.optimize",optimize)
+    item={**lever(100),"unit_cost":Decimal(".01")}
+    method,chosen=optimize_levers(50,[item])
+    assert method=="LINPROG" and chosen[0]["amount"]==50 and calls
+
+
 def test_curve_tighter_targets_never_reduce_fixture_cost():
     item=lever()
     def check(lines):

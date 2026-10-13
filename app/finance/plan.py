@@ -25,9 +25,14 @@ def optimize_levers(required:int,levers:list[dict],*,solver:str="AUTO")->tuple[s
         except ImportError:
             if solver=="LINPROG":raise
         else:
-            result=linprog([float(x["unit_cost"]) for x in usable],A_ub=[[-float(x.get("net_factor",1)) for x in usable]],b_ub=[-required],bounds=[(0,x["cap"]) for x in usable],method="highs")
+            # HiGHS receives only dimensionless fractions and normalized ratios.
+            # Money stays integer/Decimal, including reconstruction of allocations.
+            scale=Decimal(max(required,sum(x["cap"] for x in usable)))
+            objective=[Decimal(str(x["unit_cost"]))*x["cap"] for x in usable]
+            cost_scale=max(max(objective),Decimal(1))
+            result=linprog([float(cost/cost_scale) for cost in objective],A_ub=[[-float(Decimal(x["cap"])*Decimal(str(x.get("net_factor",1)))/scale) for x in usable]],b_ub=[-float(Decimal(required)/scale)],bounds=[(0,1)]*len(usable),method="highs")
             if result.success:
-                chosen=[{**item,"amount":min(item["cap"],int(Decimal(str(value)).to_integral_value(rounding=ROUND_CEILING)))} for item,value in zip(usable,result.x) if value>=1]
+                chosen=[{**item,"amount":min(item["cap"],int((Decimal(item["cap"])*Decimal(str(fraction))).to_integral_value(rounding=ROUND_CEILING)))} for item,fraction in zip(usable,result.x) if fraction>0]
                 if sum(Decimal(x["amount"])*Decimal(str(x.get("net_factor",1))) for x in chosen)>=required:
                     return "LINPROG",chosen
             elif solver=="LINPROG":raise ValueError(result.message)
@@ -156,7 +161,7 @@ def propose_plan(db,seller_id:int,*,target_prob=None,persist=True,loan_repayment
     baseline_chosen,baseline_after,baseline_status=validate_and_complete(baseline_chosen,baseline_levers,lambda lines:plan_scenario(inputs,run,lines,products),target_week=target,threshold=threshold,target_prob=target_prob)
     baseline=sum(line_quote(products,x)["cost_paise"] for x in baseline_chosen) if baseline_status=="VALID" else 0
     details={"target_probability":str(target_prob),"alert_threshold":str(threshold),"alert_week":target,"baseline_status":baseline_status,"baseline_after_probabilities":[w["prob_below_buffer"] for w in baseline_after["weeks"]],"baseline_lines":[{"product_id":x["product_id"],"amount_paise":x["amount"],"scope":x["scope"],"days":x["days"],"funding_date":x["funding_date"],"repayment_date":x["repayment_date"]} for x in baseline_chosen]}
-    why=f"Lowest absolute cost per net paise arriving by alert week {target}, subject to documented caps. Only MATCHED options are eligible."
+    why=f"Allocate the least-cost net cash arriving by alert week {target}, subject to documented independent caps. The allocation is exact for this single net-cash constraint; probability is separately verified by the same-seed forecast. Only MATCHED options are eligible."
     selected={(x["product_id"],x["scope"]) for x in chosen}
     skipped=[]
     for lever in levers:

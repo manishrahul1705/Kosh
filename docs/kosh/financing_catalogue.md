@@ -43,3 +43,21 @@ BANK_OD_DRAWDOWN has **no upfront fee per drawdown**. Any annual sanction or
 renewal fee is already sunk, so incremental draw cost is principal * illustrative
 12% annual interest * actual days drawn / 365. The options quote is still 90 days;
 plan interest and annual IRR follow the recorded funding and repayment dates.
+
+
+## Allocation and forecast proof
+
+The optional linprog path remains optional; SciPy is not added as a dependency.
+The least-cost allocation is exact for **one net-cash constraint and independent
+caps**. Cheapest-first greedy solves that fractional allocation when SciPy is
+absent. The LP receives dimensionless allocation fractions; monetary values and
+rounding remain integer paise and Decimal. Shared invoice capacity is reserved
+for zero-cost collections before discounting, so a receivable is not funded twice.
+This allocation result is not a general chance-constrained optimisation proof.
+Safety is separately verified by the **same-seed forecast**: alert-week probability
+must be at most the chosen target, and every horizon week must remain strictly
+below the alert threshold. The target defaults to 0.20; the alert defaults to 0.50.
+The capacity loop and paid-amount trimming recheck those conditions. A failure is
+INSUFFICIENT, not a valid plan. The NBFC baseline is forecast-verified at that same
+target, using the same free collections, timing, fees and repayment assumptions;
+an unattainable NBFC baseline is labelled INSUFFICIENT, without invented savings.

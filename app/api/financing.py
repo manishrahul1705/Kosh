@@ -71,7 +71,7 @@ def safety_curve(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSelle
 def create_plan(seller_id:int,payload:PlanIn=PlanIn(),db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
     try:row=propose_plan(db,seller_id,target_prob=payload.target_probability,loan_repayment_date=payload.loan_repayment_date)
     except ValueError as exc:raise HTTPException(409,str(exc))
-    append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="plan.propose",tier="T1_DRAFT",payload={"plan_id":row.id,"target_probability":row.planning_details["target_probability"]},policy_decision="ALLOW");db.commit();return {"plan_id":row.id}
+    append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="plan.propose",tier="T1_DRAFT",payload={"plan_id":row.id,"target_probability":row.planning_details["target_probability"],"loan_repayment_date":payload.loan_repayment_date},policy_decision="ALLOW");db.commit();return {"plan_id":row.id}
 @router.get("/plans/latest")
 def latest(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
     row=db.scalar(select(KoshPlan).where(KoshPlan.seller_id==seller_id).order_by(KoshPlan.id.desc()).limit(1))

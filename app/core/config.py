@@ -244,6 +244,9 @@ class Settings(BaseSettings):
     kosh_max_upload_mb: int = Field(default=10, ge=1, le=100)
     kosh_as_of_date: str = ""
     kosh_alert_threshold: float = Field(default=0.5, ge=0, le=1)
+    kosh_global_kill_switch: bool = False
+    kosh_action_limit_paise: int = Field(default=200_000_000,ge=0)
+    kosh_day_limit_paise: int = Field(default=1_000_000_000,ge=0)
     kosh_plan_target_prob: Decimal = Field(default=Decimal("0.20"), ge=0, lt=1)
     kosh_plan_percentile: int = Field(default=25, ge=10, le=50)
 

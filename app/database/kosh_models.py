@@ -317,3 +317,15 @@ class KoshPlanLine(Base):
     required_tier:Mapped[str]=mapped_column(sa.String(2),nullable=False)
     evidence:Mapped[list[dict[str,object]]]=mapped_column(sa.JSON,nullable=False)
     status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
+
+
+class KoshPolicyControl(Base):
+    __tablename__="kosh_policy_controls"
+    id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
+    scope_key:Mapped[str]=mapped_column(sa.String(64),nullable=False,unique=True)
+    seller_id:Mapped[int|None]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"))
+    kill_switch:Mapped[bool]=mapped_column(sa.Boolean,nullable=False,default=False)
+    max_action_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
+    max_day_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
+    allowlist:Mapped[list[dict]]=mapped_column(sa.JSON,nullable=False,default=list)
+    updated_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)

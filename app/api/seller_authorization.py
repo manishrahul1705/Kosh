@@ -159,3 +159,7 @@ def require_seller_approval(
     return authorize_seller(
         seller_id, identity, db, APPROVE_ROLES
     )
+
+
+def require_seller_owner(seller_id:int,db:Session=Depends(get_db),identity:AuthenticatedIdentity=Depends(get_current_user))->AuthorizedSeller:
+    return authorize_seller(seller_id,identity,db,frozenset({"OWNER"}))

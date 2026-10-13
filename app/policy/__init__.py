@@ -1,1 +1,1 @@
-"""Permission tiers and explicit approval interfaces."""
+"""Deterministic action policy and seller-owned controls."""

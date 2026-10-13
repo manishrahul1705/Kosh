@@ -244,6 +244,7 @@ class Settings(BaseSettings):
     kosh_max_upload_mb: int = Field(default=10, ge=1, le=100)
     kosh_as_of_date: str = ""
     kosh_alert_threshold: float = Field(default=0.5, ge=0, le=1)
+    kosh_approval_secret: SecretStr | None = None
     kosh_global_kill_switch: bool = False
     kosh_action_limit_paise: int = Field(default=200_000_000,ge=0)
     kosh_day_limit_paise: int = Field(default=1_000_000_000,ge=0)
@@ -258,6 +259,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_startup_safety(self) -> "Settings":
         self.assert_startup_safe()
+        if self.app_env == "production" and self.kosh_approval_secret is None:
+            raise ValueError("KOSH_APPROVAL_SECRET is required in production")
         return self
 
     def assert_startup_safe(self) -> None:

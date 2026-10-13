@@ -350,3 +350,17 @@ class KoshActionIntent(Base):
     approved_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
     executed_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
     expires_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+
+
+class KoshActionApproval(Base):
+    __tablename__="kosh_action_approvals"
+    jti:Mapped[str]=mapped_column(sa.String(36),primary_key=True)
+    intent_id:Mapped[str]=mapped_column(sa.String(36),sa.ForeignKey("kosh_action_intents.id",ondelete="RESTRICT"),nullable=False,index=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False)
+    params_hash:Mapped[str]=mapped_column(sa.CHAR(64),nullable=False)
+    approver_id:Mapped[int]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id",ondelete="RESTRICT"),nullable=False)
+    issued_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False)
+    expires_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False)
+    used_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+    revoked_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+    otp_verified:Mapped[bool]=mapped_column(sa.Boolean,nullable=False,default=False)

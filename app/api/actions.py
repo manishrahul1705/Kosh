@@ -4,12 +4,13 @@ from pydantic import BaseModel,ConfigDict,StrictInt,Field,ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
-from app.api.seller_authorization import AuthorizedSeller,require_seller_edit,require_seller_read
+from app.api.seller_authorization import AuthorizedSeller,require_seller_edit,require_seller_read,require_seller_approval
 from app.audit.ledger import append_event
 from app.database.kosh_models import KoshActionIntent
 from app.actions.planner import create_from_plan_line
 from app.actions.read import out,owned
 from app.policy.controls import context
+from app.actions.approvals import approve,reject,recheck,ActionError
 
 router=APIRouter(prefix="/api/kosh/sellers/{seller_id}/actions/intents",tags=["kosh-actions"])
 
@@ -47,3 +48,29 @@ def detail(seller_id:int,intent_id:str,db:Session=Depends(get_db),access:Authori
     row=owned(db,seller_id,intent_id)
     if row is None:raise HTTPException(404,"Intent not found")
     append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="intent.read",tier="T0",payload={"intent_id":row.id},policy_decision="ALLOW");db.commit();return out(row)
+
+
+class ApprovalIn(BaseModel):
+    model_config=ConfigDict(extra="forbid")
+
+def action_error(db,exc):
+    db.commit()
+    raise HTTPException(exc.status_code,detail={"rule_ids":[exc.rule],"reason":str(exc)})
+
+@router.post("/{intent_id}/approve")
+def approve_route(seller_id:int,intent_id:str,payload:ApprovalIn=ApprovalIn(),db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_approval)):
+    try:artifact,token=approve(db,seller_id=seller_id,intent_id=intent_id,actor_id=access.user_id)
+    except ActionError as exc:action_error(db,exc)
+    db.commit();return {"intent_id":intent_id,"approval_token":token,"expires_at":artifact.expires_at.isoformat()+"Z","jti":artifact.jti}
+
+@router.post("/{intent_id}/reject")
+def reject_route(seller_id:int,intent_id:str,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_approval)):
+    try:row=reject(db,seller_id=seller_id,intent_id=intent_id,actor_id=access.user_id)
+    except ActionError as exc:action_error(db,exc)
+    db.commit();return out(row)
+
+@router.post("/{intent_id}/recheck")
+def recheck_route(seller_id:int,intent_id:str,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
+    try:row=recheck(db,seller_id=seller_id,intent_id=intent_id,actor_id=access.user_id)
+    except ActionError as exc:action_error(db,exc)
+    db.commit();return out(row)

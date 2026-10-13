@@ -11,6 +11,7 @@ from app.lending.catalogue import load_catalogue
 from app.database.kosh_models import KoshForecastRun,KoshForecastWeek,KoshFinancingEvaluation,KoshFinancingResult
 from app.database.auth_models import AppUser
 from tests.matching_factories import make_seller
+import pytest
 
 
 def lever(cap=100):
@@ -71,6 +72,50 @@ def test_sanctioned_od_draw_has_no_upfront_fee():
         assert quote["net_proceeds_paise"]==1_000_000
         expected=int((Decimal(1_000_000)*Decimal(".12")*days/365).quantize(Decimal(1),rounding=ROUND_HALF_UP))
         assert quote["cost_paise"]==expected
+
+
+@pytest.mark.parametrize("kind",["INVOICE_DUE_AFTER_FUNDING","INVOICE_EVIDENCE_VERIFIED","INVOICE_OPEN_AMOUNT_POSITIVE"])
+@pytest.mark.parametrize("value,status",[(True,"MATCHED"),(False,"NOT_MATCHED"),(None,"REVIEW_REQUIRED")])
+def test_invoice_criterion_tri_state(kind,value,status):
+    from app.lending.evaluator import criterion_result
+    assert criterion_result({"type":kind},{kind:value},as_of=date(2026,10,13))["status"]==status
+
+
+def test_every_open_invoice_has_exact_product_reasons(client,db):
+    from app.database.kosh_models import KoshCounterparty,KoshInvoice
+    from tests.conftest import sign_in
+    subject="eeeeeeee-0000-0000-0000-000000000036"
+    seller=make_seller(db,name="Invoice eligibility",owner_subject=subject)
+    parties=[KoshCounterparty(seller_id=seller.id,name="Onboarded",kind="CUSTOMER",treds_onboarded=True),KoshCounterparty(seller_id=seller.id,name="Not onboarded",kind="CUSTOMER",treds_onboarded=False)]
+    db.add_all(parties);db.flush()
+    cases=[("GOOD",0,date(2026,11,1),True,"OPEN"),("BUYER",1,date(2026,11,1),True,"OPEN"),("UNACCEPTED",0,date(2026,11,1),False,"OPEN"),("OVERDUE",0,date(2026,10,12),True,"OPEN"),("TOO_EARLY",0,date(2026,10,14),True,"OPEN"),("OUTSIDE",0,date(2026,12,20),True,"OPEN"),("REVIEW",0,date(2026,11,1),True,"REVIEW")]
+    for number,party,due,accepted,status in cases:db.add(KoshInvoice(seller_id=seller.id,counterparty_id=parties[party].id,direction="RECEIVABLE",invoice_number=number,invoice_date=date(2026,10,1),due_date=due,amount_paise=100_000,status=status,accepted_by_buyer=accepted))
+    db.commit();sign_in(client.app,subject)
+    prefix=f"/api/kosh/sellers/{seller.id}"
+    assert client.post(prefix+"/forecast/run",json={"n_paths":10,"seed":42}).status_code==200
+    assert client.post(prefix+"/financing/evaluate").status_code==200
+    options=client.get(prefix+"/financing/options").json()["items"]
+    treds=next(x for x in options if x["product_id"]=="TREDS_INVOICE_DISCOUNTING")
+    collections=next(x for x in options if x["product_id"]=="COLLECTIONS_PUSH")
+    assert len(treds["invoice_eligibility"])==len(collections["invoice_eligibility"])==len(cases)
+    def by_number(product):return {next(e["invoice_number"] for e in x["evidence"] if "invoice_number" in e):x for x in product["invoice_eligibility"]}
+    td=by_number(treds);cc=by_number(collections)
+    assert td["GOOD"]["eligible"]
+    for number,criterion in [("BUYER","BUYER_TREDS_ONBOARDED"),("UNACCEPTED","INVOICE_ACCEPTED"),("OVERDUE","INVOICE_NOT_OVERDUE"),("TOO_EARLY","INVOICE_DUE_AFTER_FUNDING")]:
+        assert not td[number]["eligible"]
+        assert any(r["criterion"]==criterion and r["status"]=="NOT_MATCHED" for r in td[number]["reasons"])
+    assert cc["OUTSIDE"]["status"]=="NOT_MATCHED"
+    assert td["REVIEW"]["status"]=="REVIEW_REQUIRED"
+
+
+def test_collection_and_discount_caps_cannot_double_finance_same_invoice():
+    from app.finance.plan import reserve_shared_invoice_capacity
+    collection={"product_id":"COLLECTIONS_PUSH","scope":"invoice:1","status":"MATCHED","cap":50}
+    discount={"product_id":"TREDS_INVOICE_DISCOUNTING","scope":"invoice:1","status":"MATCHED","cap":100}
+    unrelated={"product_id":"TREDS_INVOICE_DISCOUNTING","scope":"invoice:2","status":"MATCHED","cap":100}
+    reserve_shared_invoice_capacity([collection,discount,unrelated])
+    assert collection["cap"]+discount["cap"]==100
+    assert unrelated["cap"]==100
 
 
 def test_curve_tighter_targets_never_reduce_fixture_cost():

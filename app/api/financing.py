@@ -29,6 +29,17 @@ def evaluate(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=De
 @router.get("/financing/options")
 def options(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
     ev=_latest_eval(db,seller_id);products={p["id"]:p for p in load_catalogue()};rows=[] if not ev else [_result(x,products) for x in db.scalars(select(KoshFinancingResult).where(KoshFinancingResult.evaluation_id==ev.id))]
+    grouped=[]
+    for product_id,product in products.items():
+        candidates=[x for x in rows if x["product_id"]==product_id]
+        if not candidates:continue
+        matched=[x for x in candidates if x["status"]=="MATCHED"]
+        selected=(matched or [x for x in candidates if x["status"]=="REVIEW_REQUIRED"] or candidates)[0]
+        if product_id in {"COLLECTIONS_PUSH","TREDS_INVOICE_DISCOUNTING"}:
+            amount=min(product["max_amount_paise"],sum(x["max_amount_paise"] for x in matched))
+            selected={**selected,**financing_quote(product,amount),"max_amount_paise":amount,"invoice_eligibility":[{"scope":x["scope"],"status":x["status"],"eligible":x["status"]=="MATCHED","max_amount_paise":x["max_amount_paise"],"reasons":x["reasons"],"evidence":x["evidence"]} for x in candidates if x["scope"]]}
+        grouped.append(selected)
+    rows=grouped
     rows.sort(key=lambda x:(Decimal(x["effective_annual_rate"] or "999"),x["product_id"]));return {"seller_id":seller_id,"sort_rule":SORT_RULE,"items":rows}
 @router.get("/financing/options/{product_id}/explain")
 def explain(seller_id:int,product_id:str,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):

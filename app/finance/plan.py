@@ -101,6 +101,14 @@ def validate_and_complete(chosen,levers,check,*,target_week,threshold,target_pro
     return chosen,after,("VALID" if target_prob is not None else "PROPOSED") if valid(after) else "INSUFFICIENT"
 
 
+def reserve_shared_invoice_capacity(levers):
+    # Reserve zero-cost collections capacity on shared invoices before discounting.
+    # This prevents financing the same receivable twice across separate products.
+    reserved={x["scope"]:x["cap"] for x in levers if x["product_id"]=="COLLECTIONS_PUSH" and x["status"]=="MATCHED" and x["cap"]>0}
+    for lever in levers:
+        if lever["product_id"]=="TREDS_INVOICE_DISCOUNTING":lever["cap"]=max(0,lever["cap"]-reserved.get(lever["scope"],0))
+
+
 def propose_plan(db,seller_id:int,*,target_prob=None,persist=True,loan_repayment_date=None)->KoshPlan|dict:
     run=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if not run:raise ValueError("No successful forecast")
@@ -135,6 +143,7 @@ def propose_plan(db,seller_id:int,*,target_prob=None,persist=True,loan_repayment
         factor=Decimal(quote["net_proceeds_paise"])/row.max_amount_paise if row.max_amount_paise else Decimal(0)
         timely=_arrival(run.as_of_date,row.arrival_business_days)<=w.week_end
         levers.append({"product_id":row.product_id,"status":row.status,"cap":row.max_amount_paise if timely else 0,"unit_cost":Decimal(quote["cost_paise"])/row.max_amount_paise if row.max_amount_paise else Decimal(0),"net_factor":factor,"rate":Decimal(quote["effective_annual_rate"]),"scope":row.scope,"arrival_business_days":row.arrival_business_days,"days":days,"funding_date":arrival.isoformat(),"repayment_date":repayment.isoformat(),"repayment_assumption":assumption})
+    reserve_shared_invoice_capacity(levers)
     method,chosen=optimize_levers(required,levers)
     inputs=load_inputs(db,seller_id,run.as_of_date)
     chosen,after,status=validate_and_complete(chosen,levers,lambda lines:plan_scenario(inputs,run,lines,products),target_week=target,threshold=threshold,target_prob=target_prob)

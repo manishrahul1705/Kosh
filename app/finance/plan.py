@@ -29,12 +29,16 @@ def propose_plan(db,seller_id:int)->KoshPlan:
     evaluation_id=db.scalar(select(func.max(KoshFinancingResult.evaluation_id)).join(KoshFinancingEvaluation,KoshFinancingEvaluation.id==KoshFinancingResult.evaluation_id).where(KoshFinancingEvaluation.seller_id==seller_id))
     rows=db.scalars(select(KoshFinancingResult).where(KoshFinancingResult.evaluation_id==evaluation_id)).all() if evaluation_id else []
     levers=[{"product_id":r.product_id,"status":r.status,"cap":r.max_amount_paise,"unit_cost":float(Decimal(r.effective_annual_rate or "0")*Decimal(90)/Decimal(365)),"rate":Decimal(r.effective_annual_rate or "0"),"scope":r.scope} for r in rows]
-    method,chosen=optimize_levers(required,levers);extras=[];accelerated=set()
+    method,chosen=optimize_levers(required,levers);extras=[];accelerated=set();reductions={}
     arrival=run.as_of_date+timedelta(days=3)
     for line in chosen:
-        if line["scope"] and line["scope"].startswith("invoice:"):accelerated.add(int(line["scope"].split(":")[1]))
-        extras.append({"date":arrival.isoformat(),"amount_paise":line["amount"]})
-    inputs=load_inputs(db,seller_id,run.as_of_date);after=simulate(inputs,as_of=run.as_of_date,n_paths=run.n_paths,seed=run.seed,include_forecast_sales=run.include_forecast_sales,buffer_paise=run.buffer_paise,extra_inflows=extras,accelerated_invoice_ids=accelerated)
+        cost=_cost(line["amount"],line["rate"])
+        if line["scope"] and line["scope"].startswith("invoice:"):
+            invoice_id=int(line["scope"].split(":")[1])
+            if line["product_id"]=="TREDS_INVOICE_DISCOUNTING":accelerated.add(invoice_id)
+            elif line["product_id"]=="COLLECTIONS_PUSH":reductions[invoice_id]=line["amount"]
+        extras.append({"date":arrival.isoformat(),"amount_paise":line["amount"]-cost})
+    inputs=load_inputs(db,seller_id,run.as_of_date);after=simulate(inputs,as_of=run.as_of_date,n_paths=run.n_paths,seed=run.seed,include_forecast_sales=run.include_forecast_sales,buffer_paise=run.buffer_paise,extra_inflows=extras,accelerated_invoice_ids=accelerated,invoice_amount_reductions=reductions)
     before=[w.prob_below_buffer for w in weeks];after_p=[w["prob_below_buffer"] for w in after["weeks"]]
     total=sum(_cost(x["amount"],x["rate"]) for x in chosen);baseline=_cost(required,Decimal("0.24"))
     plan=KoshPlan(seller_id=seller_id,forecast_run_id=run.id,forecast_fingerprint=run.input_fingerprint,method=method,status="PROPOSED",total_cost_paise=total,baseline_cost_paise=baseline,before_probabilities=before,after_probabilities=after_p);db.add(plan);db.flush()

@@ -81,8 +81,8 @@ def sample_delay(rng:random.Random,inputs:ForecastInputs,invoice:dict[str,object
         p75=sorted(inputs.portfolio_delays)[int((len(inputs.portfolio_delays)-1)*.75)];return max(overdue,overdue+max(7,p75-overdue)+shift)
     return max(0,rng.choice(conditional or observations or [30])+shift)
 
-def simulate(inputs:ForecastInputs,*,as_of:date,n_paths:int=2000,seed:int=42,include_forecast_sales:bool=True,buffer_paise:int=100_000_000,customer_delay_shift_days:dict[int,int]|None=None,exclude_counterparties:set[int]|None=None,extra_inflows:list[dict[str,object]]|None=None,accelerated_invoice_ids:set[int]|None=None)->dict[str,object]:
-    shifts=customer_delay_shift_days or {};excluded=exclude_counterparties or set();extras=extra_inflows or [];accelerated=accelerated_invoice_ids or set();starts=[week_bounds(as_of,index)[0] for index in range(1,14)]
+def simulate(inputs:ForecastInputs,*,as_of:date,n_paths:int=2000,seed:int=42,include_forecast_sales:bool=True,buffer_paise:int=100_000_000,customer_delay_shift_days:dict[int,int]|None=None,exclude_counterparties:set[int]|None=None,extra_inflows:list[dict[str,object]]|None=None,accelerated_invoice_ids:set[int]|None=None,invoice_amount_reductions:dict[int,int]|None=None)->dict[str,object]:
+    shifts=customer_delay_shift_days or {};excluded=exclude_counterparties or set();extras=extra_inflows or [];accelerated=accelerated_invoice_ids or set();reductions=invoice_amount_reductions or {};starts=[week_bounds(as_of,index)[0] for index in range(1,14)]
     balances=[[] for _ in range(13)];totals=[[0]*13 for _ in range(4)]
     for path_index in range(n_paths):
         rng=random.Random(seed*1_000_003+path_index);events=[[] for _ in range(13)]
@@ -91,7 +91,8 @@ def simulate(inputs:ForecastInputs,*,as_of:date,n_paths:int=2000,seed:int=42,inc
             if int(invoice["counterparty_id"]) in excluded:continue
             pay_date=invoice["due_date"] if invoice["direction"]=="PAYABLE" else invoice["due_date"]+timedelta(days=sample_delay(rng,inputs,invoice,as_of,shifts.get(int(invoice["counterparty_id"]),0)))
             idx=(pay_date-starts[0]).days//7
-            if 0<=idx<13:events[idx].append((int(invoice["amount_paise"])*(1 if invoice["direction"]=="RECEIVABLE" else -1),"committed"))
+            remaining=max(0,int(invoice["amount_paise"])-reductions.get(int(invoice["id"]),0))
+            if 0<=idx<13 and remaining:events[idx].append((remaining*(1 if invoice["direction"]=="RECEIVABLE" else -1),"committed"))
         for obligation in inputs.obligations:
             for raw in obligation["dates"]:
                 idx=(date.fromisoformat(raw)-starts[0]).days//7

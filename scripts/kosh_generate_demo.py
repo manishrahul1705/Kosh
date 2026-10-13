@@ -1,6 +1,7 @@
 """Generate the deterministic fictional Kosh demonstration dataset."""
 from __future__ import annotations
 import argparse,csv,json,os,random,sys
+from decimal import Decimal
 from calendar import monthrange
 from datetime import date,timedelta
 from pathlib import Path
@@ -30,7 +31,9 @@ def generate(seed:int,out:Path,as_of:date|None=None)->dict:
             if issued>as_of:continue
             if customer=="Deccan Heavy Machines Ltd (CPSE)" and issued>=date(2026,8,1) and issued<date(2026,10,1):continue
             if customer=="ABC Industries" and date(2026,8,1)<=issued<date(2026,9,1):continue
-            rupees=int(((700_000 if customer=="ABC Industries" else 2_000_000 if customer=="Deccan Heavy Machines Ltd (CPSE)" and issued>=date(2026,10,1) else 330_000+index*8_000)+rng.randrange(-25_000,25_001))*seasonal);delay=base_delay+rng.randint(-5,5)+(12 if customer=="ABC Industries" and issued>=date(2026,7,1) else 0)
+            rupees=int(((700_000 if customer=="ABC Industries" else 2_000_000 if customer=="Deccan Heavy Machines Ltd (CPSE)" and issued>=date(2026,10,1) else 330_000+index*8_000)+rng.randrange(-25_000,25_001))*seasonal)
+            if customer=="Deccan Heavy Machines Ltd (CPSE)" and issued>=date(2026,10,1):rupees=Decimal(rupees)-Decimal("51683.55")
+            delay=base_delay+rng.randint(-5,5)+(12 if customer=="ABC Industries" and issued>=date(2026,7,1) else 0)
             terms=60 if customer=="Deccan Heavy Machines Ltd (CPSE)" else 45;due=issued+timedelta(days=terms);paid=due+timedelta(days=max(0,delay));is_open=paid>as_of
             sales.append({"voucher_type":"Sales","invoice_number":f"MPC-S-{invoice_no:05d}","invoice_date":issued.isoformat(),"party_name":customer,"party_gstin":"","due_date":due.isoformat(),"credit_days":terms,"amount":f"{rupees:.2f}","paid_date":"" if is_open else paid.isoformat(),"paid_amount":"" if is_open else f"{rupees:.2f}"})
             if not is_open:bank.append((paid,f"S-{invoice_no}",f"Receipt {customer}",rupees*100,"CREDIT"))
@@ -38,7 +41,7 @@ def generate(seed:int,out:Path,as_of:date|None=None)->dict:
         for index,supplier in enumerate(SUPPLIERS):
             issued=cursor+timedelta(days=4+index*5)
             if issued>as_of:continue
-            terms=45;rupees=600_000+index*45_000+rng.randrange(-45_000,45_001);due=issued+timedelta(days=terms);paid=due;is_open=paid>as_of
+            terms=45;rupees=Decimal(600_000+index*45_000+rng.randrange(-45_000,45_001))+Decimal("0.37");due=issued+timedelta(days=terms);paid=due;is_open=paid>as_of
             purchases.append({"voucher_type":"Purchase","invoice_number":f"MPC-P-{invoice_no:05d}","invoice_date":issued.isoformat(),"party_name":supplier,"party_gstin":"","due_date":due.isoformat(),"credit_days":terms,"amount":f"{rupees:.2f}","paid_date":"" if is_open else paid.isoformat(),"paid_amount":"" if is_open else f"{rupees:.2f}"})
             if not is_open:bank.append((paid,f"P-{invoice_no}",f"Payment {supplier}",rupees*100,"DEBIT"))
             invoice_no+=1
@@ -52,7 +55,7 @@ def generate(seed:int,out:Path,as_of:date|None=None)->dict:
         if payroll<=as_of:bank.append((payroll,f"O-{cursor:%Y%m}-PAYROLL","Payroll",120_000_000,"DEBIT"))
         cursor=(cursor.replace(day=28)+timedelta(days=4)).replace(day=1)
     for index,(customer,_) in enumerate(CUSTOMERS[2:7]):
-        issued=as_of-timedelta(days=10-index);rupees=980
+        issued=as_of-timedelta(days=10-index);rupees=Decimal("980.17")+Decimal(index)/Decimal(100)
         sales.append({"voucher_type":"Sales","invoice_number":f"MPC-S-{invoice_no:05d}","invoice_date":issued.isoformat(),"party_name":customer,"party_gstin":"","due_date":(issued+timedelta(days=45)).isoformat(),"credit_days":45,"amount":f"{rupees:.2f}","paid_date":"","paid_amount":""});invoice_no+=1
     fields=["voucher_type","invoice_number","invoice_date","party_name","party_gstin","due_date","credit_days","amount","paid_date","paid_amount"]
     for name,rows in (("sales_register.csv",sales),("purchase_register.csv",purchases)):
@@ -60,7 +63,7 @@ def generate(seed:int,out:Path,as_of:date|None=None)->dict:
     balance=opening;transactions=[]
     for txn_date,txn_id,narration,amount,kind in sorted(bank):
         balance+=amount if kind=="CREDIT" else -amount;transactions.append({"txn_id":txn_id,"date":txn_date.isoformat(),"narration":narration,"amount":f"{amount/100:.2f}","type":kind,"balance":f"{balance/100:.2f}"})
-    target=250_000_000;adjust=target-balance;transactions.append({"txn_id":"ASOF-BALANCE","date":as_of.isoformat(),"narration":"Opening balance calibration","amount":f"{abs(adjust)/100:.2f}","type":"CREDIT" if adjust>=0 else "DEBIT","balance":f"{target/100:.2f}"})
+    target=249_731_842;adjust=target-balance;transactions.append({"txn_id":"ASOF-BALANCE","date":as_of.isoformat(),"narration":"Opening balance calibration","amount":f"{abs(adjust)/100:.2f}","type":"CREDIT" if adjust>=0 else "DEBIT","balance":f"{target/100:.2f}"})
     (out/"bank_statement.json").write_text(json.dumps({"account_ref_masked":"****4501","currency":"INR","opening_balance":f"{opening/100:.2f}","transactions":transactions},indent=2),encoding="utf-8")
     obligations=[{"kind":"PAYROLL","label":"Monthly payroll","amount_paise":120_000_000,"recurrence":"MONTHLY","next_due_date":"2026-10-30","day_of_month":31,"active":True},{"kind":"RENT","label":"Workshop rent","amount_paise":25_000_000,"recurrence":"MONTHLY","next_due_date":"2026-11-01","day_of_month":1,"active":True},{"kind":"EMI","label":"CNC equipment EMI","amount_paise":32_000_000,"recurrence":"MONTHLY","next_due_date":"2026-11-05","day_of_month":5,"active":True},{"kind":"GST","label":"GST payment","amount_paise":48_000_000,"recurrence":"MONTHLY","next_due_date":"2026-10-20","day_of_month":20,"active":True},{"kind":"TDS","label":"TDS payment","amount_paise":8_000_000,"recurrence":"MONTHLY","next_due_date":"2026-11-07","day_of_month":7,"active":True},{"kind":"OTHER","label":"Annual machine insurance","amount_paise":170_000_000,"recurrence":"ONE_OFF","next_due_date":"2026-11-18","day_of_month":None,"active":True}]
     (out/"obligations.json").write_text(json.dumps(obligations,indent=2),encoding="utf-8")

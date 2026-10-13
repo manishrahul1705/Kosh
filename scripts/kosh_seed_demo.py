@@ -9,7 +9,7 @@ if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
 from sqlalchemy import select
 from app.consent.service import create_consent,get_active_consent
 from app.database.auth_models import AppUser,SellerMembership
-from app.database.kosh_models import KoshCounterparty,KoshObligation,KoshPrivateDocument,KoshPrivateDocumentVersion
+from app.database.kosh_models import KoshCounterparty,KoshInvoice,KoshObligation,KoshPrivateDocument,KoshPrivateDocumentVersion
 from app.database.models import Seller,SellerAttribute,SellerRevision
 from app.database.session import build_engine,build_session_factory
 from app.finance.intake.private_store import store_private_document
@@ -28,8 +28,11 @@ def seed(database_url:str,data_dir:Path,storage:Path)->dict:
         if not membership:session.add(SellerMembership(user_id=user.id,seller_id=seller.id,role="OWNER",status="ACTIVE"));session.flush()
         revision=session.scalar(select(SellerRevision).where(SellerRevision.seller_id==seller.id,SellerRevision.is_active.is_(True)).order_by(SellerRevision.revision_number.desc()).limit(1))
         if not revision:revision=SellerRevision(seller_id=seller.id,revision_number=1,fingerprint=hashlib.sha256(b"kosh-demo-profile-v1").hexdigest(),comment="Fictional demonstration profile",is_active=True);session.add(revision);session.flush()
-        buffer=session.scalar(select(SellerAttribute).where(SellerAttribute.revision_id==revision.id,SellerAttribute.key=="cash_buffer_paise"))
-        if not buffer:session.add(SellerAttribute(revision_id=revision.id,key="cash_buffer_paise",value_type="NUMBER",value_number=100_000_000,value_text="100000000"))
+        attributes={"cash_buffer_paise":("NUMBER",100_000_000,"100000000","Forecast policy"),"gstin":("TEXT",None,"29ABCDE1234F1Z5","Self-declared business profile"),"udyam_number":("TEXT",None,"UDYAM-KA-03-0012345","Self-declared; certificate deliberately absent"),"udyam_category":("TEXT",None,"SMALL","Self-declared"),"incorporation_date":("TEXT",None,"2014-04-17","Self-declared"),"last_fy_turnover_paise":("NUMBER",6_487_351_240,"6487351240","FY 2025-26 self-declared"),"bank_od_limit_paise":("NUMBER",300_000_000,"300000000","Bank statement attribute"),"bank_od_utilised_paise":("NUMBER",120_000_000,"120000000","Bank statement attribute"),"credit_score_band":("TEXT",None,"SELF_DECLARED","Self-declared")}
+        for key,(kind,number,text,context) in attributes.items():
+            row=session.scalar(select(SellerAttribute).where(SellerAttribute.revision_id==revision.id,SellerAttribute.key==key))
+            if not row:session.add(SellerAttribute(revision_id=revision.id,key=key,value_type=kind,value_number=number,value_text=text,context=context))
+            else:row.value_type=kind;row.value_number=number;row.value_text=text;row.context=context
         consent=get_active_consent(session,seller.id,"BOOKS_EXPORT")
         if not consent:consent=create_consent(session,seller_id=seller.id,granted_by_user_id=user.id,purpose="Fictional Kosh demonstration",data_types=["BANK_STATEMENT","SALES_INVOICES","PURCHASE_BILLS","BOOKS_EXPORT","BUSINESS_PROFILE"],data_from=date(2024,1,1),data_to=date(2026,12,31),expires_at=datetime.utcnow()+timedelta(days=365))
         processed=review=0
@@ -49,7 +52,9 @@ def seed(database_url:str,data_dir:Path,storage:Path)->dict:
             else:document,version,_=store_private_document(session,seller_id=seller.id,user_id=user.id,kind=kind,filename=path.name,content=path.read_bytes(),storage_root=storage,max_bytes=10*1024*1024)
             summary=process_private_document(session,document=document,version=version,path=storage/version.storage_key,actor_id=user.id);processed+=not summary["idempotent"];review+=summary["review"]
         cpse=session.scalar(select(KoshCounterparty).where(KoshCounterparty.seller_id==seller.id,KoshCounterparty.name=="Deccan Heavy Machines Ltd (CPSE)"))
-        if cpse:cpse.is_cpse=True;cpse.treds_onboarded=True
+        if cpse:
+            cpse.is_cpse=True;cpse.treds_onboarded=True
+            for invoice in session.scalars(select(KoshInvoice).where(KoshInvoice.seller_id==seller.id,KoshInvoice.counterparty_id==cpse.id,KoshInvoice.direction=="RECEIVABLE")):invoice.accepted_by_buyer=True
         for item in json.loads((data_dir/"obligations.json").read_text(encoding="utf-8")):
             existing=session.scalar(select(KoshObligation).where(KoshObligation.seller_id==seller.id,KoshObligation.label==item["label"]))
             values={**item,"next_due_date":date.fromisoformat(item["next_due_date"])}

@@ -5,6 +5,7 @@ from decimal import Decimal,ROUND_HALF_UP
 from sqlalchemy import func,select
 from app.database.kosh_models import KoshFinancingEvaluation,KoshFinancingResult,KoshForecastRun,KoshForecastWeek,KoshInvoice,KoshCounterparty,KoshPlan,KoshPlanLine
 from app.finance.forecast import load_inputs,simulate
+from app.core.config import get_settings
 
 def _cost(amount:int,rate:Decimal,days:int=90)->int:return int((Decimal(amount)*rate*Decimal(days)/Decimal(365)).quantize(Decimal("1"),rounding=ROUND_HALF_UP))
 
@@ -25,7 +26,12 @@ def optimize_levers(required:int,levers:list[dict])->tuple[str,list[dict]]:
 def propose_plan(db,seller_id:int)->KoshPlan:
     run=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if not run:raise ValueError("No successful forecast")
-    weeks=db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id).order_by(KoshForecastWeek.week_index)).all();required=max(max(0,run.buffer_paise-w.p50_closing_balance_paise) for w in weeks)
+    weeks=db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id).order_by(KoshForecastWeek.week_index)).all();percentile=get_settings().kosh_plan_percentile
+    def planning_balance(w):
+        if percentile==50:return w.p50_closing_balance_paise
+        weight=Decimal(percentile-10)/Decimal(40)
+        return int((Decimal(w.p10_closing_balance_paise)+Decimal(w.p50_closing_balance_paise-w.p10_closing_balance_paise)*weight).quantize(Decimal("1"),rounding=ROUND_HALF_UP))
+    required=max(max(0,run.buffer_paise-planning_balance(w)) for w in weeks)
     evaluation_id=db.scalar(select(func.max(KoshFinancingResult.evaluation_id)).join(KoshFinancingEvaluation,KoshFinancingEvaluation.id==KoshFinancingResult.evaluation_id).where(KoshFinancingEvaluation.seller_id==seller_id))
     rows=db.scalars(select(KoshFinancingResult).where(KoshFinancingResult.evaluation_id==evaluation_id)).all() if evaluation_id else []
     levers=[{"product_id":r.product_id,"status":r.status,"cap":r.max_amount_paise,"unit_cost":float(Decimal(r.effective_annual_rate or "0")*Decimal(90)/Decimal(365)),"rate":Decimal(r.effective_annual_rate or "0"),"scope":r.scope} for r in rows]

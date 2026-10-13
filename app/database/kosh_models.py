@@ -60,6 +60,7 @@ class KoshInvoice(Base):
     source_location: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     extraction_confidence: Mapped[float | None] = mapped_column(sa.Float, nullable=True)
     content_hash: Mapped[str | None] = mapped_column(sa.String(64), nullable=True)
+    accepted_by_buyer: Mapped[bool | None] = mapped_column(sa.Boolean, nullable=True)
     created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
@@ -266,3 +267,52 @@ class KoshBacktest(Base):
     coverage_by_horizon: Mapped[dict[str, float]] = mapped_column(sa.JSON, nullable=False)
     mape_p50_inflow: Mapped[float] = mapped_column(sa.Float, nullable=False)
     created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=utcnow)
+
+class KoshFinancingEvaluation(Base):
+    __tablename__="kosh_financing_evaluations"
+    id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False,index=True)
+    forecast_run_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("kosh_forecast_runs.id",ondelete="RESTRICT"),nullable=False)
+    input_fingerprint:Mapped[str]=mapped_column(sa.CHAR(64),nullable=False)
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+
+class KoshFinancingResult(Base):
+    __tablename__="kosh_financing_results"
+    id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
+    evaluation_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("kosh_financing_evaluations.id",ondelete="CASCADE"),nullable=False,index=True)
+    product_id:Mapped[str]=mapped_column(sa.String(64),nullable=False)
+    scope:Mapped[str|None]=mapped_column(sa.String(128))
+    status:Mapped[str]=mapped_column(sa.String(24),nullable=False)
+    max_amount_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
+    effective_annual_rate:Mapped[str|None]=mapped_column(sa.String(32))
+    arrival_business_days:Mapped[int]=mapped_column(sa.Integer,nullable=False)
+    reasons:Mapped[list[dict[str,object]]]=mapped_column(sa.JSON,nullable=False)
+    evidence:Mapped[list[dict[str,object]]]=mapped_column(sa.JSON,nullable=False)
+
+class KoshPlan(Base):
+    __tablename__="kosh_plans"
+    id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False,index=True)
+    forecast_run_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("kosh_forecast_runs.id",ondelete="RESTRICT"),nullable=False)
+    forecast_fingerprint:Mapped[str]=mapped_column(sa.CHAR(64),nullable=False)
+    method:Mapped[str]=mapped_column(sa.String(24),nullable=False)
+    status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
+    total_cost_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
+    baseline_cost_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
+    before_probabilities:Mapped[list[float]]=mapped_column(sa.JSON,nullable=False)
+    after_probabilities:Mapped[list[float]]=mapped_column(sa.JSON,nullable=False)
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+
+class KoshPlanLine(Base):
+    __tablename__="kosh_plan_lines"
+    id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
+    plan_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("kosh_plans.id",ondelete="CASCADE"),nullable=False,index=True)
+    product_id:Mapped[str]=mapped_column(sa.String(64),nullable=False)
+    scope_ids:Mapped[list[int]]=mapped_column(sa.JSON,nullable=False)
+    amount_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
+    arrival_week:Mapped[int]=mapped_column(sa.Integer,nullable=False)
+    cost_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
+    effective_annual_rate:Mapped[str|None]=mapped_column(sa.String(32))
+    required_tier:Mapped[str]=mapped_column(sa.String(2),nullable=False)
+    evidence:Mapped[list[dict[str,object]]]=mapped_column(sa.JSON,nullable=False)
+    status:Mapped[str]=mapped_column(sa.String(16),nullable=False)

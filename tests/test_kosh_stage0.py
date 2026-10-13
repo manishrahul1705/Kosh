@@ -27,7 +27,7 @@ EXPECTED = {
     "kosh_counterparties": {"name", "kind", "gstin", "is_cpse", "treds_onboarded", "notes"},
     "kosh_invoices": {"counterparty_id", "direction", "invoice_number", "invoice_date", "due_date",
                       "amount_paise", "currency", "status", "paid_date", "paid_amount_paise",
-                      "source_document_version_id", "source_location", "extraction_confidence", "content_hash"},
+                      "source_document_version_id", "source_location", "extraction_confidence", "content_hash", "accepted_by_buyer"},
     "kosh_obligations": {"kind", "label", "amount_paise", "recurrence", "next_due_date", "day_of_month", "active"},
     "kosh_consent_artifacts": {"granted_by_user_id", "purpose", "data_types", "data_from", "data_to",
                                "expires_at", "revoked_at", "status"},
@@ -36,6 +36,7 @@ EXPECTED = {
 }
 STAGE1_TABLES = {"kosh_private_documents", "kosh_private_document_versions", "kosh_bank_transactions"}
 STAGE2_TABLES = {"kosh_forecast_runs", "kosh_forecast_weeks", "kosh_alerts", "kosh_backtests"}
+STAGE3_TABLES = {"kosh_financing_evaluations", "kosh_financing_results", "kosh_plans", "kosh_plan_lines"}
 
 
 @pytest.fixture(autouse=True)
@@ -144,11 +145,11 @@ def test_downgrade_drops_only_new_tables(tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path / 'downgrade.db'}")
     before = set(inspect(engine).get_table_names())
     command.upgrade(cfg, "head")
-    assert set(inspect(engine).get_table_names()) == before | set(EXPECTED) | STAGE1_TABLES | STAGE2_TABLES
+    assert set(inspect(engine).get_table_names()) == before | set(EXPECTED) | STAGE1_TABLES | STAGE2_TABLES | STAGE3_TABLES
     command.downgrade(cfg, "0018_tender_status_and_seller_matching")
     assert set(inspect(engine).get_table_names()) == before
     command.upgrade(cfg, "head")
-    assert set(EXPECTED) | STAGE1_TABLES | STAGE2_TABLES <= set(inspect(engine).get_table_names())
+    assert set(EXPECTED) | STAGE1_TABLES | STAGE2_TABLES | STAGE3_TABLES <= set(inspect(engine).get_table_names())
     engine.dispose()
 
 

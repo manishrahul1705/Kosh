@@ -34,6 +34,7 @@ EXPECTED = {
     "kosh_audit_entries": {"sequence", "actor_type", "actor_id", "action", "tier", "params_hash", "payload",
                            "policy_decision", "approval_id", "prev_hash", "entry_hash", "recorded_at"},
 }
+STAGE1_TABLES = {"kosh_private_documents", "kosh_private_document_versions", "kosh_bank_transactions"}
 
 
 @pytest.fixture(autouse=True)
@@ -80,11 +81,11 @@ def test_private_endpoint_rejects_other_seller(client, businesses, method, path)
     sign_in(client.app, SUBJECT)
     assert client.request(method, f"/api/kosh/sellers/{other}/{path}").status_code == 403
     response = client.request(method, f"/api/kosh/sellers/{owner}/{path}")
-    assert response.status_code == (501 if method == "POST" else 200)
+    assert response.status_code == (422 if method == "POST" else 200)
     if method == "GET":
         if path == "documents":
             assert response.json() == []
-        else:
+        elif path not in {"ledger", "audit"}:
             assert response.json() == {"seller_id": owner, "status": "NOT_IMPLEMENTED", "items": []}
 
 
@@ -142,11 +143,11 @@ def test_downgrade_drops_only_new_tables(tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path / 'downgrade.db'}")
     before = set(inspect(engine).get_table_names())
     command.upgrade(cfg, "head")
-    assert set(inspect(engine).get_table_names()) == before | set(EXPECTED)
+    assert set(inspect(engine).get_table_names()) == before | set(EXPECTED) | STAGE1_TABLES
     command.downgrade(cfg, "0018_tender_status_and_seller_matching")
     assert set(inspect(engine).get_table_names()) == before
     command.upgrade(cfg, "head")
-    assert set(EXPECTED) <= set(inspect(engine).get_table_names())
+    assert set(EXPECTED) | STAGE1_TABLES <= set(inspect(engine).get_table_names())
     engine.dispose()
 
 

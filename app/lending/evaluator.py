@@ -7,7 +7,12 @@ PASS="MATCHED";FAIL="NOT_MATCHED";REVIEW="REVIEW_REQUIRED"
 
 def criterion_result(criterion:dict, facts:dict, *, as_of:date)->dict:
     kind=criterion.get("type");source=criterion.get("source") or {};base={"criterion":kind,"product_clause":source,"business_evidence":None}
-    if source.get("as_of_date") and (as_of-date.fromisoformat(source["as_of_date"])).days>180:return {**base,"status":REVIEW,"reason_code":"STALE_SOURCE","reason":"Source is older than 180 days; verify before relying."}
+    source_date=source.get("verified_on") or source.get("as_of_date") or criterion.get("verified_on")
+    if source_date:
+        try:age=(as_of-date.fromisoformat(source_date)).days
+        except (ValueError,TypeError):age=-1
+        if age<0:return {**base,"status":REVIEW,"reason_code":"INVALID_SOURCE_DATE","reason":"Source date needs verification."}
+        if age>180:return {**base,"status":REVIEW,"reason_code":"STALE_SOURCE","reason":"Source is older than 180 days; verify before relying."}
     known={"UDYAM_REGISTERED","UDYAM_CATEGORY_IN","UDYAM_CERTIFICATE_PRESENT","GST_REGISTERED","BUSINESS_VINTAGE_MIN_MONTHS","TURNOVER_RANGE","AMOUNT_WITHIN_LIMIT","LIMIT_HEADROOM_MIN","BUYER_TREDS_ONBOARDED","INVOICE_ACCEPTED","INVOICE_NOT_OVERDUE","RECEIVABLE_OVERDUE_OR_DUE_WITHIN_DAYS","SUPPLIER_RELATIONSHIP_MIN_MONTHS","SUPPLIER_ON_TIME_RATIO_MIN","DOCUMENT_PRESENT","MUDRA_CATEGORY_AMOUNT","NON_CORPORATE","NON_FARM","INCOME_GENERATING","MICRO_SMALL_ENTERPRISE","TARUN_AVAILED_AND_REPAID"}
     if kind not in known:return {**base,"status":REVIEW,"reason_code":"UNKNOWN_CRITERION","reason":"Criterion is not supported."}
     if kind=="TARUN_AVAILED_AND_REPAID" and facts.get("AMOUNT_WITHIN_LIMIT") is not None and facts["AMOUNT_WITHIN_LIMIT"]<=100_000_000:

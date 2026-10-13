@@ -19,10 +19,15 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
     run=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if not run:raise ValueError("No successful forecast")
     rev,a,docs=_attributes(db,seller_id);peak=max(w.expected_shortfall_paise for w in db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id)))
-    facts={"UDYAM_REGISTERED":bool(a.get("udyam_number")),"UDYAM_CATEGORY_IN":a.get("udyam_category"),"UDYAM_CERTIFICATE_PRESENT":True if "UDYAM_CERTIFICATE" in docs else None,"GST_REGISTERED":bool(a.get("gstin")),"BUSINESS_VINTAGE_MIN_MONTHS":150,"TURNOVER_RANGE":a.get("last_fy_turnover_paise"),"AMOUNT_WITHIN_LIMIT":peak,"LIMIT_HEADROOM_MIN":int(a.get("bank_od_limit_paise") or 0)-int(a.get("bank_od_utilised_paise") or 0),"SUPPLIER_RELATIONSHIP_MIN_MONTHS":None,"SUPPLIER_ON_TIME_RATIO_MIN":None,"DOCUMENT_PRESENT":None}
+    facts={"UDYAM_REGISTERED":bool(a["udyam_number"]) if "udyam_number" in a else None,"UDYAM_CATEGORY_IN":a.get("udyam_category"),"UDYAM_CERTIFICATE_PRESENT":True if "UDYAM_CERTIFICATE" in docs else None,"GST_REGISTERED":bool(a["gstin"]) if "gstin" in a else None,"BUSINESS_VINTAGE_MIN_MONTHS":None,"TURNOVER_RANGE":a.get("last_fy_turnover_paise"),"AMOUNT_WITHIN_LIMIT":peak,"LIMIT_HEADROOM_MIN":int(a["bank_od_limit_paise"])-int(a["bank_od_utilised_paise"]) if a.get("bank_od_limit_paise") is not None and a.get("bank_od_utilised_paise") is not None else None,"SUPPLIER_RELATIONSHIP_MIN_MONTHS":None,"SUPPLIER_ON_TIME_RATIO_MIN":None,"DOCUMENT_PRESENT":None}
+    if a.get("incorporation_date"):
+        try:
+            incorporated=date.fromisoformat(a["incorporation_date"])
+            facts["BUSINESS_VINTAGE_MIN_MONTHS"]=max(0,(as_of.year-incorporated.year)*12+as_of.month-incorporated.month-(as_of.day<incorporated.day))
+        except (ValueError,TypeError):pass
     for kind,key in [("NON_CORPORATE","non_corporate"),("NON_FARM","non_farm"),("INCOME_GENERATING","income_generating"),("MICRO_SMALL_ENTERPRISE","micro_small_enterprise"),("TARUN_AVAILED_AND_REPAID","tarun_availed_and_repaid")]:
         value=a.get(key)
-        facts[kind]=None if value is None else str(value).lower() in {"true","1","1.0","yes"}
+        facts[kind]=True if str(value).lower() in {"true","1","1.0","yes"} else False if str(value).lower() in {"false","0","0.0","no"} else None
     evaluation=KoshFinancingEvaluation(seller_id=seller_id,forecast_run_id=run.id,input_fingerprint=run.input_fingerprint);db.add(evaluation);db.flush()
     for product in load_catalogue():
         scopes=[(None,facts,product["max_amount_paise"])]
@@ -32,9 +37,10 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
         elif product["id"]=="COLLECTIONS_PUSH":
             abc=db.execute(select(KoshInvoice,KoshCounterparty).join(KoshCounterparty,KoshCounterparty.id==KoshInvoice.counterparty_id).where(KoshInvoice.seller_id==seller_id,KoshInvoice.direction=="RECEIVABLE",KoshInvoice.status!="PAID",KoshCounterparty.name=="ABC Industries").order_by(KoshInvoice.due_date)).first()
             scopes=[] if not abc else [(f"invoice:{abc[0].id}",{**facts,"RECEIVABLE_OVERDUE_OR_DUE_WITHIN_DAYS":(abc[0].due_date-as_of).days},abc[0].amount_paise//2)]
+        if not scopes:scopes=[(None,facts,0)]
         for scope,local,cap in scopes:
             result=evaluate_product(product,{**local,"product_max":product["max_amount_paise"]},as_of=as_of);rate=product["cost_model"]["annual_rate"]
-            if product["id"]=="BANK_OD_DRAWDOWN":cap=facts["LIMIT_HEADROOM_MIN"]
+            if product["id"]=="BANK_OD_DRAWDOWN":cap=max(0,facts["LIMIT_HEADROOM_MIN"] or 0)
             rate=financing_quote(product,min(int(cap),int(product["max_amount_paise"])))["effective_annual_rate"]
             db.add(KoshFinancingResult(evaluation_id=evaluation.id,product_id=product["id"],scope=scope,status=result["status"],max_amount_paise=min(int(cap),int(product["max_amount_paise"])),effective_annual_rate=rate,arrival_business_days=product["arrival_business_days"],reasons=result["reasons"],evidence=[r.get("business_evidence") for r in result["reasons"] if r.get("business_evidence")]))
     return evaluation

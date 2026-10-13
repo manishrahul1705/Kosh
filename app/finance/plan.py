@@ -26,7 +26,10 @@ def optimize_levers(required:int,levers:list[dict],*,solver:str="AUTO")->tuple[s
             if solver=="LINPROG":raise
         else:
             result=linprog([float(x["unit_cost"]) for x in usable],A_ub=[[-float(x.get("net_factor",1)) for x in usable]],b_ub=[-required],bounds=[(0,x["cap"]) for x in usable],method="highs")
-            if result.success:method="LINPROG"
+            if result.success:
+                chosen=[{**item,"amount":min(item["cap"],int(Decimal(str(value)).to_integral_value(rounding=ROUND_CEILING)))} for item,value in zip(usable,result.x) if value>=1]
+                if sum(Decimal(x["amount"])*Decimal(str(x.get("net_factor",1))) for x in chosen)>=required:
+                    return "LINPROG",chosen
             elif solver=="LINPROG":raise ValueError(result.message)
     # The single constraint has the same optimum as LP, with deterministic ties.
     remaining=Decimal(required);chosen=[]

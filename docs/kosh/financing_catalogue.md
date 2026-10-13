@@ -19,7 +19,7 @@ or 1% fee. We use a **clearly illustrative CPSE TReDS discount rate of 8.5% p.a.
 This is a modelling assumption, not a verified lender quote; source of the numeric
 assumption is the Stage 3.1 specification, not a primary publication. No external
 verification was performed. At 90 days the effective annual discount cost is
-8.5% / (1 - 8.5% * 90 / 365) = **8.681968%** before integer-paise rounding.
+8.5% / (1 - 8.5% * 90 / 365) = **8.681964%** before integer-paise rounding.
 Actual auction rate, fees and invoice maturity must be verified before execution.
 PMMY source URL is https://www.mudra.org.in/; criteria dates record the supplied
 Stage 3.1 rules, and verified=false explicitly preserves pending live verification.

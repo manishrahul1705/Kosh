@@ -26,7 +26,21 @@ export interface FinancingOptions { seller_id:number;sort_rule:string;items:Fina
 export interface SafetyPlan { target_probability:string;status:string;total_cost_paise:number;alert_week_probability:number;lines:{product_id:string;amount_paise:number;days:number;cost_paise:number}[] }
 export interface FinancingPlan { target_probability:string;planning_details:{baseline_status:string}; why_this_plan:string; id:number;status:string;method:string;total_cost_paise:number;baseline_cost_paise:number;before_probabilities:number[];after_probabilities:number[];lines:{id:number;product_id:string;amount_paise:number;arrival_week:number;cost_paise:number;required_tier:string;days:number;funding_date:string;repayment_date:string|null;repayment_assumption:string}[] }
 
+export interface ActionIntent { id:string; plan_line_id:number; action_type:string; tier:string; params:Record<string,unknown>; status:string; expires_at:string|null; policy_decision:Record<string,unknown> }
+export interface SandboxItem { id:string|number; intent_id:string; status:string; [key:string]:unknown }
 export const koshApi = {
+  actionInbox:(sellerId:number)=>apiClient.get<{role:string;items:ActionIntent[]}>(`/kosh/sellers/${sellerId}/actions/intents`).then(r=>r.data),
+  proposeIntent:(sellerId:number,planLineId:number)=>apiClient.post(`/kosh/sellers/${sellerId}/actions/intents`,{plan_line_id:planLineId}).then(r=>r.data),
+  approveIntent:(sellerId:number,id:string,otp?:string)=>apiClient.post<{approval_token:string;expires_at:string}>(`/kosh/sellers/${sellerId}/actions/intents/${id}/approve`,otp?{otp_code:otp}:{}).then(r=>r.data),
+  rejectIntent:(sellerId:number,id:string)=>apiClient.post(`/kosh/sellers/${sellerId}/actions/intents/${id}/reject`).then(r=>r.data),
+  requestOtp:(sellerId:number,id:string)=>apiClient.post(`/kosh/sellers/${sellerId}/actions/intents/${id}/otp`).then(r=>r.data),
+  executeIntent:(sellerId:number,id:string,token:string)=>apiClient.post(`/kosh/sellers/${sellerId}/actions/intents/${id}/execute`,{approval_token:token}).then(r=>r.data),
+  policy:(sellerId:number)=>apiClient.get<{role:string;seller_kill:boolean;global_kill:boolean}>(`/kosh/sellers/${sellerId}/policy`).then(r=>r.data),
+  killSwitch:(sellerId:number,enabled:boolean)=>apiClient.post(`/kosh/sellers/${sellerId}/policy/kill-switch`,{enabled,scope:'SELLER'}).then(r=>r.data),
+  sandboxInbox:(sellerId:number)=>apiClient.get<{items:SandboxItem[]}>(`/kosh/sellers/${sellerId}/sandbox/inbox`).then(r=>r.data),
+  sandboxOutbox:(sellerId:number)=>apiClient.get<{items:SandboxItem[]}>(`/kosh/sellers/${sellerId}/sandbox/outbox`).then(r=>r.data),
+  executions:(sellerId:number)=>apiClient.get<{items:SandboxItem[]}>(`/kosh/sellers/${sellerId}/sandbox/executions`).then(r=>r.data),
+  blockedDocumentPayment:(sellerId:number)=>apiClient.post(`/kosh/sellers/${sellerId}/actions/intents`,{source:'DOCUMENT',action_type:'PAYMENT',amount_paise:48000000,payee:'XXXX'}).then(r=>r.data),
   ledger: (sellerId: number) =>
     apiClient.get<Ledger>(`/kosh/sellers/${sellerId}/ledger`).then((r) => r.data),
   forecast: (sellerId: number) => apiClient.get<Forecast>(`/kosh/sellers/${sellerId}/forecast/latest`).then((r) => r.data),

@@ -35,3 +35,11 @@ date. The default repayment assumption is the catalogue's 90-day bullet term;
 an explicitly chosen repayment date overrides that assumption. Every plan line
 records both dates, actual days and the repayment assumption. The same-target
 NBFC comparison follows the same rules and forecasts the actual repayments.
+
+
+## Already-sanctioned OD
+
+BANK_OD_DRAWDOWN has **no upfront fee per drawdown**. Any annual sanction or
+renewal fee is already sunk, so incremental draw cost is principal * illustrative
+12% annual interest * actual days drawn / 365. The options quote is still 90 days;
+plan interest and annual IRR follow the recorded funding and repayment dates.

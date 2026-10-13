@@ -63,6 +63,16 @@ def test_actual_line_dates_drive_discount_cash_flow():
     assert sum(w["expected_inflow_committed_paise"] for w in result["weeks"])==1_000_000-quote["cost_paise"]
 
 
+def test_sanctioned_od_draw_has_no_upfront_fee():
+    from decimal import ROUND_HALF_UP
+    product=next(p for p in load_catalogue() if p["id"]=="BANK_OD_DRAWDOWN")
+    for days in (1,30,90):
+        quote=financing_quote(product,1_000_000,days=days)
+        assert quote["net_proceeds_paise"]==1_000_000
+        expected=int((Decimal(1_000_000)*Decimal(".12")*days/365).quantize(Decimal(1),rounding=ROUND_HALF_UP))
+        assert quote["cost_paise"]==expected
+
+
 def test_curve_tighter_targets_never_reduce_fixture_cost():
     item=lever()
     def check(lines):

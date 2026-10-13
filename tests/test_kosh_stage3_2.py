@@ -6,6 +6,8 @@ from sqlalchemy import select
 from app.core.config import Settings
 from app.finance.plan import validate_and_complete
 from app.finance.forecast import ForecastInputs,simulate
+from app.finance.costs import financing_quote
+from app.lending.catalogue import load_catalogue
 from app.database.kosh_models import KoshForecastRun,KoshForecastWeek,KoshFinancingEvaluation,KoshFinancingResult
 from app.database.auth_models import AppUser
 from tests.matching_factories import make_seller
@@ -36,6 +38,29 @@ def test_target_is_inclusive_threshold_is_strict_and_every_week_is_checked():
 def test_safety_target_not_alert_threshold_controls_insufficient():
     def check(lines):return {"weeks":[{"prob_below_buffer":.3}]}
     assert validate_and_complete([], [lever()],check,target_week=1,threshold=.5,target_prob=Decimal(".2"))[2]=="INSUFFICIENT"
+
+
+def test_actual_tenor_changes_cost_and_quote_basis_stays_ninety_days():
+    products={p["id"]:p for p in load_catalogue()}
+    for product_id in ("TREDS_INVOICE_DISCOUNTING","BANK_OD_DRAWDOWN","NBFC_UNSECURED_BUSINESS_LOAN"):
+        short=financing_quote(products[product_id],1_000_000,days=30)
+        long=financing_quote(products[product_id],1_000_000,days=90)
+        assert short["days"]==30 and short["cost_paise"]<long["cost_paise"]
+        assert financing_quote(products[product_id],1_000_000)["days"]==90
+    assert (date(2026,12,2)-date(2026,10,16)).days==47
+
+
+def test_actual_line_dates_drive_discount_cash_flow():
+    from types import SimpleNamespace
+    from app.finance.plan import plan_scenario
+    products={p["id"]:p for p in load_catalogue()}
+    inputs=ForecastInputs(0,({"id":7,"counterparty_id":1,"direction":"RECEIVABLE","due_date":date(2026,12,2),"amount_paise":1_000_000},),(),(0,),{},(),(),0)
+    run=SimpleNamespace(as_of_date=date(2026,10,13),n_paths=1,seed=42,include_forecast_sales=False,buffer_paise=0)
+    line={"product_id":"TREDS_INVOICE_DISCOUNTING","amount":500_000,"scope":"invoice:7","arrival_business_days":3,"days":47}
+    result=plan_scenario(inputs,run,[line],products)
+    quote=financing_quote(products[line["product_id"]],line["amount"],days=47)
+    assert result["weeks"][0]["expected_inflow_committed_paise"]==quote["net_proceeds_paise"]
+    assert sum(w["expected_inflow_committed_paise"] for w in result["weeks"])==1_000_000-quote["cost_paise"]
 
 
 def test_curve_tighter_targets_never_reduce_fixture_cost():

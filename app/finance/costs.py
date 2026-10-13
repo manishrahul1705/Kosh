@@ -25,9 +25,10 @@ def effective_annual_cost(principal_paise:int,repayment_paise:int,days:int)->Dec
     return loan_apr(principal_paise,[(days,repayment_paise)])
 
 
-def financing_quote(product:dict, amount_paise:int)->dict:
+def financing_quote(product:dict, amount_paise:int,*,days:int|None=None)->dict:
     """Dated illustrative cash flows; never treat nominal interest as effective cost."""
-    model=product["cost_model"];days=int(model["tenor_days"])
+    model=product["cost_model"];days=int(model["tenor_days"] if days is None else days)
+    if days<=0:raise ValueError("Financing tenor must be positive")
     if amount_paise<=0:
         return {"amount_paise":amount_paise,"days":days,"cost_paise":0,"net_proceeds_paise":0,"effective_annual_rate":"0"}
     relationship=product["id"] in {"COLLECTIONS_PUSH","SUPPLIER_TERM_EXTENSION"}

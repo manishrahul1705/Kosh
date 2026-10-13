@@ -23,3 +23,15 @@ verification was performed. At 90 days the effective annual discount cost is
 Actual auction rate, fees and invoice maturity must be verified before execution.
 PMMY source URL is https://www.mudra.org.in/; criteria dates record the supplied
 Stage 3.1 rules, and verified=false explicitly preserves pending live verification.
+
+
+## Plan cash-flow dates
+
+The options table retains the **90-day quote basis** for comparison. Plan lines
+use dated cash flows: discounting runs from the funding business day to the
+recorded invoice maturity (and is unavailable if maturity is at/before funding).
+OD and loans use the actual days between funding and the planned bullet repayment
+date. The default repayment assumption is the catalogue's 90-day bullet term;
+an explicitly chosen repayment date overrides that assumption. Every plan line
+records both dates, actual days and the repayment assumption. The same-target
+NBFC comparison follows the same rules and forecasts the actual repayments.

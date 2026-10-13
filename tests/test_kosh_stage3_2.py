@@ -38,6 +38,45 @@ def test_safety_target_not_alert_threshold_controls_insufficient():
     assert validate_and_complete([], [lever()],check,target_week=1,threshold=.5,target_prob=Decimal(".2"))[2]=="INSUFFICIENT"
 
 
+def test_curve_tighter_targets_never_reduce_fixture_cost():
+    item=lever()
+    def check(lines):
+        amount=sum(x["amount"] for x in lines)
+        return {"weeks":[{"prob_below_buffer":max(0,(100-amount)/100)}]}
+    costs=[]
+    for target in (".40",".30",".20",".10"):
+        chosen,after,status=validate_and_complete([], [item],check,target_week=1,threshold=.5,target_prob=Decimal(target))
+        assert status=="VALID" and Decimal(str(after["weeks"][0]["prob_below_buffer"]))<=Decimal(target)
+        costs.append(sum(x["amount"]*x["unit_cost"] for x in chosen))
+    assert costs==sorted(costs) and len(set(costs))==4
+
+
+def test_chosen_target_persisted_and_audited_curve_read_authorized(client,db,monkeypatch):
+    from tests.conftest import sign_in
+    from app.api.auth import get_token_verifier
+    from app.database.kosh_models import KoshAuditEntry,KoshPlan
+    monkeypatch.setenv("SUPABASE_URL","https://kosh-tests.supabase.co");get_token_verifier.cache_clear()
+    subject="eeeeeeee-0000-0000-0000-000000000034"
+    owner=make_seller(db,name="Curve owner",owner_subject=subject)
+    other=make_seller(db,name="Curve other",owner_subject="eeeeeeee-0000-0000-0000-000000000035")
+    path=f"/api/kosh/sellers/{owner.id}"
+    assert client.get(path+"/financing/safety-curve").status_code==401
+    sign_in(client.app,subject)
+    assert client.get(f"/api/kosh/sellers/{other.id}/financing/safety-curve").status_code==403
+    client.post(path+"/forecast/run",json={"n_paths":10,"seed":42})
+    client.post(path+"/financing/evaluate")
+    result=client.post(path+"/plans",json={"target_probability":"0.30"})
+    assert result.status_code==200
+    plan=db.get(KoshPlan,result.json()["plan_id"])
+    assert plan.planning_details["target_probability"]=="0.30"
+    event=db.scalar(select(KoshAuditEntry).where(KoshAuditEntry.action=="plan.propose").order_by(KoshAuditEntry.id.desc()))
+    assert event.payload["target_probability"]=="0.30"
+    assert client.post(path+"/plans",json={"target_probability":"0.50"}).status_code==409
+    curve=client.get(path+"/financing/safety-curve")
+    assert curve.status_code==200 and len(curve.json()["items"])==4
+    assert all(x["status"]=="INSUFFICIENT" for x in curve.json()["items"])
+
+
 def test_nbfc_baseline_is_forecast_verified_at_same_target(db,monkeypatch):
     from app.finance.plan import propose_plan
     seller=make_seller(db,name="Safety comparison",owner_subject="eeeeeeee-0000-0000-0000-000000000033")

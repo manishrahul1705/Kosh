@@ -23,7 +23,8 @@ export interface ForecastAlert { id?:number;week_index:number;probability:number
 export interface Forecast { seller_id:number;run:{id:number;as_of_date:string;buffer_paise:number;include_forecast_sales?:boolean};weeks:ForecastWeek[];under_review_paise:number;alert:ForecastAlert|null }
 export interface FinancingOption { amount_paise:number;days:number;cost_paise:number;cost_assumption:string; product_id:string;display_name:string;provider_label:string;scope:string|null;status:'MATCHED'|'NOT_MATCHED'|'REVIEW_REQUIRED';max_amount_paise:number;effective_annual_rate:string|null;arrival_business_days:number;reasons:{reason:string;reason_code:string;product_clause?:{quote?:string}}[];evidence:Record<string,unknown>[];assumption:boolean;verify_before_relying:boolean }
 export interface FinancingOptions { seller_id:number;sort_rule:string;items:FinancingOption[] }
-export interface FinancingPlan { why_this_plan:string; id:number;status:string;method:string;total_cost_paise:number;baseline_cost_paise:number;before_probabilities:number[];after_probabilities:number[];lines:{id:number;product_id:string;amount_paise:number;arrival_week:number;cost_paise:number;required_tier:string}[] }
+export interface SafetyPlan { target_probability:string;status:string;total_cost_paise:number;alert_week_probability:number;lines:{product_id:string;amount_paise:number;days:number;cost_paise:number}[] }
+export interface FinancingPlan { target_probability:string;planning_details:{baseline_status:string}; why_this_plan:string; id:number;status:string;method:string;total_cost_paise:number;baseline_cost_paise:number;before_probabilities:number[];after_probabilities:number[];lines:{id:number;product_id:string;amount_paise:number;arrival_week:number;cost_paise:number;required_tier:string}[] }
 
 export const koshApi = {
   ledger: (sellerId: number) =>
@@ -42,7 +43,8 @@ export const koshApi = {
   financingOptions:(sellerId:number)=>apiClient.get<FinancingOptions>(`/kosh/sellers/${sellerId}/financing/options`).then(r=>r.data),
   evaluateFinancing:(sellerId:number)=>apiClient.post(`/kosh/sellers/${sellerId}/financing/evaluate`).then(r=>r.data),
   latestPlan:(sellerId:number)=>apiClient.get<FinancingPlan>(`/kosh/sellers/${sellerId}/plans/latest`).then(r=>r.data),
-  createPlan:(sellerId:number)=>apiClient.post(`/kosh/sellers/${sellerId}/plans`).then(r=>r.data),
+  safetyCurve:(sellerId:number)=>apiClient.get<{items:SafetyPlan[]}>(`/kosh/sellers/${sellerId}/financing/safety-curve`).then(r=>r.data),
+  createPlan:(sellerId:number,targetProbability="0.20")=>apiClient.post(`/kosh/sellers/${sellerId}/plans`,{target_probability:targetProbability}).then(r=>r.data),
   approvals: (sellerId: number) =>
     apiClient.get<KoshPlaceholder>(`/kosh/sellers/${sellerId}/approvals`).then((r) => r.data),
   audit: (sellerId: number) =>

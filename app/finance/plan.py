@@ -97,7 +97,7 @@ def validate_and_complete(chosen,levers,check,*,target_week,threshold,target_pro
     return chosen,after,("VALID" if target_prob is not None else "PROPOSED") if valid(after) else "INSUFFICIENT"
 
 
-def propose_plan(db,seller_id:int,*,target_prob=None)->KoshPlan:
+def propose_plan(db,seller_id:int,*,target_prob=None,persist=True)->KoshPlan|dict:
     run=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if not run:raise ValueError("No successful forecast")
     weeks=db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id).order_by(KoshForecastWeek.week_index)).all()
@@ -142,6 +142,8 @@ def propose_plan(db,seller_id:int,*,target_prob=None)->KoshPlan:
     why+=" "+" ".join(skipped)
     why+=f" Same-seed forecast at week {target}: {after_p[target-1]:.4f}, required at most {target_prob:.4f}; every horizon week below {threshold:.4f}. Paid capacity trimmed to the smallest valid paise amount." if status=="VALID" else " Available eligible capacity cannot bring the target and horizon safety conditions; this plan is INSUFFICIENT."
     details["why_this_plan"]=why
+    if not persist:
+        return {"target_probability":str(target_prob),"status":status,"method":method,"total_cost_paise":total,"baseline_cost_paise":baseline,"planning_details":details,"after_probabilities":after_p,"alert_week_probability":after_p[target-1],"why_this_plan":why,"lines":[{"product_id":x["product_id"],"scope":x["scope"],**financing_quote(products[x["product_id"]],x["amount"])} for x in chosen]}
     plan=KoshPlan(seller_id=seller_id,forecast_run_id=run.id,forecast_fingerprint=run.input_fingerprint,method=method,status=status,planning_details=details,total_cost_paise=total,baseline_cost_paise=baseline,before_probabilities=before,after_probabilities=after_p);db.add(plan);db.flush()
     tiers={"COLLECTIONS_PUSH":"T2","SUPPLIER_TERM_EXTENSION":"T2"}
     for x in chosen:

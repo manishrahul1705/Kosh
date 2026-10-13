@@ -2,6 +2,7 @@
 from datetime import date
 from decimal import Decimal
 from fastapi import APIRouter,Depends,HTTPException
+from pydantic import BaseModel,Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
@@ -36,11 +37,22 @@ def explain(seller_id:int,product_id:str,db:Session=Depends(get_db),access:Autho
     return {"product_id":product_id,"status":matches[0]["status"],"explanation":" ".join(r["reason"] for x in matches for r in x["reasons"])}
 def _plan_out(db,row):
     lines=db.scalars(select(KoshPlanLine).where(KoshPlanLine.plan_id==row.id)).all();return {"id":row.id,"seller_id":row.seller_id,"forecast_run_id":row.forecast_run_id,"forecast_fingerprint":row.forecast_fingerprint,"method":row.method,"status":row.status,"total_cost_paise":row.total_cost_paise,"baseline_cost_paise":row.baseline_cost_paise,"before_probabilities":row.before_probabilities,"after_probabilities":row.after_probabilities,"planning_details":row.planning_details,"target_probability":row.planning_details.get("target_probability"),"why_this_plan":row.planning_details.get("why_this_plan") or next((e["why_this_plan"] for line in lines for e in line.evidence if "why_this_plan" in e),"No eligible capacity was selected."),"lines":[{c.name:getattr(x,c.name) for c in x.__table__.columns} for x in lines]}
-@router.post("/plans")
-def create_plan(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    try:row=propose_plan(db,seller_id)
+class PlanIn(BaseModel):
+    target_probability:Decimal|None=Field(default=None,ge=0,lt=1)
+
+@router.get("/financing/safety-curve")
+def safety_curve(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
+    try:items=[propose_plan(db,seller_id,target_prob=target,persist=False) for target in (Decimal(".40"),Decimal(".30"),Decimal(".20"),Decimal(".10"))]
     except ValueError as exc:raise HTTPException(409,str(exc))
-    append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="plan.propose",tier="T1_DRAFT",payload={"plan_id":row.id},policy_decision="ALLOW");db.commit();return {"plan_id":row.id}
+    append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="plan.safety_curve.read",tier="T0_READ",payload={"targets":[x["target_probability"] for x in items]},policy_decision="ALLOW")
+    db.commit()
+    return {"seller_id":seller_id,"default_target_probability":str(get_settings().kosh_plan_target_prob),"items":items}
+
+@router.post("/plans")
+def create_plan(seller_id:int,payload:PlanIn=PlanIn(),db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
+    try:row=propose_plan(db,seller_id,target_prob=payload.target_probability)
+    except ValueError as exc:raise HTTPException(409,str(exc))
+    append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="plan.propose",tier="T1_DRAFT",payload={"plan_id":row.id,"target_probability":row.planning_details["target_probability"]},policy_decision="ALLOW");db.commit();return {"plan_id":row.id}
 @router.get("/plans/latest")
 def latest(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
     row=db.scalar(select(KoshPlan).where(KoshPlan.seller_id==seller_id).order_by(KoshPlan.id.desc()).limit(1))

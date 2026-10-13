@@ -1,6 +1,6 @@
 # Kosh
 
-Kosh is an SME cash-flow and financing workspace built around source-backed business information and deterministic decisions. Its Tender-to-Cash module discovers public GeM tenders, extracts requirements, checks document coverage and explains seller matches. The `kosh` branch adds Stage 0 storage and private workspace placeholders; ledger calculations, forecasts, financing recommendations and external actions are not implemented yet.
+Kosh is an SME cash-flow and financing workspace built around source-backed business information and deterministic decisions. Its Tender-to-Cash module discovers public GeM tenders, extracts requirements, checks document coverage and explains seller matches. Stage 1 adds consent-controlled private intake, deterministic invoice and bank extraction, an integer-paise ledger and an append-only audit chain. Forecasts, financing recommendations and external actions remain later stages.
 
 ## Features
 
@@ -14,7 +14,18 @@ Kosh is an SME cash-flow and financing workspace built around source-backed busi
 6. **Plan & Approve** - gap-closing plans with explicit approvals.
 7. **Act & Prove** - authorized sandbox actions and auditable evidence.
 
-Stage 0 on `kosh` provides five additive tables, permission-tier declarations, seller-authorized empty APIs and protected Cash, Plan, Approvals, Audit and Connect pages. Private upload returns 501 after authorization. These placeholders do not calculate business outcomes.
+Stage 1 keeps public tender documents separate from private borrower files. Connect manages consent and validated uploads; Ledger shows source-backed receivables, payables, obligations and bank balances; Audit verifies the persisted hash chain.
+
+Generate and seed the deterministic fictional demo only against an explicitly selected development database:
+
+```powershell
+& .\.venv\Scripts\python.exe scripts/kosh_generate_demo.py --seed 42 --out demo_data
+& .\.venv\Scripts\python.exe scripts/kosh_seed_demo.py --database-url sqlite:///./kosh_work.db --data demo_data --storage private_storage
+$env:DATABASE_URL = 'sqlite:///./kosh_work.db'
+& .\.venv\Scripts\python.exe scripts/verify_audit_chain.py --export-jsonl private_notes/kosh-audit.jsonl
+```
+
+The generated data and private storage are ignored. Keep all worker and collection flags disabled while using this local demo.
 
 ### Tender-to-Cash
 

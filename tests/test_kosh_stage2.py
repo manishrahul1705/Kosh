@@ -52,7 +52,7 @@ def test_performance_bound():
     assert time.perf_counter()-started<5
 
 def test_generated_pdfs_are_native_reconciled_and_date_bounded(tmp_path):
-    manifest=generate(42,tmp_path,date(2026,10,13));files=sorted((tmp_path/"invoices").glob("*.pdf"));assert manifest["invoice_pdfs"]==len(files)==14
+    manifest=generate(42,tmp_path,date(2026,10,13));files=sorted((tmp_path/"invoices").glob("*.pdf"));assert manifest["invoice_pdfs"]==len(files)==15
     parsed=[extract_invoice_pdf(path) for path in files]
     assert all(row["method"]=="NATIVE" and row["amounts"]["total"] is not None and "TOTALS_MISMATCH" not in row["reasons"] for row in parsed)
     poison=next(row for row in parsed if row["invoice_number"]=="POISON-001");assert poison["seller_name"]=="Aster Alloy Supplies" and "INSTRUCTION_TEXT_DETECTED" in poison["reasons"]

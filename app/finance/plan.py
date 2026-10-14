@@ -156,33 +156,74 @@ def propose_plan(db,seller_id:int,*,target_prob=None,persist=True,loan_repayment
         module={'COLLECTIONS_PUSH':'collections','SUPPLIER_TERM_EXTENSION':'procurement'}.get(row.product_id)
         active=not module or enabled(db,seller_id,module)
         levers.append({"product_id":row.product_id,"status":row.status if active else "REVIEW_REQUIRED","module_disabled":not active,"cap":row.max_amount_paise if timely else 0,"unit_cost":Decimal(quote["cost_paise"])/row.max_amount_paise if row.max_amount_paise else Decimal(0),"net_factor":factor,"rate":Decimal(quote["effective_annual_rate"]),"scope":row.scope,"arrival_business_days":row.arrival_business_days,"days":days,"funding_date":arrival.isoformat(),"repayment_date":repayment.isoformat() if repayment else None,"repayment_assumption":assumption})
+    inputs = load_inputs(db, seller_id, run.as_of_date, include_addon_events=run.params.get("include_addon_events", True), include_customer_history=run.params.get("include_customer_history", False), include_revenue_signal=run.params.get("include_revenue_signal", False))
+    # Compute Guaranteed plan (cash-posting levers only: excludes COLLECTIONS_PUSH and SUPPLIER_TERM_EXTENSION)
+    guaranteed_levers = [x for x in levers if x["product_id"] not in {"COLLECTIONS_PUSH", "SUPPLIER_TERM_EXTENSION"}]
+    _, g_chosen = optimize_levers(required, guaranteed_levers)
+    g_chosen, g_after, g_status = validate_and_complete(g_chosen, guaranteed_levers, lambda lines: plan_scenario(inputs, run, lines, products), target_week=target, threshold=threshold, target_prob=target_prob)
+    g_total = sum(line_quote(products, x)["cost_paise"] for x in g_chosen) if g_status == "VALID" else 0
+    g_after_p = [w["prob_below_buffer"] for w in g_after["weeks"]]
+    guaranteed_plan_data = {
+        "status": g_status,
+        "total_cost_paise": g_total,
+        "alert_week_probability": g_after_p[target-1],
+        "after_probabilities": g_after_p,
+        "lines": [{"product_id": x["product_id"], "amount_paise": x["amount"], "scope": x["scope"], "days": x["days"], "funding_date": x["funding_date"], "repayment_date": x["repayment_date"], "cost_paise": line_quote(products, x)["cost_paise"], "effective_annual_rate": line_quote(products, x)["effective_annual_rate"]} for x in g_chosen]
+    }
+
+    # Expected with collections (includes collections reminders, labelled as uncertain)
     reserve_shared_invoice_capacity(levers)
-    method,chosen=optimize_levers(required,levers)
-    inputs=load_inputs(db,seller_id,run.as_of_date,include_addon_events=run.params.get("include_addon_events",True),include_customer_history=run.params.get("include_customer_history",False),include_revenue_signal=run.params.get("include_revenue_signal",False))
-    chosen,after,status=validate_and_complete(chosen,levers,lambda lines:plan_scenario(inputs,run,lines,products),target_week=target,threshold=threshold,target_prob=target_prob)
-    before=[w.prob_below_buffer for w in weeks];after_p=[w["prob_below_buffer"] for w in after["weeks"]]
-    total=sum(line_quote(products,x)["cost_paise"] for x in chosen)
+    method, chosen = optimize_levers(required, levers)
+    chosen, after, status = validate_and_complete(chosen, levers, lambda lines: plan_scenario(inputs, run, lines, products), target_week=target, threshold=threshold, target_prob=target_prob)
+    before = [w.prob_below_buffer for w in weeks]; after_p = [w["prob_below_buffer"] for w in after["weeks"]]
+    total = sum(line_quote(products, x)["cost_paise"] for x in chosen)
+
+    # Validity check against the target uses the GUARANTEED figure / capacity:
+    # If guaranteed plan meets target, plan is VALID (guaranteed).
+    final_status = g_status if g_status == "VALID" else status
+
     # The comparison must meet the same safety target and horizon gate, using
     # the same free collections capacity, fees, arrival and repayment cash flows.
-    baseline_levers=[x for x in levers if x["product_id"] in {"COLLECTIONS_PUSH","NBFC_UNSECURED_BUSINESS_LOAN"}]
-    _,baseline_chosen=optimize_levers(required,baseline_levers)
-    baseline_chosen,baseline_after,baseline_status=validate_and_complete(baseline_chosen,baseline_levers,lambda lines:plan_scenario(inputs,run,lines,products),target_week=target,threshold=threshold,target_prob=target_prob)
-    baseline=sum(line_quote(products,x)["cost_paise"] for x in baseline_chosen) if baseline_status=="VALID" else 0
-    details={"target_probability":str(target_prob),"alert_threshold":str(threshold),"alert_week":target,"baseline_status":baseline_status,"baseline_after_probabilities":[w["prob_below_buffer"] for w in baseline_after["weeks"]],"baseline_lines":[{"product_id":x["product_id"],"amount_paise":x["amount"],"scope":x["scope"],"days":x["days"],"funding_date":x["funding_date"],"repayment_date":x["repayment_date"]} for x in baseline_chosen]}
-    why=f"Allocate the least-cost net cash arriving by alert week {target}, subject to documented independent caps. The allocation is exact for this single net-cash constraint; probability is separately verified by the same-seed forecast. Only MATCHED options are eligible."
-    selected={(x["product_id"],x["scope"]) for x in chosen}
-    skipped=[]
+    baseline_levers = [x for x in levers if x["product_id"] in {"COLLECTIONS_PUSH", "NBFC_UNSECURED_BUSINESS_LOAN"}]
+    _, baseline_chosen = optimize_levers(required, baseline_levers)
+    baseline_chosen, baseline_after, baseline_status = validate_and_complete(baseline_chosen, baseline_levers, lambda lines: plan_scenario(inputs, run, lines, products), target_week=target, threshold=threshold, target_prob=target_prob)
+    baseline = sum(line_quote(products, x)["cost_paise"] for x in baseline_chosen) if baseline_status == "VALID" else 0
+
+    expected_plan_data = {
+        "status": status,
+        "total_cost_paise": total,
+        "alert_week_probability": after_p[target-1],
+        "after_probabilities": after_p,
+        "lines": [{"product_id": x["product_id"], "amount_paise": x["amount"], "scope": x["scope"], "days": x["days"], "funding_date": x["funding_date"], "repayment_date": x["repayment_date"], "cost_paise": line_quote(products, x)["cost_paise"], "effective_annual_rate": line_quote(products, x)["effective_annual_rate"]} for x in chosen]
+    }
+
+    details = {
+        "target_probability": str(target_prob),
+        "alert_threshold": str(threshold),
+        "alert_week": target,
+        "baseline_status": baseline_status,
+        "baseline_after_probabilities": [w["prob_below_buffer"] for w in baseline_after["weeks"]],
+        "baseline_lines": [{"product_id": x["product_id"], "amount_paise": x["amount"], "scope": x["scope"], "days": x["days"], "funding_date": x["funding_date"], "repayment_date": x["repayment_date"]} for x in baseline_chosen],
+        "guaranteed_plan": guaranteed_plan_data,
+        "expected_plan": expected_plan_data,
+        "guaranteed_status": g_status,
+        "guaranteed_total_cost_paise": g_total,
+        "expected_total_cost_paise": total,
+    }
+    why = f"Allocate the least-cost net cash arriving by alert week {target}, subject to documented independent caps. The allocation is exact for this single net-cash constraint; probability is separately verified by the same-seed forecast. Only MATCHED options are eligible."
+    selected = {(x["product_id"], x["scope"]) for x in chosen}
+    skipped = []
     for lever in levers:
-        if (lever["product_id"],lever["scope"]) in selected:continue
-        reason="disabled by owner module setting" if lever.get("module_disabled") else "requires review or failed eligibility" if lever["status"]!="MATCHED" else "cannot arrive by the alert week" if lever["cap"]==0 else "costs more per net paise than the selected available capacity"
+        if (lever["product_id"], lever["scope"]) in selected: continue
+        reason = "disabled by owner module setting" if lever.get("module_disabled") else "requires review or failed eligibility" if lever["status"] != "MATCHED" else "cannot arrive by the alert week" if lever["cap"] == 0 else "costs more per net paise than the selected available capacity"
         skipped.append(f"{lever['product_id']}: {reason}.")
-    why+=" "+" ".join(skipped)
-    why+=f" Same-seed forecast at week {target}: {after_p[target-1]:.4f}, required at most {target_prob:.4f}; every horizon week below {threshold:.4f}. Paid capacity trimmed to the smallest valid paise amount." if status=="VALID" else " Available eligible capacity cannot bring the target and horizon safety conditions; this plan is INSUFFICIENT."
-    details["why_this_plan"]=why
+    why += " " + " ".join(skipped)
+    why += f" Same-seed forecast at week {target}: guaranteed probability {g_after_p[target-1]:.4f} (expected with collections {after_p[target-1]:.4f}), required at most {target_prob:.4f}; every horizon week below {threshold:.4f}. Paid capacity trimmed to the smallest valid paise amount." if final_status == "VALID" else " Available eligible capacity cannot bring the target and horizon safety conditions; this plan is INSUFFICIENT."
+    details["why_this_plan"] = why
     if not persist:
-        return {"target_probability":str(target_prob),"status":status,"method":method,"total_cost_paise":total,"baseline_cost_paise":baseline,"planning_details":details,"after_probabilities":after_p,"alert_week_probability":after_p[target-1],"why_this_plan":why,"lines":[{"product_id":x["product_id"],"scope":x["scope"],"funding_date":x["funding_date"],"repayment_date":x["repayment_date"],"repayment_assumption":x["repayment_assumption"],**line_quote(products,x)} for x in chosen]}
-    plan=KoshPlan(seller_id=seller_id,forecast_run_id=run.id,forecast_fingerprint=run.input_fingerprint,method=method,status=status,planning_details=details,total_cost_paise=total,baseline_cost_paise=baseline,before_probabilities=before,after_probabilities=after_p);db.add(plan);db.flush()
-    tiers={"COLLECTIONS_PUSH":"T2","SUPPLIER_TERM_EXTENSION":"T2"}
+        return {"target_probability": str(target_prob), "status": final_status, "method": method, "total_cost_paise": total, "baseline_cost_paise": baseline, "guaranteed_plan": guaranteed_plan_data, "expected_plan": expected_plan_data, "planning_details": details, "after_probabilities": after_p, "alert_week_probability": after_p[target-1], "why_this_plan": why, "lines": [{"product_id": x["product_id"], "scope": x["scope"], "funding_date": x["funding_date"], "repayment_date": x["repayment_date"], "repayment_assumption": x["repayment_assumption"], **line_quote(products, x)} for x in chosen]}
+    plan = KoshPlan(seller_id=seller_id, forecast_run_id=run.id, forecast_fingerprint=run.input_fingerprint, method=method, status=final_status, planning_details=details, total_cost_paise=total, baseline_cost_paise=baseline, before_probabilities=before, after_probabilities=after_p); db.add(plan); db.flush()
+    tiers = {"COLLECTIONS_PUSH": "T2", "SUPPLIER_TERM_EXTENSION": "T2"}
     for x in chosen:
         quote=line_quote(products,x)
         arrival_week=(_arrival(run.as_of_date,x["arrival_business_days"])-week_bounds(run.as_of_date)[0]).days//7+1

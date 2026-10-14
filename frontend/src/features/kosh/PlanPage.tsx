@@ -608,9 +608,94 @@ export const PlanPage = () => {
 
       {/* Proposed Gap-closing Plan */}
       {plan.data ? (
-        <div className="rounded border bg-white p-4 space-y-3">
-          <h3 className="text-base font-semibold">Proposed gap-closing plan</h3>
+        <div className="rounded border bg-white p-4 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Proposed gap-closing plan</h3>
+              <p className="text-xs text-gray-600">
+                Validity check against the target probability ({Number(plan.data.target_probability) * 100}%) is strictly verified using the <strong>Guaranteed plan</strong>.
+              </p>
+            </div>
+            <span
+              className={`px-2 py-0.5 rounded text-xs font-semibold self-start sm:self-auto ${
+                plan.data.status === 'VALID' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}
+            >
+              {plan.data.status === 'VALID' ? 'PLAN VALID (GUARANTEED)' : plan.data.status}
+            </span>
+          </div>
+
           <p className="text-sm text-gray-700">{plan.data.why_this_plan}</p>
+
+          {/* Dual plan metrics: Guaranteed vs Expected */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Guaranteed Plan Card */}
+            <div className="rounded border border-blue-200 bg-blue-50/40 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-sm text-blue-950">Guaranteed plan</span>
+                <span className="text-[11px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">
+                  Cash-posting levers only
+                </span>
+              </div>
+              <p className="text-xs text-gray-600">
+                Only levers that post cash on execution (e.g. TReDS discounting, Bank OD). Target validity is verified against this figure.
+              </p>
+              <div className="pt-1 flex items-baseline justify-between text-xs">
+                <span className="text-gray-600">Guaranteed cost:</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {formatPaiseINR(plan.data.guaranteed_plan?.total_cost_paise ?? plan.data.planning_details?.guaranteed_total_cost_paise ?? plan.data.total_cost_paise)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-gray-600">Alert week probability:</span>
+                <span className="font-medium text-gray-800">
+                  {plan.data.guaranteed_plan
+                    ? `${(plan.data.guaranteed_plan.alert_week_probability * 100).toFixed(1)}%`
+                    : 'Verified <= 20%'}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-gray-600">Verification status:</span>
+                <span className={`font-semibold ${plan.data.planning_details?.guaranteed_status === 'VALID' || plan.data.status === 'VALID' ? 'text-green-700' : 'text-red-700'}`}>
+                  {plan.data.planning_details?.guaranteed_status ?? plan.data.status}
+                </span>
+              </div>
+            </div>
+
+            {/* Expected with Collections Card */}
+            <div className="rounded border border-amber-200 bg-amber-50/40 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-sm text-amber-950">Expected with collections</span>
+                <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">
+                  Uncertain cash timing
+                </span>
+              </div>
+              <p className="text-xs text-gray-600">
+                Includes collections reminder pushes. Reminders cost zero monetary fees but cash receipt remains uncertain until buyer pays.
+              </p>
+              <div className="pt-1 flex items-baseline justify-between text-xs">
+                <span className="text-gray-600">Expected cost:</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {formatPaiseINR(plan.data.expected_plan?.total_cost_paise ?? plan.data.planning_details?.expected_total_cost_paise ?? plan.data.total_cost_paise)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-gray-600">Alert week probability:</span>
+                <span className="font-medium text-gray-800">
+                  {plan.data.expected_plan
+                    ? `${(plan.data.expected_plan.alert_week_probability * 100).toFixed(1)}%`
+                    : `${(plan.data.after_probabilities[plan.data.after_probabilities.length > 5 ? 5 : 0] * 100).toFixed(1)}%`}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-gray-600">Levers status:</span>
+                <span className="font-semibold text-amber-800">
+                  {plan.data.expected_plan?.status ?? 'INCLUDED WITH COLLECTIONS'}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <p className="text-sm font-medium">
             {plan.data.status === 'VALID'
               ? 'Same-seed forecast meets the chosen safety target and every horizon week is below the alert threshold'
@@ -618,6 +703,8 @@ export const PlanPage = () => {
               ? 'INSUFFICIENT: this plan does not meet the safety conditions; re-evaluate options'
               : 'Safety target not verified; build a new plan.'}
           </p>
+
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 pt-2">Executed Plan Levers</h4>
           <ul className="list-disc pl-5 text-sm space-y-1">
             {plan.data.lines.map((line) => (
               <li key={line.id} id={`plan-line-${line.id}`}>

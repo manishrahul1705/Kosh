@@ -39,7 +39,8 @@ def options(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Dep
         selected=(matched or [x for x in candidates if x["status"]=="REVIEW_REQUIRED"] or candidates)[0]
         if product_id in {"COLLECTIONS_PUSH","TREDS_INVOICE_DISCOUNTING","SUPPLIER_TERM_EXTENSION"}:
             amount=min(product["max_amount_paise"],sum(x["max_amount_paise"] for x in matched))
-            selected={**selected,**financing_quote(product,amount),"max_amount_paise":amount,"invoice_eligibility":[{"scope":x["scope"],"status":x["status"],"eligible":x["status"]=="MATCHED","max_amount_paise":x["max_amount_paise"],"reasons":x["reasons"],"evidence":x["evidence"]} for x in candidates if x["scope"]]}
+            prod_status = "MATCHED" if matched else ("REVIEW_REQUIRED" if any(x["status"]=="REVIEW_REQUIRED" for x in candidates) else "NOT_MATCHED")
+            selected={**selected,"status":prod_status,**financing_quote(product,amount),"max_amount_paise":amount,"invoice_eligibility":[{"scope":x["scope"],"status":x["status"],"eligible":x["status"]=="MATCHED","max_amount_paise":x["max_amount_paise"],"reasons":x["reasons"],"evidence":x["evidence"]} for x in candidates if x["scope"]]}
         grouped.append(selected)
     rows=grouped
     rows.sort(key=lambda x:(Decimal(x["effective_annual_rate"] or "999"),x["product_id"]));return {"seller_id":seller_id,"sort_rule":SORT_RULE,"items":rows}
@@ -59,7 +60,7 @@ def _plan_out(db,row):
     from app.finance.plan_freshness import display_status
     status=display_status(db,row);details=dict(row.planning_details)
     if status=='STALE':details['baseline_status']='STALE';details['why_this_plan']='Forecast inputs or the selected basis changed. Re-evaluate financing and build a current plan.'
-    lines=db.scalars(select(KoshPlanLine).where(KoshPlanLine.plan_id==row.id)).all();return {"id":row.id,"seller_id":row.seller_id,"forecast_run_id":row.forecast_run_id,"forecast_fingerprint":row.forecast_fingerprint,"method":row.method,"status":status,"total_cost_paise":row.total_cost_paise,"baseline_cost_paise":row.baseline_cost_paise,"before_probabilities":row.before_probabilities,"after_probabilities":row.after_probabilities,"planning_details":details,"target_probability":row.planning_details.get("target_probability"),"why_this_plan":details.get("why_this_plan") or next((e["why_this_plan"] for line in lines for e in line.evidence if "why_this_plan" in e),"No eligible capacity was selected."),"lines":[_line_out(x) for x in lines]}
+    lines=db.scalars(select(KoshPlanLine).where(KoshPlanLine.plan_id==row.id)).all();return {"id":row.id,"seller_id":row.seller_id,"forecast_run_id":row.forecast_run_id,"forecast_fingerprint":row.forecast_fingerprint,"method":row.method,"status":status,"total_cost_paise":row.total_cost_paise,"baseline_cost_paise":row.baseline_cost_paise,"guaranteed_plan":details.get("guaranteed_plan"),"expected_plan":details.get("expected_plan"),"before_probabilities":row.before_probabilities,"after_probabilities":row.after_probabilities,"planning_details":details,"target_probability":row.planning_details.get("target_probability"),"why_this_plan":details.get("why_this_plan") or next((e["why_this_plan"] for line in lines for e in line.evidence if "why_this_plan" in e),"No eligible capacity was selected."),"lines":[_line_out(x) for x in lines]}
 class PlanIn(BaseModel):
     target_probability:Decimal|None=Field(default=None,ge=0,lt=1)
     loan_repayment_date:date|None=None

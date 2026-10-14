@@ -27,6 +27,34 @@ $env:DATABASE_URL = 'sqlite:///./kosh_work.db'
 
 The generated data and private storage are ignored. Keep all worker and collection flags disabled while using this local demo.
 
+### Judge quick start
+
+To run the complete Kosh demo end-to-end (seed 42, as-of `2026-10-13`, forecast, financing evaluation, gap-closing plan at target 0.20, and Stage 4 sandbox execution):
+
+```powershell
+# Safe offline environment variables
+$env:SCHEDULER_ENABLED = 'false'
+$env:AUTO_MIGRATE = 'false'
+$env:COLLECT_ON_STARTUP = 'false'
+$env:STARTUP_RECOVERY_ENABLED = 'false'
+$env:APP_ENV = 'development'
+$env:KOSH_AS_OF_DATE = '2026-10-13'
+
+# 1. Run canonical demonstration pipeline and view exact numbers
+& .\.venv\Scripts\python.exe scripts/kosh_demo_numbers.py
+# Output document: docs/kosh/demo_numbers.md
+
+# 2. Run backend test suite
+& .\.venv\Scripts\python.exe -m pytest -q --tb=line -p no:warnings tests/test_kosh_*
+
+# 3. Frontend checks
+Set-Location frontend
+npx.cmd tsc -b
+npm.cmd run test -- --run
+npm.cmd run build
+Set-Location ..
+```
+
 ### Tender-to-Cash
 
 - Public GeM listing discovery, bid identity, changes and deadline/status history.

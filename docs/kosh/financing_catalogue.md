@@ -1,4 +1,4 @@
-﻿# Financing catalogue
+# Financing catalogue
 
 The catalogue is versioned product data. Provider labels, rates, fees, tenors and arrival speeds are illustrative assumptions, never paid placement. Scheme criteria include dated source blocks; entries marked `verified: false` must be verified before relying on them. Results are deterministic, include failed and review-required options, and never execute financing actions.
 
@@ -65,3 +65,14 @@ an unattainable NBFC baseline is labelled INSUFFICIENT, without invented savings
 Operational collections/supplier levers have no financing tenor or repayment
 obligation: plan days are 0 and repayment_date is null. Their options retain the
 90-day quote display basis for the consistent table, with zero monetary cost.
+
+## MSMED Act 2006 statutory terms
+
+For eligible micro and small enterprises, Section 15 of the MSMED Act 2006 requires
+buyers to make payment on or before the agreed date, which cannot exceed 45 days
+from the day of acceptance or deemed acceptance. Where no period is agreed in
+writing, payment is due within 15 days. Under Section 16, failure to make payment
+by the statutory due date incurs compound interest with monthly rests at three times
+the RBI bank rate (illustrative 5.75% bank rate yields 17.25% p.a.). Statutory debt
+and interest are calculated deterministically only when micro/small enterprise
+applicability, acceptance dates, and agreed terms are documented.

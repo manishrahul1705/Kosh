@@ -196,7 +196,7 @@ def test_nbfc_baseline_is_forecast_verified_at_same_target(db,monkeypatch):
     db.add(evaluation);db.flush()
     db.add(KoshFinancingResult(evaluation_id=evaluation.id,product_id="NBFC_UNSECURED_BUSINESS_LOAN",status="MATCHED",max_amount_paise=1000,effective_annual_rate=".3",arrival_business_days=5,reasons=[],evidence=[]))
     db.flush()
-    monkeypatch.setattr("app.finance.plan.load_inputs",lambda *args:inputs)
+    monkeypatch.setattr("app.finance.plan.load_inputs",lambda *args,**kwargs:inputs)
     plan=propose_plan(db,seller.id)
     assert plan.status=="VALID"
     assert plan.planning_details["target_probability"]=="0.20"

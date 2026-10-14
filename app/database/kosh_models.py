@@ -236,6 +236,8 @@ class KoshForecastWeek(Base):
     expected_inflow_forecast_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
     expected_outflow_committed_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
     expected_outflow_forecast_paise: Mapped[int] = mapped_column(sa.BigInteger, nullable=False)
+    expected_inflow_addon_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False,default=0)
+    expected_outflow_addon_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False,default=0)
     expected_inflow_sandbox_paise: Mapped[int] = mapped_column(sa.BigInteger,nullable=False,default=0)
     expected_outflow_sandbox_paise: Mapped[int] = mapped_column(sa.BigInteger,nullable=False,default=0)
     prob_below_buffer: Mapped[float] = mapped_column(sa.Float, nullable=False)
@@ -455,3 +457,20 @@ class KoshSandboxOutbox(Base):
     body:Mapped[str]=mapped_column(sa.Text,nullable=False)
     status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
     created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+
+
+class KoshCashEvent(Base):
+    __tablename__="kosh_cash_events"
+    __table_args__=(sa.CheckConstraint("status IN ('PROPOSED','CONFIRMED','REJECTED')",name="cash_event_status"),sa.CheckConstraint("event_type IN ('EXPECTED_RECEIVABLE','SCHEDULED_PAYABLE','COST_CHANGE','FINANCING_NEED')",name="cash_event_type"),sa.CheckConstraint("amount_paise>=0",name="cash_event_amount"),)
+    id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False,index=True)
+    event_type:Mapped[str]=mapped_column(sa.String(32),nullable=False)
+    source_module:Mapped[str]=mapped_column(sa.String(48),nullable=False)
+    evidence_ref:Mapped[str]=mapped_column(sa.String(160),nullable=False)
+    event_date:Mapped[date]=mapped_column(sa.Date,nullable=False)
+    amount_paise:Mapped[int]=mapped_column(sa.BigInteger,nullable=False)
+    status:Mapped[str]=mapped_column(sa.String(16),nullable=False,default="PROPOSED")
+    created_by_user_id:Mapped[int]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id"),nullable=False)
+    confirmed_by_user_id:Mapped[int|None]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id"))
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+    confirmed_at:Mapped[datetime|None]=mapped_column(sa.DateTime)

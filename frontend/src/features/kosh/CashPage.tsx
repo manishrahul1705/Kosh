@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useMutation,useQuery,useQueryClient } from '@tanstack/react-query'
 import { Area,AreaChart,CartesianGrid,Legend,Line,ResponsiveContainer,Tooltip,XAxis,YAxis } from 'recharts'
 import { useSeller } from '@/app/SellerContext'
@@ -13,6 +13,7 @@ export const CashPage=()=>{
   const {activeSellerId}=useSeller();const qc=useQueryClient();const [showForecast,setShowForecast]=useState(true);const [drawer,setDrawer]=useState(false);const [shift,setShift]=useState(0);const [scenario,setScenario]=useState<Forecast|null>(null)
   useQuery({queryKey:['kosh','ledger',activeSellerId],queryFn:()=>koshApi.ledger(activeSellerId!),enabled:activeSellerId!==null})
   const forecast=useQuery({queryKey:['kosh','forecast',activeSellerId],queryFn:()=>koshApi.forecast(activeSellerId!),enabled:activeSellerId!==null,retry:false})
+  const events=useQuery({queryKey:['kosh','cash-events',activeSellerId],queryFn:()=>koshApi.cashEvents(activeSellerId!),enabled:activeSellerId!==null})
   const analysis=useQuery({queryKey:['kosh','analysis',activeSellerId],queryFn:()=>koshApi.analysis(activeSellerId!),enabled:activeSellerId!==null})
   const backtest=useQuery({queryKey:['kosh','backtest',activeSellerId],queryFn:()=>koshApi.backtest(activeSellerId!),enabled:activeSellerId!==null,retry:false})
   const run=useMutation({mutationFn:()=>koshApi.runForecast(activeSellerId!),onSuccess:()=>qc.invalidateQueries({queryKey:['kosh','forecast',activeSellerId]})})
@@ -20,6 +21,9 @@ export const CashPage=()=>{
   const data=scenario??forecast.data;if(!data)return <p>Select a seller.</p>;const alert=data.alert;const chart=data.weeks.map(row=>({...row,label:`W${row.week_index}`,low:row.p10_closing_balance_paise,range:row.p90_closing_balance_paise-row.p10_closing_balance_paise,buffer:data.run.buffer_paise,forecast:showForecast?row.expected_inflow_forecast_paise:0}))
   const coverage=(backtest.data?.coverage_by_horizon??{}) as Record<string,number>;const metrics=analysis.data??{}
   return <section aria-label="Cash forecast" className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-semibold">13-week cash forecast</h2><div><label className="mr-3"><input type="checkbox" checked={showForecast} onChange={event=>setShowForecast(event.target.checked)}/> Include forecast sales</label><button className="rounded border px-3 py-1" onClick={()=>setDrawer(!drawer)}>What-if</button></div></div>
+    <label><input type="checkbox" checked={data.run.include_addon_events??true} onChange={e=>{setScenario(null);void koshApi.runForecast(activeSellerId!,{include_addon_events:e.target.checked,n_paths:data.run.n_paths??2000,seed:data.run.seed??42,include_forecast_sales:data.run.include_forecast_sales??true}).then(()=>qc.invalidateQueries({queryKey:['kosh','forecast',activeSellerId]}))}}/> Include confirmed add-on cash events</label>
+    <details><summary>Add-on cash events (proposals excluded)</summary>{events.data?.items.map(event=><p key={event.id}>{event.event_type} ? {event.source_module} ? {event.status} ? {formatPaiseINR(event.amount_paise)} ? {event.event_date} ? {event.evidence_ref}</p>)}</details>
+    {data.weeks.some(w=>(w.expected_inflow_addon_paise??0)>0||(w.expected_outflow_addon_paise??0)>0)&&<p>Forecast includes separately labelled owner-confirmed add-on cash flows.</p>}
     {alert&&<div role="alert" className="rounded border-l-4 border-amber-500 bg-amber-50 p-4"><strong>{alert.summary??`Week ${alert.week_index}: ${(alert.probability*100).toFixed(0)}% chance below buffer`}</strong><p>Expected shortfall {formatPaiseINR(alert.expected_shortfall_paise)}</p><a href="/plan" className="underline">Build a gap-closing plan</a><ol className="list-decimal pl-5">{alert.causes.map((cause,index)=><li key={index}>{cause.customer??cause.type}: {formatPaiseINR(cause.amount_paise)} ({formatPaiseINR(cause.contribution_paise)} contribution)</li>)}</ol>{alert.id&&<button className="underline" onClick={()=>koshApi.acknowledgeAlert(activeSellerId!,alert.id!)}>Acknowledge</button>}</div>}
     {data.weeks.some(w=>(w.expected_inflow_sandbox_paise??0)>0||(w.expected_outflow_sandbox_paise??0)>0)&&<p className="rounded border border-orange-400 p-3">Includes separately labelled sandbox cash events. These are simulated entries, not real bank transactions.</p>}
     {data.under_review_paise>0&&<a href="/ledger" className="block rounded bg-amber-50 p-3 underline">Under review: {formatPaiseINR(data.under_review_paise)} excluded</a>}

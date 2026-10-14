@@ -143,6 +143,8 @@ def create_app(
     app.include_router(portal.router)
     app.include_router(business_documents.router)
     app.include_router(cash.router)
+    from app.api import cash_events
+    app.include_router(cash_events.router)
     from app.api import financing
     app.include_router(financing.router)
     from app.api import policy

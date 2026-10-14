@@ -48,8 +48,9 @@ class ForecastInputs:
     under_review_paise:int
     sandbox_cash_events:tuple[dict,...]=()
     sandbox_invoice_reductions:dict[int,int]=field(default_factory=dict)
+    addon_cash_events:tuple[dict,...]=()
 
-def load_inputs(db:Session,seller_id:int,as_of:date)->ForecastInputs:
+def load_inputs(db:Session,seller_id:int,as_of:date,*,include_addon_events:bool=True)->ForecastInputs:
     bank=db.scalar(select(KoshBankTransaction).where(KoshBankTransaction.seller_id==seller_id,KoshBankTransaction.txn_date<=as_of).order_by(KoshBankTransaction.txn_date.desc(),KoshBankTransaction.id.desc()).limit(1))
     rows=db.execute(select(KoshInvoice,KoshCounterparty).join(KoshCounterparty,KoshCounterparty.id==KoshInvoice.counterparty_id).where(KoshInvoice.seller_id==seller_id,KoshInvoice.invoice_date<=as_of)).all()
     cutoff=as_of-timedelta(days=730);portfolio=[];customer={};open_rows=[];review=0;sales=[0]*26;purchases=[0]*26;history_start=as_of-timedelta(weeks=26)
@@ -67,7 +68,9 @@ def load_inputs(db:Session,seller_id:int,as_of:date)->ForecastInputs:
     obligations=tuple({"id":row.id,"kind":row.kind,"label":row.label,"amount_paise":row.amount_paise,"dates":[d.isoformat() for d in obligation_dates(row,start,end)]} for row in db.scalars(select(KoshObligation).where(KoshObligation.seller_id==seller_id,KoshObligation.active.is_(True))))
     from app.finance.sandbox_ledger import overlay
     delta,events,reductions=overlay(db,seller_id,as_of)
-    return ForecastInputs((bank.balance_paise if bank else 0)+delta,tuple(open_rows),obligations,tuple(portfolio or [30,45,60]),{key:tuple(value) for key,value in customer.items()},tuple(sales),tuple(purchases),review,events,reductions)
+    from app.database.kosh_models import KoshCashEvent
+    addon=tuple({"date":row.event_date.isoformat(),"amount_paise":row.amount_paise*(1 if row.event_type=="EXPECTED_RECEIVABLE" else -1),"component":"addon","event_id":row.id,"source_module":row.source_module} for row in db.scalars(select(KoshCashEvent).where(KoshCashEvent.seller_id==seller_id,KoshCashEvent.status=="CONFIRMED",KoshCashEvent.event_type!="FINANCING_NEED").order_by(KoshCashEvent.id))) if include_addon_events else ()
+    return ForecastInputs((bank.balance_paise if bank else 0)+delta,tuple(open_rows),obligations,tuple(portfolio or [30,45,60]),{key:tuple(value) for key,value in customer.items()},tuple(sales),tuple(purchases),review,addon_cash_events=addon,sandbox_cash_events=events,sandbox_invoice_reductions=reductions)
 
 def buffer_for_seller(db:Session,seller_id:int,default:int=100_000_000)->int:
     row=db.scalar(select(SellerAttribute).join(SellerRevision,SellerRevision.id==SellerAttribute.revision_id).where(SellerRevision.seller_id==seller_id,SellerRevision.is_active.is_(True),SellerAttribute.key=="cash_buffer_paise").order_by(SellerRevision.revision_number.desc()).limit(1))
@@ -75,6 +78,7 @@ def buffer_for_seller(db:Session,seller_id:int,default:int=100_000_000)->int:
 
 def fingerprint(inputs:ForecastInputs,params:dict[str,object])->str:
     payload={"opening":inputs.opening_balance_paise,"invoices":inputs.invoices,"obligations":inputs.obligations,"portfolio":inputs.portfolio_delays,"customer":inputs.customer_delays,"sales":inputs.historical_sales,"purchases":inputs.historical_purchases,"review":inputs.under_review_paise,"params":params}
+    if inputs.addon_cash_events:payload["addon"]=inputs.addon_cash_events
     if inputs.sandbox_cash_events or inputs.sandbox_invoice_reductions:payload["sandbox"]={"events":inputs.sandbox_cash_events,"reductions":inputs.sandbox_invoice_reductions}
     return hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":"),default=str).encode()).hexdigest()
 
@@ -87,10 +91,10 @@ def sample_delay(rng:random.Random,inputs:ForecastInputs,invoice:dict[str,object
     return max(0,rng.choice(conditional or observations or [30])+shift)
 
 def simulate(inputs:ForecastInputs,*,as_of:date,n_paths:int=2000,seed:int=42,include_forecast_sales:bool=True,buffer_paise:int=100_000_000,customer_delay_shift_days:dict[int,int]|None=None,exclude_counterparties:set[int]|None=None,extra_inflows:list[dict[str,object]]|None=None,accelerated_invoice_ids:set[int]|None=None,invoice_amount_reductions:dict[int,int]|None=None)->dict[str,object]:
-    shifts=customer_delay_shift_days or {};excluded=exclude_counterparties or set();extras=[*(extra_inflows or []),*inputs.sandbox_cash_events];accelerated=accelerated_invoice_ids or set();reductions=dict(inputs.sandbox_invoice_reductions)
+    shifts=customer_delay_shift_days or {};excluded=exclude_counterparties or set();extras=[*(extra_inflows or []),*inputs.sandbox_cash_events,*inputs.addon_cash_events];accelerated=accelerated_invoice_ids or set();reductions=dict(inputs.sandbox_invoice_reductions)
     for invoice_id,amount in (invoice_amount_reductions or {}).items():reductions[invoice_id]=reductions.get(invoice_id,0)+amount
     starts=[week_bounds(as_of,index)[0] for index in range(1,14)]
-    balances=[[] for _ in range(13)];totals=[[0]*13 for _ in range(6)]
+    balances=[[] for _ in range(13)];totals=[[0]*13 for _ in range(8)]
     for path_index in range(n_paths):
         rng=random.Random(seed*1_000_003+path_index);events=[[] for _ in range(13)]
         for invoice in inputs.invoices:
@@ -106,7 +110,7 @@ def simulate(inputs:ForecastInputs,*,as_of:date,n_paths:int=2000,seed:int=42,inc
                 if 0<=idx<13:events[idx].append((-int(obligation["amount_paise"]),"committed"))
         for extra in extras:
             idx=(date.fromisoformat(str(extra["date"]))-starts[0]).days//7
-            if 0<=idx<13:events[idx].append((int(extra["amount_paise"]),"sandbox" if extra.get("component")=="sandbox" else "committed"))
+            if 0<=idx<13:events[idx].append((int(extra["amount_paise"]),extra["component"] if extra.get("component") in {"sandbox","addon"} else "committed"))
         if include_forecast_sales:
             for issued_idx in range(13):
                 sale_idx=issued_idx+6+max(0,rng.choice(inputs.portfolio_delays or (0,)))//7
@@ -117,12 +121,12 @@ def simulate(inputs:ForecastInputs,*,as_of:date,n_paths:int=2000,seed:int=42,inc
         for idx,week_events in enumerate(events):
             for amount,component in week_events:
                 balance+=amount
-                total_index=(4 if amount>=0 else 5) if component=="sandbox" else (0 if amount>=0 and component=="committed" else 1 if amount>=0 else 2 if component=="committed" else 3)
+                total_index=(6 if amount>=0 else 7) if component=="addon" else (4 if amount>=0 else 5) if component=="sandbox" else (0 if amount>=0 and component=="committed" else 1 if amount>=0 else 2 if component=="committed" else 3)
                 totals[total_index][idx]+=abs(amount)
             balances[idx].append(balance)
     weeks=[]
     for idx,values in enumerate(balances):
         shortfalls=[max(0,buffer_paise-value) for value in values]
         expected=[int((Decimal(row[idx])/n_paths).quantize(Decimal("1"),rounding=ROUND_HALF_UP)) for row in totals]
-        weeks.append({"week_index":idx+1,"week_start":starts[idx],"week_end":starts[idx]+timedelta(days=6),"p10_closing_balance_paise":_paise(values,".10"),"p50_closing_balance_paise":_paise(values,".50"),"p90_closing_balance_paise":_paise(values,".90"),"expected_inflow_committed_paise":expected[0],"expected_inflow_forecast_paise":expected[1],"expected_outflow_committed_paise":expected[2],"expected_outflow_forecast_paise":expected[3],"expected_inflow_sandbox_paise":expected[4],"expected_outflow_sandbox_paise":expected[5],"prob_below_buffer":sum(value<buffer_paise for value in values)/n_paths,"expected_shortfall_paise":int((Decimal(sum(shortfalls))/n_paths).quantize(Decimal("1"),rounding=ROUND_HALF_UP))})
+        weeks.append({"week_index":idx+1,"week_start":starts[idx],"week_end":starts[idx]+timedelta(days=6),"p10_closing_balance_paise":_paise(values,".10"),"p50_closing_balance_paise":_paise(values,".50"),"p90_closing_balance_paise":_paise(values,".90"),"expected_inflow_committed_paise":expected[0],"expected_inflow_forecast_paise":expected[1],"expected_outflow_committed_paise":expected[2],"expected_outflow_forecast_paise":expected[3],"expected_inflow_addon_paise":expected[6],"expected_outflow_addon_paise":expected[7],"expected_inflow_sandbox_paise":expected[4],"expected_outflow_sandbox_paise":expected[5],"prob_below_buffer":sum(value<buffer_paise for value in values)/n_paths,"expected_shortfall_paise":int((Decimal(sum(shortfalls))/n_paths).quantize(Decimal("1"),rounding=ROUND_HALF_UP))})
     return {"as_of_date":as_of,"horizon_weeks":13,"n_paths":n_paths,"seed":seed,"buffer_paise":buffer_paise,"under_review_paise":inputs.under_review_paise,"weeks":weeks}

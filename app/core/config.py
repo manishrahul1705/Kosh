@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     dev_login_enabled: bool = False
     # Supabase project URL (public). Read from the environment or .env; see app/api/auth.py.
     supabase_url: str = ""
+    # Permitted CORS origins for API requests (comma-separated; never '*' in production)
+    cors_origins: str = "http://localhost:5180,http://127.0.0.1:5180"
     database_url: str = "sqlite:///./data/gem.db"
     auto_migrate: bool = True
     # Startup mode. normal = existing behaviour. verify = read-only inspection: no
@@ -287,6 +289,10 @@ class Settings(BaseSettings):
         if self.app_env.strip().lower() == "production" and self.auto_migrate:
             problems.append("AUTO_MIGRATE must be false when APP_ENV=production "
                             "(apply migrations with scripts/migrate.py)")
+        if self.app_env.strip().lower() == "production":
+            origins = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+            if "*" in origins:
+                problems.append("CORS_ORIGINS cannot contain '*' when APP_ENV=production")
         if problems:
             raise ValueError("Unsafe startup configuration: " + "; ".join(problems))
 

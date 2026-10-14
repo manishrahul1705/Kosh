@@ -58,8 +58,22 @@ def action_error(db,exc):
     db.commit()
     raise HTTPException(exc.status_code,detail={"rule_ids":[exc.rule],"reason":str(exc)})
 
+_APPROVAL_ATTEMPTS: dict[int, list] = {}
+MAX_APPROVALS_PER_MINUTE = 30
+
+def _check_approval_rate_limit(seller_id: int) -> None:
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(minutes=1)
+    attempts = [t for t in _APPROVAL_ATTEMPTS.get(seller_id, []) if t > cutoff]
+    if len(attempts) >= MAX_APPROVALS_PER_MINUTE:
+        raise HTTPException(status_code=429, detail="Approval rate limit exceeded; please wait.")
+    attempts.append(now)
+    _APPROVAL_ATTEMPTS[seller_id] = attempts
+
 @router.post("/{intent_id}/approve")
 def approve_route(seller_id:int,intent_id:str,payload:ApprovalIn=ApprovalIn(),db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_approval)):
+    _check_approval_rate_limit(seller_id)
     try:
         verified=False
         if payload.otp_code is not None:

@@ -37,6 +37,8 @@ DEV_AUDIENCE = "authenticated"
 TOKEN_LIFETIME = timedelta(hours=8)
 LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost", "testclient"}
 _NAMESPACE = uuid.UUID("6f1d3c52-2a7e-4f0b-9a51-3d6c0e0b7a10")
+_login_attempts: dict[str, list[datetime]] = {}
+MAX_DEV_LOGIN_ATTEMPTS_PER_MIN = 30
 
 
 class DevTokenVerifier:
@@ -131,6 +133,17 @@ def install(app: FastAPI, settings: Settings) -> bool:
         host = request.client.host if request.client else ""
         if host not in LOCAL_HOSTS:
             raise HTTPException(status_code=403, detail="Local test sign-in only works from this computer")
+
+        # In-memory attempt limiter
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(minutes=1)
+        client_key = host or "local"
+        recent = [t for t in _login_attempts.get(client_key, []) if t > cutoff]
+        if len(recent) >= MAX_DEV_LOGIN_ATTEMPTS_PER_MIN:
+            raise HTTPException(status_code=429, detail="Too many dev login attempts; try again later.")
+        recent.append(now)
+        _login_attempts[client_key] = recent
+
         email = body.email.strip().lower()
         token, expires_in = verifier.issue(email)
         identity = verifier.verify(token)

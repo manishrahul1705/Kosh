@@ -107,6 +107,36 @@ def create_app(
                      "deterministic status tracking, automatic seller matching and a per-client portal."),
         lifespan=lifespan,
     )
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi import Request
+    raw_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+    if settings.app_env.strip().lower() == "production":
+        origins = [o for o in raw_origins if o != "*"]
+        if not origins:
+            origins = ["http://localhost:5180"]
+    else:
+        origins = raw_origins if raw_origins else ["*"]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none';"
+        )
+        return response
+
     app.state.settings = settings
     app.state.scheduler = None
     if session_factory is None:

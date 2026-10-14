@@ -28,7 +28,7 @@ class TermsIn(BaseModel):
     model_config=ConfigDict(extra="forbid")
     acceptance_date:date|None=None
     agreement_status:Literal["UNKNOWN","NONE","AGREED"]="UNKNOWN"
-    agreed_days:StrictInt|None=Field(default=None,ge=0,le=365)
+    agreed_days:StrictInt|None=Field(default=None,ge=0,le=45)
     supplier_mse:StrictBool|Literal["UNKNOWN","APPLICABLE","NOT_APPLICABLE"]|None=None
     evidence_ref:str|None=Field(default=None,max_length=160)
     @model_validator(mode="after")
@@ -38,9 +38,10 @@ class TermsIn(BaseModel):
             elif self.supplier_mse=="NOT_APPLICABLE":self.supplier_mse=False
             else:self.supplier_mse=None
         if self.agreement_status=="AGREED":
-            if self.agreed_days is None or self.agreed_days<0:raise ValueError("Agreed days required for documented agreed period")
+            if self.agreed_days is None:raise ValueError("Agreed days required for documented agreed period")
+            if self.agreed_days<0 or self.agreed_days>45:raise ValueError("Agreed payment period cannot exceed 45 days under Section 15 of MSMED Act")
         else:
-            if self.agreed_days is not None:raise ValueError("Agreed days required only for a documented agreement")
+            if self.agreed_days is not None:raise ValueError("Agreed days must not be set when agreement status is not AGREED")
         return self
 class DraftIn(BaseModel):
     model_config=ConfigDict(extra="forbid")
@@ -75,7 +76,7 @@ def terms(seller_id:int,invoice_id:int,payload:TermsIn,db:Session=Depends(get_db
     reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id);invoice=owned_invoice(db,seller_id,invoice_id)
     as_of=date.fromisoformat(get_settings().kosh_as_of_date or date.today().isoformat())
     if payload.acceptance_date is not None:
-        if payload.acceptance_date.isoformat()>as_of.isoformat():raise HTTPException(422,"Acceptance cannot be a future fact")
+        if payload.acceptance_date>as_of:raise HTTPException(422,f"Acceptance date cannot be in the future (after calculation as-of date {as_of.isoformat()})")
         if payload.acceptance_date<invoice.invoice_date:raise HTTPException(422,"Acceptance cannot precede issue date")
     row=db.get(KoshCollectionTerms,invoice.id)
     if row is None:row=KoshCollectionTerms(invoice_id=invoice.id,seller_id=seller_id);db.add(row)

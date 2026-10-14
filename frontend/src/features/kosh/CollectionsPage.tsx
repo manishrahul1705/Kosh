@@ -221,13 +221,13 @@ export const CollectionsPage = () => {
                   required
                   type="number"
                   min="0"
-                  max="365"
-                  placeholder="e.g. 30 (max statutory 45)"
+                  max="45"
+                  placeholder="e.g. 30 (statutory max 45)"
                   className="w-full rounded-md border border-gray-300 p-2 text-sm bg-white"
                   value={days}
                   onChange={(e) => setDays(e.target.value)}
                 />
-                <span className="text-[11px] text-gray-500">Capped at 45 days under Section 15</span>
+                <span className="text-[11px] text-gray-500">Agreed credit cannot exceed 45 days under Section 15</span>
               </div>
             ) : (
               <div>

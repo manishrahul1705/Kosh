@@ -68,20 +68,33 @@ def test_owner_access_non_owner_rejection_and_wrong_seller(client, db):
     assert resp.status_code == 404
 
 
-def test_missing_and_invalid_evidence(client, db):
+def test_missing_and_invalid_evidence(client, db, monkeypatch):
+    from app.core.config import get_settings
+    monkeypatch.setenv("KOSH_AS_OF_DATE", "2026-10-13")
+    get_settings.cache_clear()
     seller, user, invoice, _ = planned_line(db)
     sign_in(client.app, SUBJECT)
     prefix = f"/api/kosh/sellers/{seller.id}/collections"
 
-    # Future acceptance date (> 2026-10-13)
+    # Acceptance date boundary test relative to calculation as_of date (2026-10-13)
+    # Exactly on as_of date: allowed
     resp = client.put(f"{prefix}/{invoice.id}/terms", json={
-        "acceptance_date": "2026-10-15",
+        "acceptance_date": "2026-10-13",
         "agreement_status": "NONE",
         "supplier_mse": True,
-        "evidence_ref": "invalid-future",
+        "evidence_ref": "boundary-on-as-of",
+    })
+    assert resp.status_code == 200, resp.text
+    # Exactly one day after as_of date: rejected with clear validation message
+    resp = client.put(f"{prefix}/{invoice.id}/terms", json={
+        "acceptance_date": "2026-10-14",
+        "agreement_status": "NONE",
+        "supplier_mse": True,
+        "evidence_ref": "boundary-after-as-of",
     })
     assert resp.status_code == 422
     assert "future" in resp.text.lower()
+    assert "2026-10-13" in resp.text
 
     # Acceptance date before invoice issue date
     resp = client.put(f"{prefix}/{invoice.id}/terms", json={
@@ -92,6 +105,57 @@ def test_missing_and_invalid_evidence(client, db):
     })
     assert resp.status_code == 422
     assert "precede" in resp.text.lower()
+
+    # AGREED with agreed_days > 45: explicitly rejected with clear validation message (not silently clamped)
+    resp = client.put(f"{prefix}/{invoice.id}/terms", json={
+        "acceptance_date": "2026-10-01",
+        "agreement_status": "AGREED",
+        "agreed_days": 46,
+        "supplier_mse": True,
+        "evidence_ref": "over-45-days-credit",
+    })
+    assert resp.status_code == 422
+    assert "cannot exceed 45 days" in resp.text or "less than or equal to 45" in resp.text
+
+    # AGREED with agreed_days = 45: valid
+    resp = client.put(f"{prefix}/{invoice.id}/terms", json={
+        "acceptance_date": "2026-10-01",
+        "agreement_status": "AGREED",
+        "agreed_days": 45,
+        "supplier_mse": True,
+        "evidence_ref": "valid-45-days-credit",
+    })
+    assert resp.status_code == 200
+
+    # Switching from AGREED (with agreed_days) to NONE: old agreed_days cannot be retained
+    resp = client.put(f"{prefix}/{invoice.id}/terms", json={
+        "acceptance_date": "2026-10-01",
+        "agreement_status": "NONE",
+        "agreed_days": None,
+        "supplier_mse": True,
+        "evidence_ref": "switched-to-none",
+    })
+    assert resp.status_code == 200
+    db.rollback()
+    terms_row = db.get(KoshCollectionTerms, invoice.id)
+    assert terms_row.agreement_status == "NONE"
+    assert terms_row.agreed_days is None
+
+    # Switching to UNKNOWN: clears agreed_days and stays distinct
+    resp = client.put(f"{prefix}/{invoice.id}/terms", json={
+        "acceptance_date": None,
+        "agreement_status": "UNKNOWN",
+        "agreed_days": None,
+        "supplier_mse": None,
+        "evidence_ref": "switched-to-unknown",
+    })
+    assert resp.status_code == 200
+    db.rollback()
+    terms_row = db.get(KoshCollectionTerms, invoice.id)
+    assert terms_row.agreement_status == "UNKNOWN"
+    assert terms_row.agreed_days is None
+    assert terms_row.acceptance_date is None
+    assert terms_row.supplier_mse is None
 
     # AGREED without agreed_days
     resp = client.put(f"{prefix}/{invoice.id}/terms", json={

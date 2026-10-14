@@ -29,6 +29,11 @@ export interface FinancingPlan { target_probability:string;planning_details:{bas
 export interface ActionIntent { id:string; plan_line_id:number|null; action_type:string; tier:string; params:Record<string,unknown>; status:string; expires_at:string|null; policy_decision:Record<string,unknown> }
 export interface SandboxItem { id:string|number; intent_id:string; status:string; [key:string]:unknown }
 export const koshApi = {
+  reports:(id:number)=>apiClient.get<{role:string;items:{id:number;status:string;evidence_ref:string;pdf_sha256:string}[];recipients:{id:string;label:string}[]}>(`/kosh/sellers/${id}/reports`).then(r=>r.data),
+  generateReport:(id:number)=>apiClient.post(`/kosh/sellers/${id}/reports`).then(r=>r.data),
+  downloadReport:(id:number,report:number)=>apiClient.get<Blob>(`/kosh/sellers/${id}/reports/${report}/pdf`,{responseType:'blob'}).then(r=>r.data),
+  shareReport:(id:number,report:number,recipient:string)=>apiClient.post(`/kosh/sellers/${id}/reports/${report}/share`,{recipient_id:recipient}).then(r=>r.data),
+  grantSharingConsent:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/consents/sharing`,payload).then(r=>r.data),
   chat:(id:number,question:string)=>apiClient.post<{status:string;reason:string;facts:{id:string;text:string;href:string}[]}>(`/kosh/sellers/${id}/chat`,{question}).then(r=>r.data),
   revenueSignal:(id:number)=>apiClient.get<{model:string;reason:string;explainability:string;cash_timing:string;source:string;available_packages:Record<string,boolean>;weeks:{week_index:number;predicted_revenue_paise:number;level_contribution_paise:number;trend_contribution_paise:number}[]}>(`/kosh/sellers/${id}/revenue`).then(r=>r.data),
   intelligence:(id:number)=>apiClient.get<{role:string;items:{counterparty_id:number;name:string;open_receivables_paise:number;median_delay_days:number|null;credit_signal:string;concentration_share:string|null}[];history:{id:number;status:string;evidence_ref:string}[]}>(`/kosh/sellers/${id}/intelligence`).then(r=>r.data),

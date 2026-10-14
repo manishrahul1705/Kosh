@@ -250,9 +250,17 @@ export const PlanPage = () => {
                         ? 'bg-red-100 text-red-800'
                         : 'bg-amber-100 text-amber-800'
                     }`}
+                    title={
+                      item.status === 'MATCHED'
+                        ? 'Recorded business facts meet catalogue criteria. This is not a loan sanction or lender approval.'
+                        : undefined
+                    }
                   >
                     {item.status === 'REVIEW_REQUIRED' ? 'NEEDS REVIEW' : item.status}
                   </span>
+                  {item.status === 'MATCHED' && (
+                    <small className="block text-[10px] text-gray-500">Meets criteria; not lender approval</small>
+                  )}
                 </td>
                 <td className="py-2">{formatPaiseINR(item.amount_paise ?? item.max_amount_paise)}</td>
                 <td className="py-2">
@@ -277,7 +285,7 @@ export const PlanPage = () => {
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Financing eligibility evidence</h3>
             <p className="text-xs text-gray-600">
-              Record business facts to verify eligibility against scheme criteria. Owner assertions are recorded with supporting references and do not constitute lender approval or move money.
+              Record business facts to verify eligibility against scheme criteria. MATCHED indicates recorded facts meet scheme criteria; it does not constitute lender approval, loan sanction, or guaranteed funding.
             </p>
           </div>
           {evidenceQuery.data?.as_of && (
@@ -312,16 +320,22 @@ export const PlanPage = () => {
                       </div>
                       <span
                         className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                          c.status === 'CONFIRMED'
+                          c.status === 'CONFIRMED' || c.status === 'VERIFIED' || c.status === 'LINKED_DOCUMENT'
                             ? 'bg-green-100 text-green-700'
                             : c.status === 'PROPOSAL'
                             ? 'bg-blue-100 text-blue-700'
                             : c.status === 'UNSUPPORTED'
                             ? 'bg-purple-100 text-purple-700'
+                            : c.status === 'DECLARATION_ONLY'
+                            ? 'bg-amber-100 text-amber-800'
                             : 'bg-amber-100 text-amber-700'
                         }`}
                       >
-                        {c.status}
+                        {c.status === 'DECLARATION_ONLY'
+                          ? 'DECLARATION ONLY (NEEDS DOC)'
+                          : c.status === 'NEEDS_DOCUMENTATION'
+                          ? 'NEEDS DOCUMENTATION'
+                          : c.status}
                       </span>
                     </li>
                   ))}
@@ -454,9 +468,9 @@ export const PlanPage = () => {
                 disabled={!isOwner}
                 className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
               >
-                <option value="UNKNOWN">Unknown / Certificate absent</option>
-                <option value="YES">Yes (Registration certificate verified / uploaded)</option>
-                <option value="NO">No (Not available)</option>
+                <option value="UNKNOWN">Unknown / Unrecorded</option>
+                <option value="YES">Yes (Registration certificate document uploaded / verified)</option>
+                <option value="NO">No (Not available — needs documentation)</option>
               </select>
             </div>
 

@@ -10,7 +10,7 @@ from app.api.seller_authorization import AuthorizedSeller,require_seller_edit,re
 from app.audit.ledger import append_event
 from app.core.config import get_settings
 from app.database.models import SellerRevision,SellerAttribute,SellerDocument
-from app.database.kosh_models import KoshFinancingEvaluation,KoshFinancingResult,KoshPlan,KoshPlanLine,KoshForecastRun
+from app.database.kosh_models import KoshCounterparty,KoshFinancingEvaluation,KoshFinancingResult,KoshPlan,KoshPlanLine,KoshForecastRun
 from app.finance.plan import propose_plan
 from app.finance.costs import financing_quote
 from app.lending.catalogue import load_catalogue
@@ -37,7 +37,7 @@ def options(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Dep
         if not candidates:continue
         matched=[x for x in candidates if x["status"]=="MATCHED"]
         selected=(matched or [x for x in candidates if x["status"]=="REVIEW_REQUIRED"] or candidates)[0]
-        if product_id in {"COLLECTIONS_PUSH","TREDS_INVOICE_DISCOUNTING"}:
+        if product_id in {"COLLECTIONS_PUSH","TREDS_INVOICE_DISCOUNTING","SUPPLIER_TERM_EXTENSION"}:
             amount=min(product["max_amount_paise"],sum(x["max_amount_paise"] for x in matched))
             selected={**selected,**financing_quote(product,amount),"max_amount_paise":amount,"invoice_eligibility":[{"scope":x["scope"],"status":x["status"],"eligible":x["status"]=="MATCHED","max_amount_paise":x["max_amount_paise"],"reasons":x["reasons"],"evidence":x["evidence"]} for x in candidates if x["scope"]]}
         grouped.append(selected)
@@ -179,6 +179,7 @@ class FinancingEvidenceIn(BaseModel):
     tarun_availed_and_repaid: bool | None = None
     udyam_certificate_present: bool | None = None
     gem_po_document: bool | None = None
+    supplier_id: int | None = None
     supplier_relationship_months: int | None = Field(default=None, ge=0)
     supplier_on_time_ratio: float | None = Field(default=None, ge=0.0, le=1.0)
     supplier_extension_status: str | None = Field(default=None, pattern="^(PROPOSED|CONFIRMED|UNKNOWN)$")
@@ -205,14 +206,25 @@ def get_financing_evidence(seller_id: int, db: Session = Depends(get_db), access
         try: return cast_fn(v)
         except (ValueError, TypeError): return None
 
-    udyam_cert_doc = "UDYAM_CERTIFICATE" in docs
+    udyam_doc = db.scalar(select(SellerDocument).where(SellerDocument.revision_id == rev.id, SellerDocument.document_type == "UDYAM_CERTIFICATE")) if rev else None
+    if udyam_doc:
+        udyam_status = "VERIFIED" if udyam_doc.status == "VERIFIED" else "LINKED_DOCUMENT"
+        udyam_val = True
+    elif a.get("udyam_certificate_present") is not None:
+        udyam_status = "DECLARATION_ONLY"
+        udyam_val = _bool_or_none("udyam_certificate_present")
+    else:
+        udyam_status = "NEEDS_DOCUMENTATION"
+        udyam_val = None
+
     evidence = {
         "non_corporate": _bool_or_none("non_corporate"),
         "non_farm": _bool_or_none("non_farm"),
         "income_generating": _bool_or_none("income_generating"),
         "micro_small_enterprise": _bool_or_none("micro_small_enterprise"),
         "tarun_availed_and_repaid": _bool_or_none("tarun_availed_and_repaid"),
-        "udyam_certificate_present": True if udyam_cert_doc else _bool_or_none("udyam_certificate_present"),
+        "udyam_certificate_present": udyam_val,
+        "udyam_certificate_status": udyam_status,
         "gem_po_document": True if ("GEM_PO" in docs or "PURCHASE_ORDER" in docs) else (_bool_or_none("gem_po_document") if a.get("gem_po_document") is not None else _bool_or_none("document_present")),
         "supplier_relationship_months": _num_or_none("supplier_relationship_months", int),
         "supplier_on_time_ratio": _num_or_none("supplier_on_time_ratio", float),
@@ -238,7 +250,7 @@ def get_financing_evidence(seller_id: int, db: Session = Depends(get_db), access
             "display_name": "CGTMSE-backed working capital loan",
             "product_support_status": "IMPLEMENTED",
             "criteria": [
-                {"criterion": "UDYAM_CERTIFICATE_PRESENT", "label": "Udyam Registration Certificate", "status": "CONFIRMED" if evidence["udyam_certificate_present"] is not None else "MISSING", "value": evidence["udyam_certificate_present"], "evidence_required": "Uploaded Udyam Certificate document or verified certificate reference", "supported": True},
+                {"criterion": "UDYAM_CERTIFICATE_PRESENT", "label": "Udyam Registration Certificate", "status": udyam_status, "value": evidence["udyam_certificate_present"], "evidence_required": "Uploaded Udyam Certificate document or independently verified certificate reference (owner declaration alone is insufficient)", "supported": True},
             ],
         },
         {
@@ -289,6 +301,19 @@ def set_financing_evidence(seller_id: int, payload: FinancingEvidenceIn, db: Ses
         db.add(rev)
         db.flush()
 
+    # Handle fixture document artifacts
+    if payload.apply_fixture == "FICT-MATCH-001":
+        doc = db.scalar(select(SellerDocument).where(SellerDocument.revision_id == rev.id, SellerDocument.document_type == "UDYAM_CERTIFICATE"))
+        if not doc:
+            doc = SellerDocument(revision_id=rev.id, document_type="UDYAM_CERTIFICATE", display_name="Udyam Certificate", filename="fict_udyam_cert_verified_2026.pdf", status="VERIFIED")
+            db.add(doc)
+        else:
+            doc.status = "VERIFIED"
+    elif payload.apply_fixture:
+        # Clear fixture document if applying other fixtures
+        for d in db.scalars(select(SellerDocument).where(SellerDocument.revision_id == rev.id, SellerDocument.document_type == "UDYAM_CERTIFICATE", SellerDocument.filename == "fict_udyam_cert_verified_2026.pdf")).all():
+            db.delete(d)
+
     now_iso = utcnow().isoformat()
     ref = data.get("evidence_ref") or "Declared by owner"
     context = f"Owner-entered evidence; ref: {ref}; recorded: {now_iso}; user: {access.user_id}"
@@ -315,32 +340,54 @@ def set_financing_evidence(seller_id: int, payload: FinancingEvidenceIn, db: Ses
                 attr = db.scalar(select(SellerAttribute).where(SellerAttribute.revision_id == rev.id, SellerAttribute.key == k))
                 if attr: db.delete(attr)
 
+    supplier_id = payload.supplier_id
+    all_suppliers = db.scalars(select(KoshCounterparty).where(KoshCounterparty.seller_id == seller_id, KoshCounterparty.kind == "SUPPLIER")).all()
+    if supplier_id is None and len(all_suppliers) == 1:
+        supplier_id = all_suppliers[0].id
+
     if "supplier_relationship_months" in data:
         v = data["supplier_relationship_months"]
         if v is not None:
             _set_attr("supplier_relationship_months", "NUMBER", number=float(v))
+            if supplier_id is not None:
+                _set_attr(f"supplier_{supplier_id}_relationship_months", "NUMBER", number=float(v))
         elif payload.apply_fixture or "supplier_relationship_months" in payload.__fields_set__:
             attr = db.scalar(select(SellerAttribute).where(SellerAttribute.revision_id == rev.id, SellerAttribute.key == "supplier_relationship_months"))
             if attr: db.delete(attr)
+            if supplier_id is not None:
+                attr_s = db.scalar(select(SellerAttribute).where(SellerAttribute.revision_id == rev.id, SellerAttribute.key == f"supplier_{supplier_id}_relationship_months"))
+                if attr_s: db.delete(attr_s)
 
     if "supplier_on_time_ratio" in data:
         v = data["supplier_on_time_ratio"]
         if v is not None:
             _set_attr("supplier_on_time_ratio", "NUMBER", number=float(v))
+            if supplier_id is not None:
+                _set_attr(f"supplier_{supplier_id}_on_time_ratio", "NUMBER", number=float(v))
         elif payload.apply_fixture or "supplier_on_time_ratio" in payload.__fields_set__:
             attr = db.scalar(select(SellerAttribute).where(SellerAttribute.revision_id == rev.id, SellerAttribute.key == "supplier_on_time_ratio"))
             if attr: db.delete(attr)
+            if supplier_id is not None:
+                attr_s = db.scalar(select(SellerAttribute).where(SellerAttribute.revision_id == rev.id, SellerAttribute.key == f"supplier_{supplier_id}_on_time_ratio"))
+                if attr_s: db.delete(attr_s)
 
     if "supplier_extension_status" in data:
         v = data["supplier_extension_status"]
         if v is not None:
             _set_attr("supplier_extension_status", "TEXT", text=str(v).upper())
+            if supplier_id is not None:
+                _set_attr(f"supplier_{supplier_id}_extension_status", "TEXT", text=str(v).upper())
         elif payload.apply_fixture or "supplier_extension_status" in payload.__fields_set__:
             attr = db.scalar(select(SellerAttribute).where(SellerAttribute.revision_id == rev.id, SellerAttribute.key == "supplier_extension_status"))
             if attr: db.delete(attr)
+            if supplier_id is not None:
+                attr_s = db.scalar(select(SellerAttribute).where(SellerAttribute.revision_id == rev.id, SellerAttribute.key == f"supplier_{supplier_id}_extension_status"))
+                if attr_s: db.delete(attr_s)
 
     _set_attr("financing_evidence_ref", "TEXT", text=ref)
     _set_attr("financing_evidence_recorded_at", "TEXT", text=now_iso)
+    if supplier_id is not None:
+        _set_attr(f"supplier_{supplier_id}_evidence_ref", "TEXT", text=ref)
 
     append_event(
         db,

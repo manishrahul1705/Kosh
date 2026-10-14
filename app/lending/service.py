@@ -22,17 +22,20 @@ def _attribute_sources(db,seller_id):
     for row in db.scalars(select(SellerAttribute).where(SellerAttribute.revision_id==rev.id)):
         is_owner=bool(row.context and "owner" in row.context.lower())
         sources[row.key]={
-            "origin":"OWNER_RECORDED" if is_owner else "SELF_DECLARED",
+            "origin":"OWNER_DECLARATION" if is_owner else "SELF_DECLARED",
+            "strength":"OWNER_DECLARATION",
             "reference":row.context or "Business profile",
             "recorded_at":row.created_at.isoformat() if row.created_at else None,
             "verified":False,
         }
     for doc in db.scalars(select(SellerDocument).where(SellerDocument.revision_id==rev.id)):
+        is_verified=(doc.status=="VERIFIED")
         sources[doc.document_type]={
             "origin":"DOCUMENT",
+            "strength":"INDEPENDENTLY_VERIFIED" if is_verified else "LINKED_DOCUMENT",
             "reference":doc.filename or doc.display_name,
             "recorded_at":doc.created_at.isoformat() if doc.created_at else None,
-            "verified":doc.status=="VERIFIED",
+            "verified":is_verified,
         }
     return sources
 
@@ -40,10 +43,38 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
     run=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if not run:raise ValueError("No successful forecast")
     rev,a,docs=_attributes(db,seller_id);sources=_attribute_sources(db,seller_id);peak=max((w.expected_shortfall_paise for w in db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id))),default=0)
-    udyam_cert_attr=a.get("udyam_certificate_present")
-    udyam_cert_val=True if ("UDYAM_CERTIFICATE" in docs or str(udyam_cert_attr).lower() in {"true","1","yes"}) else False if str(udyam_cert_attr).lower() in {"false","0","no"} else None
-    doc_val=a.get("gem_po_document") if a.get("gem_po_document") is not None else a.get("document_present")
-    doc_present=True if ("GEM_PO" in docs or "PURCHASE_ORDER" in docs or str(doc_val).lower() in {"true","1","yes"}) else False if str(doc_val).lower() in {"false","0","no"} else None
+    
+    udyam_doc=db.scalar(select(SellerDocument).where(SellerDocument.revision_id==rev.id,SellerDocument.document_type=="UDYAM_CERTIFICATE")) if rev else None
+    if udyam_doc:
+        udyam_strength="INDEPENDENTLY_VERIFIED" if udyam_doc.status=="VERIFIED" else "LINKED_DOCUMENT"
+        udyam_source=sources.get("UDYAM_CERTIFICATE")
+        udyam_cert_val=True
+    elif a.get("udyam_certificate_present") is not None:
+        udyam_strength="OWNER_DECLARATION"
+        udyam_source=sources.get("udyam_certificate_present")
+        s=str(a.get("udyam_certificate_present")).lower()
+        udyam_cert_val=True if s in {"true","1","yes"} else False if s in {"false","0","no"} else None
+    else:
+        udyam_strength=None
+        udyam_source=None
+        udyam_cert_val=None
+
+    po_doc=db.scalar(select(SellerDocument).where(SellerDocument.revision_id==rev.id,SellerDocument.document_type.in_(["GEM_PO","PURCHASE_ORDER"]))) if rev else None
+    if po_doc:
+        po_strength="INDEPENDENTLY_VERIFIED" if po_doc.status=="VERIFIED" else "LINKED_DOCUMENT"
+        po_source=sources.get(po_doc.document_type)
+        doc_present=True
+    elif a.get("gem_po_document") is not None or a.get("document_present") is not None:
+        raw_val=a.get("gem_po_document") if a.get("gem_po_document") is not None else a.get("document_present")
+        po_strength="OWNER_DECLARATION"
+        po_source=sources.get("gem_po_document") or sources.get("document_present")
+        s=str(raw_val).lower()
+        doc_present=True if s in {"true","1","yes"} else False if s in {"false","0","no"} else None
+    else:
+        po_strength=None
+        po_source=None
+        doc_present=None
+
     rel_months=None
     if a.get("supplier_relationship_months") is not None:
         try:rel_months=int(a["supplier_relationship_months"])
@@ -59,7 +90,8 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
         "UDYAM_CATEGORY_IN":a.get("udyam_category"),
         "UDYAM_CATEGORY_IN_SOURCE":sources.get("udyam_category"),
         "UDYAM_CERTIFICATE_PRESENT":udyam_cert_val,
-        "UDYAM_CERTIFICATE_PRESENT_SOURCE":sources.get("udyam_certificate_present") or sources.get("UDYAM_CERTIFICATE"),
+        "UDYAM_CERTIFICATE_PRESENT_STRENGTH":udyam_strength,
+        "UDYAM_CERTIFICATE_PRESENT_SOURCE":udyam_source,
         "GST_REGISTERED":True if a.get("gstin") else None,
         "GST_REGISTERED_SOURCE":sources.get("gstin"),
         "BUSINESS_VINTAGE_MIN_MONTHS":None,
@@ -72,8 +104,11 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
         "SUPPLIER_RELATIONSHIP_MIN_MONTHS_SOURCE":sources.get("supplier_relationship_months"),
         "SUPPLIER_ON_TIME_RATIO_MIN":on_time_ratio,
         "SUPPLIER_ON_TIME_RATIO_MIN_SOURCE":sources.get("supplier_on_time_ratio"),
+        "SUPPLIER_AGREEMENT_CONFIRMED":str(a.get("supplier_extension_status") or "").upper() or None,
+        "SUPPLIER_AGREEMENT_CONFIRMED_SOURCE":sources.get("supplier_extension_status"),
         "DOCUMENT_PRESENT":doc_present,
-        "DOCUMENT_PRESENT_SOURCE":sources.get("gem_po_document") or sources.get("document_present") or sources.get("GEM_PO"),
+        "DOCUMENT_PRESENT_STRENGTH":po_strength,
+        "DOCUMENT_PRESENT_SOURCE":po_source,
     }
     if a.get("incorporation_date"):
         try:
@@ -97,6 +132,43 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
                 local={**facts,"BUYER_TREDS_ONBOARDED":party.treds_onboarded,"INVOICE_ACCEPTED":invoice.accepted_by_buyer,"INVOICE_NOT_OVERDUE":invoice.due_date>=as_of,"RECEIVABLE_OVERDUE_OR_DUE_WITHIN_DAYS":(invoice.due_date-as_of).days,"INVOICE_DUE_AFTER_FUNDING":invoice.due_date>funding,"INVOICE_EVIDENCE_VERIFIED":None if invoice.status=="REVIEW" else True,"INVOICE_OPEN_AMOUNT_POSITIVE":remaining>0,"COLLECTION_REPEAT_ATTEMPT":reminder_sent(db,seller_id,invoice.id),"COLLECTION_REPEAT_OUTCOME_PRESENT":None}
                 cap=remaining if product["id"]=="TREDS_INVOICE_DISCOUNTING" else remaining//2
                 scopes.append((f"invoice:{invoice.id}",local,cap))
+        elif product["id"]=="SUPPLIER_TERM_EXTENSION":
+            scopes=[]
+            payables=db.execute(select(KoshInvoice,KoshCounterparty).join(KoshCounterparty,KoshCounterparty.id==KoshInvoice.counterparty_id).where(KoshInvoice.seller_id==seller_id,KoshInvoice.direction=="PAYABLE",KoshInvoice.status!="PAID").order_by(KoshInvoice.due_date,KoshInvoice.id)).all()
+            supplier_ids={party.id for _,party in payables}
+            for invoice,party in payables:
+                remaining=max(0,invoice.amount_paise-(invoice.paid_amount_paise or 0))
+                s_rel=a.get(f"supplier_{party.id}_relationship_months")
+                s_on_time=a.get(f"supplier_{party.id}_on_time_ratio")
+                s_ext=a.get(f"supplier_{party.id}_extension_status")
+                if s_rel is None and len(supplier_ids)==1:
+                    s_rel=a.get("supplier_relationship_months")
+                if s_on_time is None and len(supplier_ids)==1:
+                    s_on_time=a.get("supplier_on_time_ratio")
+                if s_ext is None and len(supplier_ids)==1:
+                    s_ext=a.get("supplier_extension_status")
+                rel_m=int(s_rel) if s_rel is not None else None
+                on_t=float(s_on_time) if s_on_time is not None else None
+                ext_st=str(s_ext).upper() if s_ext is not None else "UNKNOWN"
+                supplier_src=sources.get(f"supplier_{party.id}_relationship_months") or (sources.get("supplier_relationship_months") if len(supplier_ids)==1 else None) or {
+                    "origin":"OWNER_DECLARATION",
+                    "strength":"OWNER_DECLARATION",
+                    "reference":f"Supplier: {party.name}",
+                    "recorded_at":None,
+                    "verified":False,
+                }
+                local={
+                    **facts,
+                    "SUPPLIER_RELATIONSHIP_MIN_MONTHS":rel_m,
+                    "SUPPLIER_RELATIONSHIP_MIN_MONTHS_SOURCE":supplier_src,
+                    "SUPPLIER_ON_TIME_RATIO_MIN":on_t,
+                    "SUPPLIER_ON_TIME_RATIO_MIN_SOURCE":supplier_src,
+                    "SUPPLIER_AGREEMENT_CONFIRMED":ext_st,
+                    "SUPPLIER_AGREEMENT_CONFIRMED_SOURCE":supplier_src,
+                    "INVOICE_EVIDENCE_VERIFIED":True,
+                    "INVOICE_OPEN_AMOUNT_POSITIVE":remaining>0,
+                }
+                scopes.append((f"invoice:{invoice.id}",local,remaining))
         if not scopes:scopes=[(None,facts,0)]
         for scope,local,cap in scopes:
             clauses=list(product["criteria"])
@@ -114,7 +186,5 @@ def run_evaluation(db,seller_id:int,as_of:date)->KoshFinancingEvaluation:
                 result=evaluate_product(product,local,as_of=as_of)
             if product["id"]=="MUDRA_LOAN" and facts["TARUN_AVAILED_AND_REPAID"] is not True:cap=min(cap,100_000_000)
             rate=financing_quote(product,min(int(cap),int(product["max_amount_paise"])))["effective_annual_rate"]
-            db.add(KoshFinancingResult(evaluation_id=evaluation.id,product_id=product["id"],scope=scope,status=result["status"],max_amount_paise=min(int(cap),int(product["max_amount_paise"])),effective_annual_rate=rate,arrival_business_days=product["arrival_business_days"],reasons=result["reasons"],evidence=[r.get("business_evidence") for r in result["reasons"] if r.get("business_evidence")]+([{"invoice_id":invoice.id,"invoice_number":invoice.invoice_number,"buyer":party.name,"due_date":invoice.due_date.isoformat()}] if scope and (invoice:=db.get(KoshInvoice,int(scope.split(":")[1]))) and (party:=db.get(KoshCounterparty,invoice.counterparty_id)) else [])))
+            db.add(KoshFinancingResult(evaluation_id=evaluation.id,product_id=product["id"],scope=scope,status=result["status"],max_amount_paise=min(int(cap),int(product["max_amount_paise"])),effective_annual_rate=rate,arrival_business_days=product["arrival_business_days"],reasons=result["reasons"],evidence=[r.get("business_evidence") for r in result["reasons"] if r.get("business_evidence")]+([{"invoice_id":invoice.id,"invoice_number":invoice.invoice_number,"buyer":party.name,"party":party.name,"counterparty_id":party.id,"direction":invoice.direction,"due_date":invoice.due_date.isoformat()}] if scope and (invoice:=db.get(KoshInvoice,int(scope.split(":")[1]))) and (party:=db.get(KoshCounterparty,invoice.counterparty_id)) else [])))
     return evaluation
-
-

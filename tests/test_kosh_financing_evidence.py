@@ -19,7 +19,7 @@ from app.database.kosh_models import (
     KoshFinancingEvaluation,
     KoshFinancingResult,
 )
-from app.database.models import SellerRevision, SellerAttribute
+from app.database.models import SellerRevision, SellerAttribute, SellerDocument
 from app.actions.planner import create_from_plan_line
 from app.audit.verify import verify_chain
 from tests.test_kosh_stage4_intents import planned_line, SUBJECT
@@ -55,7 +55,7 @@ def _setup_seller_with_forecast_and_plan(db, *, name="Financing Seller", subject
             expected_outflow_committed_paise=300000,
             expected_outflow_forecast_paise=0,
             prob_below_buffer=0.10,
-            expected_shortfall_paise=40000000,  # 4 lakh (Kishore Mudra band)
+            expected_shortfall_paise=40000000,  # 4 lakh (Kishore Mudra band, cap 5 lakh)
         ))
         db.flush()
 
@@ -152,6 +152,11 @@ def test_all_three_eligibility_outcomes_and_criterion_reasons(client, db):
     assert any(c["criterion"] == "NON_CORPORATE" and c["status"] == "MISSING" for c in mudra_missing["criteria"])
 
     # Outcome 2: MATCHED (Complete evidence satisfying scheme criteria)
+    # Provide linked verified document for Udyam certificate
+    rev = db.scalar(select(SellerRevision).where(SellerRevision.seller_id == seller.id, SellerRevision.is_active.is_(True)).order_by(SellerRevision.revision_number.desc()).limit(1))
+    db.add(SellerDocument(revision_id=rev.id, document_type="UDYAM_CERTIFICATE", display_name="Udyam Certificate", filename="udyam_cert_verified.pdf", status="VERIFIED"))
+    db.commit()
+
     resp = client.put(prefix, json={
         "non_corporate": True,
         "non_farm": True,
@@ -178,7 +183,9 @@ def test_all_three_eligibility_outcomes_and_criterion_reasons(client, db):
     assert non_corp_reason["status"] == "MATCHED"
     assert non_corp_reason["reason_code"] == "CRITERION_MET"
     assert non_corp_reason["business_evidence"]["value"] is True
-    assert non_corp_reason["business_evidence"]["source"]["origin"] == "OWNER_RECORDED"
+    assert non_corp_reason["business_evidence"]["source"]["origin"] in {"OWNER_DECLARATION", "OWNER_RECORDED"}
+    assert non_corp_reason["business_evidence"]["source"]["verified"] is False
+    assert non_corp_reason["business_evidence"]["source"]["strength"] == "OWNER_DECLARATION"
 
     assert cgtmse["status"] == "MATCHED"
     assert supplier_ext["status"] == "MATCHED"
@@ -210,6 +217,194 @@ def test_all_three_eligibility_outcomes_and_criterion_reasons(client, db):
     rel_reason = next(r for r in supplier_failed["reasons"] if r["criterion"] == "SUPPLIER_RELATIONSHIP_MIN_MONTHS")
     assert rel_reason["status"] == "NOT_MATCHED"
     assert rel_reason["reason_code"] == "CRITERION_FAILED"
+
+
+def test_evidence_strength_and_missing_document_boundary(client, db):
+    """Test evidence strength levels and confirm certificate absence means needs documentation, not ineligibility."""
+    seller, user, _, _, _ = _setup_seller_with_forecast_and_plan(db)
+    sign_in(client.app, SUBJECT)
+    prefix = f"/api/kosh/sellers/{seller.id}/financing/evidence"
+
+    # 1. Owner declaration alone (udyam_certificate_present=true with free-text note, NO linked document)
+    resp = client.put(prefix, json={
+        "udyam_certificate_present": True,
+        "evidence_ref": "Owner free-text assertion without document",
+    })
+    assert resp.status_code == 200
+    options = resp.json()["options"]
+    cgtmse = next(p for p in options if p["product_id"] == "CGTMSE_BACKED_WC_LOAN")
+    # Must remain REVIEW_REQUIRED because owner declaration is insufficient for document requirement
+    assert cgtmse["status"] == "REVIEW_REQUIRED"
+    cert_reason = next(r for r in cgtmse["reasons"] if r["criterion"] == "UDYAM_CERTIFICATE_PRESENT")
+    assert cert_reason["status"] == "REVIEW_REQUIRED"
+    assert cert_reason["reason_code"] == "NEEDS_DOCUMENTATION"
+    assert cert_reason["business_evidence"]["strength"] == "OWNER_DECLARATION"
+    assert cert_reason["business_evidence"]["source"]["verified"] is False
+    assert "Owner declaration alone does not satisfy" in cert_reason["reason"]
+
+    # 2. Absence of certificate (udyam_certificate_present=false)
+    # Must remain REVIEW_REQUIRED (needs documentation), NOT NOT_MATCHED (not company ineligibility)
+    resp = client.put(prefix, json={
+        "udyam_certificate_present": False,
+        "evidence_ref": "Certificate not available",
+    })
+    assert resp.status_code == 200
+    options = resp.json()["options"]
+    cgtmse = next(p for p in options if p["product_id"] == "CGTMSE_BACKED_WC_LOAN")
+    assert cgtmse["status"] == "REVIEW_REQUIRED"
+    cert_reason = next(r for r in cgtmse["reasons"] if r["criterion"] == "UDYAM_CERTIFICATE_PRESENT")
+    assert cert_reason["status"] == "REVIEW_REQUIRED"
+    assert cert_reason["reason_code"] == "NEEDS_DOCUMENTATION"
+    assert "Needs documentation" in cert_reason["reason"]
+
+    # 3. Linked verified document satisfies the requirement
+    rev = db.scalar(select(SellerRevision).where(SellerRevision.seller_id == seller.id, SellerRevision.is_active.is_(True)).order_by(SellerRevision.revision_number.desc()).limit(1))
+    db.add(SellerDocument(revision_id=rev.id, document_type="UDYAM_CERTIFICATE", display_name="Udyam Certificate", filename="udyam_doc_verified.pdf", status="VERIFIED"))
+    db.commit()
+
+    resp = client.put(prefix, json={
+        "evidence_ref": "Document verified on file",
+    })
+    assert resp.status_code == 200
+    options = resp.json()["options"]
+    cgtmse = next(p for p in options if p["product_id"] == "CGTMSE_BACKED_WC_LOAN")
+    assert cgtmse["status"] == "MATCHED"
+    cert_reason = next(r for r in cgtmse["reasons"] if r["criterion"] == "UDYAM_CERTIFICATE_PRESENT")
+    assert cert_reason["status"] == "MATCHED"
+    assert cert_reason["reason_code"] == "CRITERION_MET"
+    assert cert_reason["business_evidence"]["strength"] == "INDEPENDENTLY_VERIFIED"
+    assert cert_reason["business_evidence"]["source"]["verified"] is True
+
+
+def test_supplier_scope_isolation_and_proposal_distinction(client, db):
+    """Test supplier scope isolation: Supplier A evidence must never qualify Supplier B, and proposals stay unconfirmed."""
+    seller, user, _, payable_a, _ = _setup_seller_with_forecast_and_plan(db)
+    sign_in(client.app, SUBJECT)
+    prefix = f"/api/kosh/sellers/{seller.id}/financing/evidence"
+
+    # Add a second supplier and second payable
+    supplier_b = KoshCounterparty(seller_id=seller.id, name="Secondary Components Supplier", kind="SUPPLIER", treds_onboarded=False)
+    db.add(supplier_b)
+    db.flush()
+    payable_b = KoshInvoice(
+        seller_id=seller.id,
+        counterparty_id=supplier_b.id,
+        direction="PAYABLE",
+        invoice_number=f"BILL-SUPPLIER-B-002",
+        invoice_date=date(2026, 10, 5),
+        due_date=date(2026, 10, 30),
+        amount_paise=3000000,
+        status="OPEN",
+        accepted_by_buyer=True,
+    )
+    db.add(payable_b)
+    db.commit()
+
+    due_a_orig = payable_a.due_date
+    due_b_orig = payable_b.due_date
+
+    # 1. Record confirmed evidence ONLY for Supplier A
+    resp = client.put(prefix, json={
+        "supplier_id": payable_a.counterparty_id,
+        "supplier_relationship_months": 24,
+        "supplier_on_time_ratio": 0.95,
+        "supplier_extension_status": "CONFIRMED",
+        "evidence_ref": "Signed bilateral addendum with Supplier A",
+    })
+    assert resp.status_code == 200
+    options = resp.json()["options"]
+    supplier_ext = next(p for p in options if p["product_id"] == "SUPPLIER_TERM_EXTENSION")
+    elig = supplier_ext.get("invoice_eligibility", [])
+    assert len(elig) == 2
+
+    scope_a = next(x for x in elig if x["scope"] == f"invoice:{payable_a.id}")
+    scope_b = next(x for x in elig if x["scope"] == f"invoice:{payable_b.id}")
+
+    # Supplier A's invoice qualifies
+    assert scope_a["status"] == "MATCHED"
+    assert scope_a["eligible"] is True
+
+    # Supplier B's invoice does NOT qualify (evidence for Supplier A does not qualify Supplier B)
+    assert scope_b["status"] == "REVIEW_REQUIRED"
+    assert scope_b["eligible"] is False
+    assert any(r["criterion"] == "SUPPLIER_AGREEMENT_CONFIRMED" and r["status"] == "REVIEW_REQUIRED" for r in scope_b["reasons"])
+
+    # 2. Update Supplier A to PROPOSED
+    resp = client.put(prefix, json={
+        "supplier_id": payable_a.counterparty_id,
+        "supplier_relationship_months": 24,
+        "supplier_on_time_ratio": 0.95,
+        "supplier_extension_status": "PROPOSED",
+        "evidence_ref": "Proposal email sent to Supplier A",
+    })
+    assert resp.status_code == 200
+    options = resp.json()["options"]
+    supplier_ext = next(p for p in options if p["product_id"] == "SUPPLIER_TERM_EXTENSION")
+    scope_a = next(x for x in supplier_ext["invoice_eligibility"] if x["scope"] == f"invoice:{payable_a.id}")
+
+    # Proposal remains REVIEW_REQUIRED; proposal alone does NOT match
+    assert scope_a["status"] == "REVIEW_REQUIRED"
+    assert scope_a["eligible"] is False
+    assert any(r["reason_code"] == "PROPOSAL_PENDING_CONFIRMATION" for r in scope_a["reasons"])
+    assert supplier_ext["status"] == "REVIEW_REQUIRED"
+
+    # 3. Confirm payable dates are strictly unchanged
+    db.refresh(payable_a)
+    db.refresh(payable_b)
+    assert payable_a.due_date == due_a_orig
+    assert payable_b.due_date == due_b_orig
+
+
+def test_mudra_category_band_boundaries(db):
+    """Test official PMMY primary source band boundaries: Shishu (<= 50k), Kishore (> 50k to 5L), Tarun (> 5L to 10L), Tarun Plus (> 10L to 20L)."""
+    from app.lending.evaluator import criterion_result
+
+    as_of = date(2026, 10, 13)
+    shishu_crit = {"type": "MUDRA_CATEGORY_AMOUNT", "category": "Shishu", "min_exclusive": 0, "max": 5000000}
+    kishore_crit = {"type": "MUDRA_CATEGORY_AMOUNT", "category": "Kishore", "min_exclusive": 5000000, "max": 50000000}
+    tarun_crit = {"type": "MUDRA_CATEGORY_AMOUNT", "category": "Tarun", "min_exclusive": 50000000, "max": 100000000}
+    tarun_plus_crit = {"type": "MUDRA_CATEGORY_AMOUNT", "category": "Tarun Plus", "min_exclusive": 100000000, "max": 200000000}
+
+    # Boundary 1: INR 50,000 (5,000,000 paise) -> Shishu selected, Kishore not applicable
+    r_shishu = criterion_result(shishu_crit, {"AMOUNT_WITHIN_LIMIT": 5000000}, as_of=as_of)
+    r_kishore = criterion_result(kishore_crit, {"AMOUNT_WITHIN_LIMIT": 5000000}, as_of=as_of)
+    assert r_shishu["status"] == "MATCHED" and r_shishu["reason_code"] == "CATEGORY_SELECTED"
+    assert r_kishore["status"] == "MATCHED" and r_kishore["reason_code"] == "NOT_APPLICABLE"
+
+    # Boundary 2: INR 50,000.01 (5,000,001 paise) -> Kishore selected, Shishu not applicable
+    r_shishu = criterion_result(shishu_crit, {"AMOUNT_WITHIN_LIMIT": 5000001}, as_of=as_of)
+    r_kishore = criterion_result(kishore_crit, {"AMOUNT_WITHIN_LIMIT": 5000001}, as_of=as_of)
+    assert r_shishu["status"] == "MATCHED" and r_shishu["reason_code"] == "NOT_APPLICABLE"
+    assert r_kishore["status"] == "MATCHED" and r_kishore["reason_code"] == "CATEGORY_SELECTED"
+
+    # Boundary 3: INR 5,00,000 (50,000,000 paise) -> Kishore selected, Tarun not applicable
+    r_kishore = criterion_result(kishore_crit, {"AMOUNT_WITHIN_LIMIT": 50000000}, as_of=as_of)
+    r_tarun = criterion_result(tarun_crit, {"AMOUNT_WITHIN_LIMIT": 50000000}, as_of=as_of)
+    assert r_kishore["status"] == "MATCHED" and r_kishore["reason_code"] == "CATEGORY_SELECTED"
+    assert r_tarun["status"] == "MATCHED" and r_tarun["reason_code"] == "NOT_APPLICABLE"
+
+    # Boundary 4: INR 5,00,000.01 (50,000,001 paise) -> Tarun selected, Kishore not applicable
+    r_kishore = criterion_result(kishore_crit, {"AMOUNT_WITHIN_LIMIT": 50000001}, as_of=as_of)
+    r_tarun = criterion_result(tarun_crit, {"AMOUNT_WITHIN_LIMIT": 50000001}, as_of=as_of)
+    assert r_kishore["status"] == "MATCHED" and r_kishore["reason_code"] == "NOT_APPLICABLE"
+    assert r_tarun["status"] == "MATCHED" and r_tarun["reason_code"] == "CATEGORY_SELECTED"
+
+    # Boundary 5: INR 10,00,000 (100,000,000 paise) -> Tarun selected, Tarun Plus not applicable
+    r_tarun = criterion_result(tarun_crit, {"AMOUNT_WITHIN_LIMIT": 100000000}, as_of=as_of)
+    r_tarun_plus = criterion_result(tarun_plus_crit, {"AMOUNT_WITHIN_LIMIT": 100000000}, as_of=as_of)
+    assert r_tarun["status"] == "MATCHED" and r_tarun["reason_code"] == "CATEGORY_SELECTED"
+    assert r_tarun_plus["status"] == "MATCHED" and r_tarun_plus["reason_code"] == "NOT_APPLICABLE"
+
+    # Boundary 6: INR 10,00,000.01 (100,000,001 paise) -> Tarun Plus selected, Tarun not applicable
+    r_tarun = criterion_result(tarun_crit, {"AMOUNT_WITHIN_LIMIT": 100000001}, as_of=as_of)
+    r_tarun_plus = criterion_result(tarun_plus_crit, {"AMOUNT_WITHIN_LIMIT": 100000001}, as_of=as_of)
+    assert r_tarun["status"] == "MATCHED" and r_tarun["reason_code"] == "NOT_APPLICABLE"
+    assert r_tarun_plus["status"] == "MATCHED" and r_tarun_plus["reason_code"] == "CATEGORY_SELECTED"
+
+    # Boundary 7: Above PMMY ceiling INR 20,00,000 (200,000,001 paise) -> NOT_MATCHED (ABOVE_PMMY_CAP)
+    r_above = criterion_result(tarun_plus_crit, {"AMOUNT_WITHIN_LIMIT": 200000001}, as_of=as_of)
+    assert r_above["status"] == "NOT_MATCHED"
+    assert r_above["reason_code"] == "ABOVE_PMMY_CAP"
 
 
 def test_evidence_revisions_audit_recording_and_plan_freshness(client, db):
@@ -297,6 +492,9 @@ def test_supplier_extension_proposal_vs_confirmed_agreement(client, db):
     assert resp.status_code == 200
     evidence_resp = client.get(prefix).json()
     assert evidence_resp["evidence"]["supplier_extension_status"] == "PROPOSED"
+    options = resp.json()["options"]
+    supplier_ext = next(p for p in options if p["product_id"] == "SUPPLIER_TERM_EXTENSION")
+    assert supplier_ext["status"] == "REVIEW_REQUIRED"
     db.refresh(payable)
     assert payable.due_date == original_due_date
 
@@ -310,6 +508,9 @@ def test_supplier_extension_proposal_vs_confirmed_agreement(client, db):
     assert resp.status_code == 200
     evidence_resp = client.get(prefix).json()
     assert evidence_resp["evidence"]["supplier_extension_status"] == "CONFIRMED"
+    options = resp.json()["options"]
+    supplier_ext = next(p for p in options if p["product_id"] == "SUPPLIER_TERM_EXTENSION")
+    assert supplier_ext["status"] == "MATCHED"
     db.refresh(payable)
     assert payable.due_date == original_due_date
 
@@ -344,3 +545,5 @@ def test_demonstration_fixtures(client, db):
     assert resp.status_code == 200
     ev = client.get(prefix).json()["evidence"]
     assert ev["supplier_extension_status"] == "PROPOSED"
+    options = resp.json()["options"]
+    assert next(p for p in options if p["product_id"] == "SUPPLIER_TERM_EXTENSION")["status"] == "REVIEW_REQUIRED"

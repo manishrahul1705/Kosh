@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import { ChatDrawer } from '@/features/kosh/ChatDrawer'
 import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
 
@@ -15,6 +16,7 @@ export const AppLayout: React.FC = () => {
         className="pt-14 pl-14 md:pl-[var(--sidebar-width)] min-h-screen transition-all duration-200"
       >
         <div className="p-3 sm:p-6">
+          <ChatDrawer />
           <Outlet />
         </div>
       </main>

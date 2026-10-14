@@ -29,6 +29,7 @@ export interface FinancingPlan { target_probability:string;planning_details:{bas
 export interface ActionIntent { id:string; plan_line_id:number|null; action_type:string; tier:string; params:Record<string,unknown>; status:string; expires_at:string|null; policy_decision:Record<string,unknown> }
 export interface SandboxItem { id:string|number; intent_id:string; status:string; [key:string]:unknown }
 export const koshApi = {
+  chat:(id:number,question:string)=>apiClient.post<{status:string;reason:string;facts:{id:string;text:string;href:string}[]}>(`/kosh/sellers/${id}/chat`,{question}).then(r=>r.data),
   revenueSignal:(id:number)=>apiClient.get<{model:string;reason:string;explainability:string;cash_timing:string;source:string;available_packages:Record<string,boolean>;weeks:{week_index:number;predicted_revenue_paise:number;level_contribution_paise:number;trend_contribution_paise:number}[]}>(`/kosh/sellers/${id}/revenue`).then(r=>r.data),
   intelligence:(id:number)=>apiClient.get<{role:string;items:{counterparty_id:number;name:string;open_receivables_paise:number;median_delay_days:number|null;credit_signal:string;concentration_share:string|null}[];history:{id:number;status:string;evidence_ref:string}[]}>(`/kosh/sellers/${id}/intelligence`).then(r=>r.data),
   proposeHistory:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/intelligence/history`,payload).then(r=>r.data),

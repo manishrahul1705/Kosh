@@ -6,6 +6,8 @@ import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { koshApi, FinancingEvidencePayload } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
+import { SandboxBanner } from '@/components/ui/SandboxBanner'
+import { formatEnumLabel } from '@/lib/koshLabels'
 
 export const PlanPage = () => {
   const { activeSellerId } = useSeller()
@@ -142,6 +144,7 @@ export const PlanPage = () => {
 
   return (
     <section aria-label="Financing plan" className="space-y-6">
+      <SandboxBanner />
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Financing options</h2>
         <button className="rounded bg-blue-700 px-3 py-2 text-white font-medium hover:bg-blue-800" onClick={() => propose.mutate()}>
@@ -253,11 +256,11 @@ export const PlanPage = () => {
                     }`}
                     title={
                       item.status === 'MATCHED'
-                        ? 'Recorded business facts meet catalogue criteria. This is not a loan sanction or lender approval.'
-                        : undefined
+                        ? `${item.status}: Recorded business facts meet catalogue criteria. This is not a loan sanction or lender approval.`
+                        : item.status
                     }
                   >
-                    {item.status === 'REVIEW_REQUIRED' ? 'NEEDS REVIEW' : item.status}
+                    {formatEnumLabel(item.status)}
                   </span>
                   {item.status === 'MATCHED' && (
                     <small className="block text-[10px] text-gray-500">Meets criteria; not lender approval</small>

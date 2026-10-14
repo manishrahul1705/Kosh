@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi, CollectionItem } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
+import { SandboxBanner } from '@/components/ui/SandboxBanner'
+import { formatEnumLabel } from '@/lib/koshLabels'
 
 export const CollectionsPage = () => {
   const { activeSellerId } = useSeller()
@@ -84,6 +86,7 @@ export const CollectionsPage = () => {
 
   return (
     <section aria-label="Collections" className="space-y-6">
+      <SandboxBanner />
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Collections & Statutory Interest</h2>

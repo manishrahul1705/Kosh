@@ -17,7 +17,52 @@ vi.mock('@/lib/api/kosh', () => ({
     messagingStatus:vi.fn().mockResolvedValue({transport:'SANDBOX_ONLY',device_pairing:'BLOCKED_OFFLINE',reason:'No external account linking',owner_command:''}),
     chat:vi.fn().mockResolvedValue({status:'REFUSED',reason:'Read-only cash chat cannot send payments.',facts:[]}),
     operations:vi.fn().mockResolvedValue({role:'OWNER',items:[],counterparties:[],drafts:[],market_sample:[]}),operationDashboard:vi.fn().mockResolvedValue({inventory:[],workflows:[],timeline:[]}),
-    collections:vi.fn().mockResolvedValue({role:'OWNER',items:[]}),intelligence:vi.fn().mockResolvedValue({role:'OWNER',items:[],history:[]}),
+    collections:vi.fn().mockResolvedValue({
+      role:'OWNER',
+      as_of:'2026-10-13',
+      items:[],
+      open_invoices:[{
+        invoice_id:383,
+        invoice_number:'INV-383',
+        party:'ABC Industries',
+        amount_paise:21553100,
+        due_date:'2026-10-16',
+        is_overdue:false,
+        interest:{
+          status:'REVIEW_REQUIRED',
+          interest_paise:null,
+          annual_rate:'0.1725',
+          reason:'Acceptance date, agreement and MSE applicability require evidence.',
+        },
+        total_paise:21553100,
+        terms:null,
+      }],
+      fixture:{
+        label:'Fictional Overdue Statutory Interest Demonstration Fixture',
+        note:'Separately labelled fictional fixture. Seeded ABC invoices are not overdue on 2026-10-13. Does not affect actual cash or ledger.',
+        invoice_number:'FICT-DEMO-001',
+        party:'Fictional Buyer Ltd',
+        principal_paise:10000000,
+        acceptance_date:'2026-01-01',
+        agreement_status:'NONE',
+        agreed_days:null,
+        supplier_mse:true,
+        evidence_ref:'fictional-demo:contract-clause-12',
+        due_date:'2026-01-16',
+        as_of:'2026-03-16',
+        overdue_days:59,
+        interest:{
+          status:'COMPUTED',
+          interest_paise:289566,
+          annual_rate:'0.1725',
+          monthly_rests:2,
+          stub_days:0,
+        },
+        total_paise:10289566,
+      },
+    }),
+    collectionTerms:vi.fn().mockResolvedValue({status:'DOCUMENTED'}),
+    intelligence:vi.fn().mockResolvedValue({role:'OWNER',items:[],history:[]}),
     revenueSignal:vi.fn().mockResolvedValue({model:'Dependency-free level and trend',reason:'Optional estimated input',explainability:'Exact contributions',cash_timing:'Assumed payment delay',source:'Owned invoices',weeks:[]}),
     reports:vi.fn().mockResolvedValue({role:'OWNER',items:[],recipients:[]}),sharingConsents:vi.fn().mockResolvedValue({items:[]}),tenderCashList:vi.fn().mockResolvedValue({items:[]}),
     modules:vi.fn().mockResolvedValue({role:'OWNER',items:[{module:'sales',name:'Sales intake',cash_feed:'Expected receivables',href:'/operations/sales',enabled:true},{module:'collections',name:'Collections module',cash_feed:'Approved reminders',href:'/operations/collections',enabled:false}]}),toggleModule:vi.fn().mockResolvedValue({}),
@@ -168,4 +213,58 @@ describe('Kosh protected routes', () => {
     }
     cleanup();client.clear()
   })
+
+  it('renders owner collections evidence form, overdue demonstration fixture, and submits terms', async () => {
+    await router.navigate('/operations/collections')
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>)
+
+    // 1. Fictional fixture demonstrated
+    expect(await screen.findByText('Fictional Overdue Statutory Interest Demonstration Fixture')).toBeInTheDocument()
+    expect(screen.getByText(/Demonstration Only/i)).toBeInTheDocument()
+    expect(screen.getByText(/FICT-DEMO-001/i)).toBeInTheDocument()
+
+    // 2. Calculation as-of date badge
+    expect(screen.getByText('2026-10-13')).toBeInTheDocument()
+
+    // 3. Open invoice displayed with REVIEW REQUIRED status and total
+    expect(screen.getByText('INV-383')).toBeInTheDocument()
+    expect(screen.getByText('ABC Industries')).toBeInTheDocument()
+    expect(screen.getByText('REVIEW REQUIRED')).toBeInTheDocument()
+
+    // 4. Owner form is present
+    expect(screen.getByText('Document Invoice Evidence & Payment Terms')).toBeInTheDocument()
+    const editBtn = screen.getByRole('button', { name: 'Edit evidence' })
+    fireEvent.click(editBtn)
+
+    // Fill the evidence form
+    const termsSelect = screen.getByLabelText(/Payment terms/i)
+    fireEvent.change(termsSelect, { target: { value: 'AGREED' } })
+
+    const daysInput = screen.getByPlaceholderText(/e.g. 30/i)
+    fireEvent.change(daysInput, { target: { value: '30' } })
+
+    const mseSelect = screen.getByLabelText(/Micro\/Small enterprise applicability/i)
+    fireEvent.change(mseSelect, { target: { value: 'APPLICABLE' } })
+
+    const evidenceInput = screen.getByPlaceholderText(/e.g. PO clause 4.2/i)
+    fireEvent.change(evidenceInput, { target: { value: 'PO-2026-ABC Clause 4' } })
+
+    const saveBtn = screen.getByRole('button', { name: 'Save Documented Terms' })
+    fireEvent.click(saveBtn)
+
+    await waitFor(() => {
+      expect(koshApi.collectionTerms).toHaveBeenCalledWith(7, 383, {
+        acceptance_date: null,
+        agreement_status: 'AGREED',
+        agreed_days: 30,
+        supplier_mse: true,
+        evidence_ref: 'PO-2026-ABC Clause 4',
+      })
+    })
+
+    cleanup()
+    client.clear()
+  })
 })
+

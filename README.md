@@ -89,7 +89,7 @@ npm.cmd ci
 npm.cmd run dev -- --host 127.0.0.1
 ```
 
-Vite serves port 5173 and proxies `/api` and `/health` to port 8000. Native OCR is optional: install Tesseract and suitable language packs separately, then configure `OCR_ENABLED`, `OCR_EXECUTABLE` and `OCR_LANGUAGES`. Low confidence, unsupported scripts and complex scanned tables remain review. Do not enable collection, paid providers or broad workers merely to start an empty workspace.
+Vite serves port 5173 and proxies `/api` and `/health` to port 8000. Native OCR is optional (`OCR_ENABLED=false` by default). When disabled, intake processes text-layer PDFs directly, and image-only pages remain `REVIEW_REQUIRED`. When enabled (`OCR_ENABLED=true`), local Tesseract CLI is used if present on PATH or `OCR_EXECUTABLE`; if Tesseract is missing or unavailable, the system records `OCR_DEPENDENCY_UNAVAILABLE` and image pages stay `REVIEW_REQUIRED` without halting ingestion. Optional live WhatsApp QR device pairing remains blocked offline (`BLOCKED_OFFLINE`) as live delivery requires authorized external sessions. Low confidence, unsupported scripts and complex scanned tables remain review. Do not enable collection, paid providers or broad workers merely to start an empty workspace.
 
 ## Tests
 

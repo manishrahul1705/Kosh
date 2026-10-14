@@ -495,11 +495,11 @@ class KoshCollectionTerms(Base):
     __tablename__="kosh_collection_terms"
     invoice_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("kosh_invoices.id",ondelete="RESTRICT"),primary_key=True)
     seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False)
-    acceptance_date:Mapped[date]=mapped_column(sa.Date,nullable=False)
-    agreement_status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
-    agreed_days:Mapped[int|None]=mapped_column(sa.Integer)
-    supplier_mse:Mapped[bool]=mapped_column(sa.Boolean,nullable=False)
-    evidence_ref:Mapped[str]=mapped_column(sa.String(160),nullable=False)
+    acceptance_date:Mapped[date|None]=mapped_column(sa.Date,nullable=True)
+    agreement_status:Mapped[str]=mapped_column(sa.String(16),nullable=False,default="UNKNOWN")
+    agreed_days:Mapped[int|None]=mapped_column(sa.Integer,nullable=True)
+    supplier_mse:Mapped[bool|None]=mapped_column(sa.Boolean,nullable=True)
+    evidence_ref:Mapped[str|None]=mapped_column(sa.String(160),nullable=True)
 
 
 class KoshOperationRecord(Base):

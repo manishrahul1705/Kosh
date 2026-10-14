@@ -28,6 +28,67 @@ export interface FinancingPlan { target_probability:string;planning_details:{bas
 
 export interface ActionIntent { id:string; plan_line_id:number|null; action_type:string; tier:string; params:Record<string,unknown>; status:string; expires_at:string|null; policy_decision:Record<string,unknown> }
 export interface SandboxItem { id:string|number; intent_id:string; status:string; [key:string]:unknown }
+
+export interface CollectionTerms {
+  acceptance_date?: string | null
+  agreement_status: 'UNKNOWN' | 'NONE' | 'AGREED'
+  agreed_days?: number | null
+  supplier_mse?: boolean | null
+  evidence_ref?: string | null
+}
+
+export interface CollectionInterest {
+  status: 'REVIEW_REQUIRED' | 'NOT_APPLICABLE' | 'COMPUTED'
+  interest_paise: number | null
+  annual_rate: string
+  basis?: string
+  reason?: string
+  due_date?: string
+  overdue_days?: number
+  monthly_rests?: number
+  stub_days?: number
+  payment_period_days?: number
+}
+
+export interface CollectionItem {
+  invoice_id: number
+  invoice_number: string
+  party: string
+  amount_paise: number
+  invoice_date?: string
+  due_date?: string
+  is_overdue?: boolean
+  interest: CollectionInterest
+  total_paise?: number
+  evidence_ref?: string | null
+  terms?: CollectionTerms | null
+}
+
+export interface CollectionFixture {
+  label: string
+  note: string
+  invoice_number: string
+  party: string
+  principal_paise: number
+  acceptance_date: string
+  agreement_status: string
+  agreed_days: number | null
+  supplier_mse: boolean
+  evidence_ref: string
+  due_date: string
+  as_of: string
+  overdue_days: number
+  interest: CollectionInterest
+  total_paise: number
+}
+
+export interface CollectionsResponse {
+  role: string
+  items: CollectionItem[]
+  open_invoices?: CollectionItem[]
+  as_of?: string
+  fixture?: CollectionFixture
+}
 export const koshApi = {
   messagingStatus:(id:number)=>apiClient.get<{transport:string;device_pairing:string;reason:string;owner_command:string}>(`/kosh/sellers/${id}/operations/messaging-status`).then(r=>r.data),
   knowledgeSearch:(id:number,q:string)=>apiClient.get<{items:{id:number;status:string;evidence_ref:string;data:Record<string,unknown>}[]}>(`/kosh/sellers/${id}/operations/knowledge/search`,{params:{q}}).then(r=>r.data),
@@ -70,8 +131,9 @@ export const koshApi = {
   priceProposal:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/pricing`,payload).then(r=>r.data),
   rfqDraft:(id:number,payload:Record<string,unknown>)=>apiClient.post<{id:number;body:string}>(`/kosh/sellers/${id}/operations/rfqs`,payload).then(r=>r.data),
   operationIntent:(id:number,draft:number)=>apiClient.post(`/kosh/sellers/${id}/operations/drafts/${draft}/intent`).then(r=>r.data),
-  collections:(id:number)=>apiClient.get<{role:string;items:{invoice_id:number;invoice_number:string;party:string;amount_paise:number;interest:{status:string;interest_paise:number|null;annual_rate:string;reason:string}}[]}>(`/kosh/sellers/${id}/collections`).then(r=>r.data),
-  collectionTerms:(id:number,invoice:number,payload:Record<string,unknown>)=>apiClient.put(`/kosh/sellers/${id}/collections/${invoice}/terms`,payload).then(r=>r.data),
+  collections:(id:number)=>apiClient.get<CollectionsResponse>(`/kosh/sellers/${id}/collections`).then(r=>r.data),
+  collectionTerms:(id:number,invoice:number,payload:Record<string,unknown>)=>apiClient.put<{status:string;invoice_id:number;principal_paise:number;interest:CollectionInterest;total_paise:number;as_of:string}>(`/kosh/sellers/${id}/collections/${invoice}/terms`,payload).then(r=>r.data),
+  getCollectionTerms:(id:number,invoice:number)=>apiClient.get<CollectionItem>(`/kosh/sellers/${id}/collections/${invoice}/terms`).then(r=>r.data),
   reminderDraft:(id:number,invoice:number,tone:string,channel='EMAIL')=>apiClient.post<{id:number;body:string}>(`/kosh/sellers/${id}/collections/drafts`,{invoice_id:invoice,tone,channel}).then(r=>r.data),
   reminderIntent:(id:number,draft:number)=>apiClient.post(`/kosh/sellers/${id}/collections/drafts/${draft}/intent`).then(r=>r.data),
   cashEvents:(sellerId:number)=>apiClient.get<{role:string;items:{id:number;event_type:string;source_module:string;evidence_ref:string;event_date:string;amount_paise:number;status:string}[]}>(`/kosh/sellers/${sellerId}/cash-events`).then(r=>r.data),

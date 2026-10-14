@@ -38,6 +38,6 @@ def evaluate_product(product:dict,facts:dict,*,as_of:date)->dict:
     results=[criterion_result(c,facts,as_of=as_of) for c in product.get("criteria",[])]
     if product["id"]=="GEM_SAHAY_PO_FINANCE":results.append({"criterion":"PRODUCT_STATUS","product_clause":"assumption","business_evidence":None,"status":REVIEW,"reason_code":"PRODUCT_UNDER_REVISION","reason":"Required evidence is missing and product terms are not verified against a current primary source."})
     status=FAIL if any(r["status"]==FAIL for r in results) else REVIEW if any(r["status"]==REVIEW for r in results) else PASS
-    if product["id"]=="GEM_SAHAY_PO_FINANCE":status=REVIEW
-    if product["id"]=="MUDRA_LOAN" and any(r["status"]==REVIEW for r in results):status=REVIEW
+    if product["id"]=="GEM_SAHAY_PO_FINANCE" and status!=FAIL:status=REVIEW
+    if product["id"]=="MUDRA_LOAN" and status!=FAIL and any(r["status"]==REVIEW for r in results):status=REVIEW
     return {"product_id":product["id"],"status":status,"reasons":results}

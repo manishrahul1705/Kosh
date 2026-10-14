@@ -26,6 +26,69 @@ export interface FinancingOptions { seller_id:number;sort_rule:string;items:Fina
 export interface SafetyPlan { target_probability:string;status:string;total_cost_paise:number;alert_week_probability:number;lines:{product_id:string;amount_paise:number;days:number;cost_paise:number}[] }
 export interface FinancingPlan { target_probability:string;planning_details:{baseline_status:string}; why_this_plan:string; id:number;status:string;method:string;total_cost_paise:number;baseline_cost_paise:number;before_probabilities:number[];after_probabilities:number[];lines:{id:number;product_id:string;amount_paise:number;arrival_week:number;cost_paise:number;required_tier:string;days:number;funding_date:string;repayment_date:string|null;repayment_assumption:string}[] }
 
+export interface FinancingEvidence {
+  non_corporate: boolean | null
+  non_farm: boolean | null
+  income_generating: boolean | null
+  micro_small_enterprise: boolean | null
+  tarun_availed_and_repaid: boolean | null
+  udyam_certificate_present: boolean | null
+  gem_po_document: boolean | null
+  supplier_relationship_months: number | null
+  supplier_on_time_ratio: number | null
+  supplier_extension_status: string
+  evidence_ref?: string | null
+  recorded_at?: string | null
+}
+
+export interface FinancingMissingCriterion {
+  criterion: string
+  label: string
+  status: string
+  value: unknown
+  evidence_required: string
+  supported: boolean
+}
+
+export interface FinancingProductMissing {
+  product_id: string
+  display_name: string
+  product_support_status: string
+  criteria: FinancingMissingCriterion[]
+}
+
+export interface FinancingFixture {
+  id: string
+  label: string
+  description: string
+  evidence: Record<string, unknown>
+}
+
+export interface FinancingEvidenceResponse {
+  seller_id: number
+  role: string
+  as_of: string
+  evidence: FinancingEvidence
+  sources: Record<string, { origin: string; reference: string; recorded_at: string | null; verified: boolean }>
+  missing_criteria: FinancingProductMissing[]
+  fixtures: FinancingFixture[]
+}
+
+export interface FinancingEvidencePayload {
+  non_corporate?: boolean | null
+  non_farm?: boolean | null
+  income_generating?: boolean | null
+  micro_small_enterprise?: boolean | null
+  tarun_availed_and_repaid?: boolean | null
+  udyam_certificate_present?: boolean | null
+  gem_po_document?: boolean | null
+  supplier_relationship_months?: number | null
+  supplier_on_time_ratio?: number | null
+  supplier_extension_status?: string | null
+  evidence_ref?: string | null
+  apply_fixture?: string | null
+}
+
 export interface ActionIntent { id:string; plan_line_id:number|null; action_type:string; tier:string; params:Record<string,unknown>; status:string; expires_at:string|null; policy_decision:Record<string,unknown> }
 export interface SandboxItem { id:string|number; intent_id:string; status:string; [key:string]:unknown }
 
@@ -165,6 +228,8 @@ export const koshApi = {
   plan: (sellerId: number) =>
     apiClient.get<KoshPlaceholder>(`/kosh/sellers/${sellerId}/plan`).then((r) => r.data),
   financingOptions:(sellerId:number)=>apiClient.get<FinancingOptions>(`/kosh/sellers/${sellerId}/financing/options`).then(r=>r.data),
+  financingEvidence:(sellerId:number)=>apiClient.get<FinancingEvidenceResponse>(`/kosh/sellers/${sellerId}/financing/evidence`).then(r=>r.data),
+  saveFinancingEvidence:(sellerId:number,payload:FinancingEvidencePayload)=>apiClient.put<{status:string;options:FinancingOption[]}>(`/kosh/sellers/${sellerId}/financing/evidence`,payload).then(r=>r.data),
   evaluateFinancing:(sellerId:number)=>apiClient.post(`/kosh/sellers/${sellerId}/financing/evaluate`).then(r=>r.data),
   latestPlan:(sellerId:number)=>apiClient.get<FinancingPlan>(`/kosh/sellers/${sellerId}/plans/latest`).then(r=>r.data),
   safetyCurve:(sellerId:number)=>apiClient.get<{items:SafetyPlan[]}>(`/kosh/sellers/${sellerId}/financing/safety-curve`).then(r=>r.data),

@@ -82,6 +82,45 @@ vi.mock('@/lib/api/kosh', () => ({
     securityEvents:vi.fn().mockResolvedValue({counts:{blocked_intents:0,failed_otps:0,token_replays:0,injection_detections:1}}),
     exportAudit:vi.fn().mockResolvedValue(""),verifyAuditExport:vi.fn(),
     verifyAudit: vi.fn().mockResolvedValue({valid:true,entries:0}),
+    financingEvidence: vi.fn().mockResolvedValue({
+      seller_id: 7,
+      role: 'OWNER',
+      as_of: '2026-10-13',
+      evidence: {
+        non_corporate: null,
+        non_farm: null,
+        income_generating: null,
+        micro_small_enterprise: null,
+        tarun_availed_and_repaid: null,
+        udyam_certificate_present: null,
+        gem_po_document: null,
+        supplier_relationship_months: null,
+        supplier_on_time_ratio: null,
+        supplier_extension_status: 'UNKNOWN',
+        evidence_ref: null,
+        recorded_at: null,
+      },
+      sources: {},
+      missing_criteria: [
+        {
+          product_id: 'MUDRA_LOAN',
+          display_name: 'MUDRA loan',
+          product_support_status: 'IMPLEMENTED',
+          criteria: [
+            { criterion: 'NON_CORPORATE', label: 'Non-corporate constitution', status: 'MISSING', value: null, evidence_required: 'Partnership deed / declaration', supported: true },
+          ],
+        },
+      ],
+      fixtures: [
+        {
+          id: 'FICT-MATCH-001',
+          label: 'Legitimate Match (Mudra / CGTMSE)',
+          description: 'Complete evidence satisfying all criteria',
+          evidence: { non_corporate: true, non_farm: true },
+        },
+      ],
+    }),
+    saveFinancingEvidence: vi.fn().mockResolvedValue({ status: 'RECORDED' }),
     processDocument: vi.fn(),uploadDocument:vi.fn(),createConsent:vi.fn(),revokeConsent:vi.fn(),patchInvoice:vi.fn(),obligations:vi.fn().mockResolvedValue([]),
   },
 }))
@@ -260,6 +299,50 @@ describe('Kosh protected routes', () => {
         agreed_days: 30,
         supplier_mse: true,
         evidence_ref: 'PO-2026-ABC Clause 4',
+      })
+    })
+
+    cleanup()
+    client.clear()
+  })
+
+  it('renders financing eligibility evidence workflow, missing criteria, and saves owner evidence', async () => {
+    await router.navigate('/plan')
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>)
+
+    expect(await screen.findByRole('region', { name: 'Financing eligibility evidence' })).toBeInTheDocument()
+    expect(screen.getByText('Missing criteria across review options')).toBeInTheDocument()
+    expect(screen.getByText('Non-corporate constitution')).toBeInTheDocument()
+
+    // Test form editing
+    const nonCorpSelect = screen.getByLabelText('Non-corporate constitution')
+    fireEvent.change(nonCorpSelect, { target: { value: 'YES' } })
+
+    const relMonthsInput = screen.getByLabelText('Supplier relationship tenure in months')
+    fireEvent.change(relMonthsInput, { target: { value: '24' } })
+
+    const refInput = screen.getByLabelText('Supporting evidence reference or note')
+    fireEvent.change(refInput, { target: { value: 'Partnership deed verified' } })
+
+    const saveBtn = screen.getByRole('button', { name: 'Save evidence' })
+    fireEvent.click(saveBtn)
+
+    await waitFor(() => {
+      expect(koshApi.saveFinancingEvidence).toHaveBeenCalledWith(7, expect.objectContaining({
+        non_corporate: true,
+        supplier_relationship_months: 24,
+        evidence_ref: 'Partnership deed verified',
+      }))
+    })
+
+    // Test demonstration fixture selection
+    const fixtureSelect = screen.getByRole('combobox', { name: 'Select demonstration fixture' })
+    fireEvent.change(fixtureSelect, { target: { value: 'FICT-MATCH-001' } })
+
+    await waitFor(() => {
+      expect(koshApi.saveFinancingEvidence).toHaveBeenCalledWith(7, {
+        apply_fixture: 'FICT-MATCH-001',
       })
     })
 

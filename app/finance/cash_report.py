@@ -8,6 +8,7 @@ from sqlalchemy import select
 from app.database.models import Seller
 from app.database.kosh_models import KoshForecastRun,KoshForecastWeek,KoshPlan,KoshPlanLine,KoshFinancingEvaluation,KoshFinancingResult,KoshAuditEntry
 from app.lending.catalogue import load_catalogue
+from app.finance.plan_freshness import display_status
 
 def snapshot(db,seller_id):
     seller=db.get(Seller,seller_id)
@@ -28,7 +29,7 @@ def snapshot(db,seller_id):
         if clause and clause.get('source',{}).get('verified') is not True:source+=' (unverified)'
         options.append({'product':product['id'],'status':status,'rate':next((r.effective_annual_rate for r in rows if r.effective_annual_rate is not None),None),'source':source})
     head=db.scalar(select(KoshAuditEntry).order_by(KoshAuditEntry.sequence.desc()).limit(1))
-    return {'seller':seller.name,'seller_id':seller_id,'run_id':run.id,'as_of':run.as_of_date.isoformat(),'buffer_paise':run.buffer_paise,'weeks':[{'week':w.week_index,'p10':w.p10_closing_balance_paise,'p50':w.p50_closing_balance_paise,'p90':w.p90_closing_balance_paise,'risk':str(w.prob_below_buffer)} for w in weeks],'plan_id':plan.id if plan else None,'plan_status':plan.status if plan else 'NONE','plan_stale':bool(plan and plan.forecast_run_id!=run.id and plan.planning_details.get('actual_execution',{}).get('forecast_run_id')!=run.id),'plan_cost_paise':plan.total_cost_paise if plan else None,'lines':[{'product':l.product_id,'amount':l.amount_paise,'cost':l.cost_paise,'days':next((e['days'] for e in l.evidence if 'days' in e),0)} for l in lines],'options':options,'evaluation_id':evaluation.id if evaluation else None,'audit_hash':head.entry_hash if head else 'No audit entries','audit_sequence':head.sequence if head else 0}
+    return {'seller':seller.name,'seller_id':seller_id,'run_id':run.id,'as_of':run.as_of_date.isoformat(),'buffer_paise':run.buffer_paise,'weeks':[{'week':w.week_index,'p10':w.p10_closing_balance_paise,'p50':w.p50_closing_balance_paise,'p90':w.p90_closing_balance_paise,'risk':str(w.prob_below_buffer)} for w in weeks],'plan_id':plan.id if plan else None,'plan_status':display_status(db,plan) if plan else 'NONE','plan_stale':bool(plan and plan.forecast_run_id!=run.id and plan.planning_details.get('actual_execution',{}).get('forecast_run_id')!=run.id),'plan_cost_paise':plan.total_cost_paise if plan else None,'lines':[{'product':l.product_id,'amount':l.amount_paise,'cost':l.cost_paise,'days':next((e['days'] for e in l.evidence if 'days' in e),0)} for l in lines],'options':options,'evaluation_id':evaluation.id if evaluation else None,'audit_hash':head.entry_hash if head else 'No audit entries','audit_sequence':head.sequence if head else 0}
 
 def build_pdf(data):
     stream=BytesIO();canvas=Canvas(stream,pagesize=A4,invariant=1);width,height=A4

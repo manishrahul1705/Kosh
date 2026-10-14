@@ -63,8 +63,9 @@ def draft(seller_id:int,payload:DraftIn,db:Session=Depends(get_db),access:Author
     decision=evaluate("REMINDER_DRAFT",{},context(db,seller_id),origin="ADDON:collections")
     if decision.decision=="DENY":
         append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="security.intent_blocked",tier="T4",payload={"policy":decision.as_dict()},policy_decision="DENY");db.commit();raise HTTPException(403,decision.as_dict())
+    gate(db,seller_id,access.user_id,source="ADDON:collections")
     invoice=owned_invoice(db,seller_id,payload.invoice_id);party=db.get(KoshCounterparty,invoice.counterparty_id)
-    params={"channel":payload.channel,"amount_paise":max(0,invoice.amount_paise-(invoice.paid_amount_paise or 0)),"invoice_id":invoice.id,"counterparty_id":party.id,"allowlist_key":f"counterparty:{party.id}","funding_date":date.fromisoformat(get_settings().kosh_as_of_date or date.today().isoformat()).isoformat(),"days":0,"cost_paise":0}
+    params={"feature_module":"collections","channel":payload.channel,"amount_paise":max(0,invoice.amount_paise-(invoice.paid_amount_paise or 0)),"invoice_id":invoice.id,"counterparty_id":party.id,"allowlist_key":f"counterparty:{party.id}","funding_date":date.fromisoformat(get_settings().kosh_as_of_date or date.today().isoformat()).isoformat(),"days":0,"cost_paise":0}
     row=KoshAddonDraft(seller_id=seller_id,module="collections",kind="COLLECTIONS_REMINDER",params=params,body=reminder(invoice,party,tone=payload.tone),evidence_hash="",status="DRAFT",created_by_user_id=access.user_id);row.evidence_hash=draft_hash(row);db.add(row);db.flush();record(db,seller_id,access,"collections.draft",{"draft_id":row.id,"invoice_id":invoice.id});return {"id":row.id,"body":row.body,"tier":"T1","params":row.params}
 @router.post("/drafts/{draft_id}/intent")
 def send_intent(seller_id:int,draft_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):

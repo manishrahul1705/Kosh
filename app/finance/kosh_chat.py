@@ -4,6 +4,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from app.database.kosh_models import KoshForecastRun,KoshForecastWeek,KoshPlan,KoshFinancingResult,KoshFinancingEvaluation,KoshInvoice
 from app.ai.providers.base import AIRequest
+from app.finance.plan_freshness import display_status
 from app.ai.providers.mock import MockProvider
 GUARD=re.compile(r"ignore\s+(?:all|previous)\s+instructions|\bsystem\s*:|pay\s+(?:supplier|vendor)|\b(?:transfer|send|approve|execute)\b|change.{0,40}bank",re.I)
 
@@ -14,7 +15,7 @@ def computed_facts(db,seller_id):
         week=db.scalar(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id).order_by(KoshForecastWeek.prob_below_buffer.desc(),KoshForecastWeek.week_index))
         if week:facts.append({"id":f"forecast:{run.id}:week:{week.week_index}","text":f"Forecast run {run.id}, week {week.week_index}: {Decimal(str(week.prob_below_buffer))*100}% probability below buffer; P50 closing INR {Decimal(week.p50_closing_balance_paise)/100:,.2f}.","href":"/cash"})
     plan=db.scalar(select(KoshPlan).where(KoshPlan.seller_id==seller_id).order_by(KoshPlan.id.desc()))
-    if plan:facts.append({"id":f"plan:{plan.id}","text":f"Plan {plan.id} is {plan.status}; computed total cost INR {Decimal(plan.total_cost_paise)/100:,.2f}.","href":"/plan"})
+    if plan:facts.append({"id":f"plan:{plan.id}","text":f"Plan {plan.id} is {display_status(db,plan)}; computed total cost INR {Decimal(plan.total_cost_paise)/100:,.2f}.","href":"/plan"})
     for row in db.scalars(select(KoshFinancingResult).join(KoshFinancingEvaluation,KoshFinancingEvaluation.id==KoshFinancingResult.evaluation_id).where(KoshFinancingEvaluation.seller_id==seller_id).order_by(KoshFinancingResult.id.desc()).limit(4)):
         facts.append({"id":f"option:{row.id}","text":f"Option record {row.id}: {row.product_id}, {row.status}.","href":"/plan"})
     for row in db.scalars(select(KoshInvoice).where(KoshInvoice.seller_id==seller_id,KoshInvoice.status=="OPEN").order_by(KoshInvoice.id).limit(2)):

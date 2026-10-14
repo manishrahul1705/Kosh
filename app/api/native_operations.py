@@ -53,7 +53,7 @@ def listing(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Dep
     record(db,seller_id,access,"operations.read",{},"T0");return {"items":items,"role":access.role,"counterparties":[{"id":p.id,"name":p.name,"kind":p.kind} for p in db.scalars(select(KoshCounterparty).where(KoshCounterparty.seller_id==seller_id))],"market_sample":MARKET_SAMPLE,"drafts":[{"id":d.id,"module":d.module,"kind":d.kind,"body":d.body,"status":d.status} for d in db.scalars(select(KoshAddonDraft).where(KoshAddonDraft.seller_id==seller_id))],"external_delivery":False}
 @router.post("/orders")
 def order(seller_id:int,payload:OrderIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id);party(db,seller_id,payload.counterparty_id)
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source="ADDON:sales" if payload.direction=="SALE" else "ADDON:procurement");party(db,seller_id,payload.counterparty_id)
     existing=db.scalar(select(KoshOperationRecord).where(KoshOperationRecord.seller_id==seller_id,KoshOperationRecord.kind==payload.direction,KoshOperationRecord.evidence_ref==payload.evidence_ref))
     if existing:
         if any(existing.data.get(key)!=value for key,value in payload.model_dump(mode="json").items()):raise HTTPException(409,"Order evidence already used with different parameters")
@@ -76,7 +76,7 @@ def confirm_order(seller_id:int,record_id:int,db:Session=Depends(get_db),access:
     event.status="CONFIRMED";event.confirmed_at=event.confirmed_at or utcnow();event.confirmed_by_user_id=access.user_id;row.status="CONFIRMED";row.updated_at=utcnow();record(db,seller_id,access,"operations.order.confirm",{"record_id":row.id,"cash_event_id":event.id});return out(row)
 @router.post("/pricing")
 def pricing(seller_id:int,payload:PricingIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id);po=owned(db,seller_id,payload.purchase_order_id,"PO")
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source="ADDON:pricing");po=owned(db,seller_id,payload.purchase_order_id,"PO")
     if po.status!="CONFIRMED":raise HTTPException(409,"Confirm the planned purchase first")
     existing=db.scalar(select(KoshOperationRecord).where(KoshOperationRecord.seller_id==seller_id,KoshOperationRecord.kind=="PRICE_CHANGE",KoshOperationRecord.evidence_ref==payload.evidence_ref))
     if existing:
@@ -87,8 +87,8 @@ def pricing(seller_id:int,payload:PricingIn,db:Session=Depends(get_db),access:Au
     row=KoshOperationRecord(seller_id=seller_id,kind="PRICE_CHANGE",evidence_ref=payload.evidence_ref,data={"purchase_order_id":po.id,"change_percent":str(payload.change_percent),"delta_paise":delta,"cash_event_id":event.id,"material_code":po.data['material_code']},status="PROPOSED",created_by_user_id=access.user_id);db.add(row);db.flush();record(db,seller_id,access,"operations.pricing.propose",{"record_id":row.id,"delta_paise":delta});return out(row)
 @router.post("/rfqs")
 def rfq(seller_id:int,payload:RFQIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id);recipient=party(db,seller_id,payload.counterparty_id)
-    row=KoshAddonDraft(seller_id=seller_id,module="procurement",kind="RFQ_MESSAGE",body=f"Request quotation for {payload.quantity} units of {payload.material_code}, required {payload.needed_date.isoformat()}. Please provide price and delivery terms.",params={"counterparty_id":recipient.id,"amount_paise":0,"allowlist_key":f"counterparty:{recipient.id}","funding_date":payload.needed_date.isoformat(),"days":0,"cost_paise":0,"evidence_reference":payload.evidence_ref},evidence_hash="",status="DRAFT",created_by_user_id=access.user_id);row.evidence_hash=draft_hash(row);db.add(row);db.flush();record(db,seller_id,access,"operations.rfq.draft",{"draft_id":row.id});return {"id":row.id,"body":row.body,"tier":"T1","drafts":[{"id":d.id,"module":d.module,"kind":d.kind,"body":d.body,"status":d.status} for d in db.scalars(select(KoshAddonDraft).where(KoshAddonDraft.seller_id==seller_id))],"external_delivery":False}
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source="ADDON:procurement");recipient=party(db,seller_id,payload.counterparty_id)
+    row=KoshAddonDraft(seller_id=seller_id,module="procurement",kind="RFQ_MESSAGE",body=f"Request quotation for {payload.quantity} units of {payload.material_code}, required {payload.needed_date.isoformat()}. Please provide price and delivery terms.",params={"feature_module":"procurement","counterparty_id":recipient.id,"amount_paise":0,"allowlist_key":f"counterparty:{recipient.id}","funding_date":payload.needed_date.isoformat(),"days":0,"cost_paise":0,"evidence_reference":payload.evidence_ref},evidence_hash="",status="DRAFT",created_by_user_id=access.user_id);row.evidence_hash=draft_hash(row);db.add(row);db.flush();record(db,seller_id,access,"operations.rfq.draft",{"draft_id":row.id});return {"id":row.id,"body":row.body,"tier":"T1","drafts":[{"id":d.id,"module":d.module,"kind":d.kind,"body":d.body,"status":d.status} for d in db.scalars(select(KoshAddonDraft).where(KoshAddonDraft.seller_id==seller_id))],"external_delivery":False}
 @router.post("/drafts/{draft_id}/intent")
 def intent(seller_id:int,draft_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
     try:row=create_from_draft(db,seller_id=seller_id,draft_id=draft_id,creator_id=access.user_id)
@@ -113,6 +113,8 @@ def resource(seller_id:int,payload:ResourceIn,db:Session=Depends(get_db),access:
     data=payload.model_dump(mode='json');kind=data.pop('kind');evidence=data.pop('evidence_ref')
     as_of=get_settings().kosh_as_of_date or date.today().isoformat()
     if data.get('observed_date') and data['observed_date']>as_of:raise HTTPException(422,'An observed fact cannot have a future date')
+    feature={'MATERIAL':'inventory','INVENTORY':'inventory','QUOTE':'procurement','SHIPMENT':'supply_chain','SHIPMENT_STEP':'supply_chain','ONBOARDING':'onboarding','KNOWLEDGE':'knowledge','MARKET_SIGNAL':'market','GOAL':'goals','TASK':'goals','STRUCTURAL_RISK':'pricing'}[kind]
+    gate(db,seller_id,access.user_id,source=f'ADDON:{feature}')
     for key,value in data.items():
         if value is None:continue
         if key in {'supplier_id','counterparty_id'}:party(db,seller_id,value)
@@ -152,14 +154,14 @@ def complete_task(seller_id:int,record_id:int,payload:CompletionIn,db:Session=De
 
 @router.post('/workflows')
 def workflow(seller_id:int,payload:WorkflowIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id)
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source='ADDON:workflows')
     draft=db.scalar(select(KoshAddonDraft).where(KoshAddonDraft.id==payload.draft_id,KoshAddonDraft.seller_id==seller_id))
     if draft is None:raise HTTPException(404,'Draft not found')
     row=KoshOperationRecord(seller_id=seller_id,kind='WORKFLOW',evidence_ref=payload.evidence_ref,data={'draft_id':draft.id,'steps':[{'name':'Observe evidence','status':'DONE'},{'name':'Validate trusted draft','status':'PENDING'},{'name':'Human approval','status':'PAUSED'},{'name':'Sandbox execution','status':'PENDING'},{'name':'Reconcile','status':'PENDING'}]},status='DRAFT',created_by_user_id=access.user_id);db.add(row);db.flush();record(db,seller_id,access,'operations.workflow.create',{'id':row.id});return out(row)
 
 @router.post('/workflows/{record_id}/advance')
 def advance(seller_id:int,record_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id);row=owned(db,seller_id,record_id,'WORKFLOW');data=dict(row.data)
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source='ADDON:workflows');row=owned(db,seller_id,record_id,'WORKFLOW');data=dict(row.data)
     if not data.get('intent_id'):
         try:intent=create_from_draft(db,seller_id=seller_id,draft_id=data['draft_id'],creator_id=access.user_id)
         except (ValueError,LookupError) as exc:raise HTTPException(409,str(exc))
@@ -173,8 +175,8 @@ def advance(seller_id:int,record_id:int,db:Session=Depends(get_db),access:Author
 
 @router.post('/notifications')
 def notification(seller_id:int,payload:NotificationIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id);resource=owned(db,seller_id,payload.record_id);recipient=party(db,seller_id,payload.counterparty_id)
-    row=KoshAddonDraft(seller_id=seller_id,module='operations',kind='NOTIFICATION_MESSAGE',params={'channel':payload.channel,'counterparty_id':recipient.id,'allowlist_key':f'counterparty:{recipient.id}','amount_paise':0,'funding_date':(get_settings().kosh_as_of_date or date.today().isoformat()),'days':0,'cost_paise':0,'evidence_reference':payload.evidence_ref},body=f'Operational update: record {resource.id} ({resource.kind}) has status {resource.status}. Please contact the business for details.',evidence_hash='',status='DRAFT',created_by_user_id=access.user_id);row.evidence_hash=draft_hash(row);db.add(row);db.flush();record(db,seller_id,access,'operations.notification.draft',{'draft_id':row.id,'record_id':resource.id});return {'id':row.id,'body':row.body,'tier':'T1','external_delivery':False}
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source='ADDON:notifications');resource=owned(db,seller_id,payload.record_id);recipient=party(db,seller_id,payload.counterparty_id)
+    row=KoshAddonDraft(seller_id=seller_id,module='operations',kind='NOTIFICATION_MESSAGE',params={'feature_module':'notifications','channel':payload.channel,'counterparty_id':recipient.id,'allowlist_key':f'counterparty:{recipient.id}','amount_paise':0,'funding_date':(get_settings().kosh_as_of_date or date.today().isoformat()),'days':0,'cost_paise':0,'evidence_reference':payload.evidence_ref},body=f'Operational update: record {resource.id} ({resource.kind}) has status {resource.status}. Please contact the business for details.',evidence_hash='',status='DRAFT',created_by_user_id=access.user_id);row.evidence_hash=draft_hash(row);db.add(row);db.flush();record(db,seller_id,access,'operations.notification.draft',{'draft_id':row.id,'record_id':resource.id});return {'id':row.id,'body':row.body,'tier':'T1','external_delivery':False}
 
 @router.post('/agents/run')
 def agent(seller_id:int,payload:AgentIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
@@ -213,7 +215,7 @@ def register_counterparty(seller_id:int,payload:CounterpartyIn,db:Session=Depend
     mission=KoshOperationRecord(seller_id=seller_id,kind='SALES_MISSION' if payload.kind=='CUSTOMER' else 'PROCUREMENT_MISSION',evidence_ref=payload.evidence_ref,data={'counterparty_id':contact.id,'contact_label':payload.contact_label,'amount_paise':None,'cost_paise':None,'payment_date':None,'next_step':'Document sales order or purchase requirement; no automatic messages'},status='GATHER_EVIDENCE',created_by_user_id=access.user_id);db.add(mission);db.flush();record(db,seller_id,access,'operations.counterparty.register',{'id':contact.id,'mission_id':mission.id});return {'id':contact.id,'mission_id':mission.id,'status':'REGISTERED','send_permission':'Allowlist and 24-hour cool-off still required'}
 @router.post('/conversations')
 def conversation(seller_id:int,payload:ConversationIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id);party(db,seller_id,payload.counterparty_id)
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source="ADDON:sales" if payload.direction=="SALE" else "ADDON:procurement");party(db,seller_id,payload.counterparty_id)
     data=payload.model_dump(mode='json');evidence=data.pop('evidence_ref');data['candidates']=conversation_candidates(payload.text);data['execution_authority']='NONE'
     row=KoshOperationRecord(seller_id=seller_id,kind='CONVERSATION',evidence_ref=evidence,data=data,status='REVIEW_REQUIRED',created_by_user_id=access.user_id);db.add(row);db.flush()
     if GUARD.search(payload.text):append_event(db,seller_id=seller_id,actor_type='SYSTEM',actor_id=None,action='security.injection_detected',tier='T0',payload={'conversation_id':row.id},policy_decision='DENY')

@@ -513,3 +513,11 @@ class KoshOperationRecord(Base):
     created_by_user_id:Mapped[int]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id"),nullable=False)
     created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
     updated_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+
+
+class KoshModuleFlag(Base):
+    __tablename__="kosh_module_flags"
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),primary_key=True)
+    module:Mapped[str]=mapped_column(sa.String(48),primary_key=True)
+    enabled:Mapped[bool]=mapped_column(sa.Boolean,nullable=False,default=True)
+    updated_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)

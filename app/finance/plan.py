@@ -152,7 +152,10 @@ def propose_plan(db,seller_id:int,*,target_prob=None,persist=True,loan_repayment
         quote=financing_quote(product,row.max_amount_paise,days=days)
         factor=Decimal(quote["net_proceeds_paise"])/row.max_amount_paise if row.max_amount_paise else Decimal(0)
         timely=_arrival(run.as_of_date,row.arrival_business_days)<=w.week_end
-        levers.append({"product_id":row.product_id,"status":row.status,"cap":row.max_amount_paise if timely else 0,"unit_cost":Decimal(quote["cost_paise"])/row.max_amount_paise if row.max_amount_paise else Decimal(0),"net_factor":factor,"rate":Decimal(quote["effective_annual_rate"]),"scope":row.scope,"arrival_business_days":row.arrival_business_days,"days":days,"funding_date":arrival.isoformat(),"repayment_date":repayment.isoformat() if repayment else None,"repayment_assumption":assumption})
+        from app.finance.modules import enabled
+        module={'COLLECTIONS_PUSH':'collections','SUPPLIER_TERM_EXTENSION':'procurement'}.get(row.product_id)
+        active=not module or enabled(db,seller_id,module)
+        levers.append({"product_id":row.product_id,"status":row.status if active else "REVIEW_REQUIRED","module_disabled":not active,"cap":row.max_amount_paise if timely else 0,"unit_cost":Decimal(quote["cost_paise"])/row.max_amount_paise if row.max_amount_paise else Decimal(0),"net_factor":factor,"rate":Decimal(quote["effective_annual_rate"]),"scope":row.scope,"arrival_business_days":row.arrival_business_days,"days":days,"funding_date":arrival.isoformat(),"repayment_date":repayment.isoformat() if repayment else None,"repayment_assumption":assumption})
     reserve_shared_invoice_capacity(levers)
     method,chosen=optimize_levers(required,levers)
     inputs=load_inputs(db,seller_id,run.as_of_date,include_addon_events=run.params.get("include_addon_events",True),include_customer_history=run.params.get("include_customer_history",False),include_revenue_signal=run.params.get("include_revenue_signal",False))
@@ -171,7 +174,7 @@ def propose_plan(db,seller_id:int,*,target_prob=None,persist=True,loan_repayment
     skipped=[]
     for lever in levers:
         if (lever["product_id"],lever["scope"]) in selected:continue
-        reason="requires review or failed eligibility" if lever["status"]!="MATCHED" else "cannot arrive by the alert week" if lever["cap"]==0 else "costs more per net paise than the selected available capacity"
+        reason="disabled by owner module setting" if lever.get("module_disabled") else "requires review or failed eligibility" if lever["status"]!="MATCHED" else "cannot arrive by the alert week" if lever["cap"]==0 else "costs more per net paise than the selected available capacity"
         skipped.append(f"{lever['product_id']}: {reason}.")
     why+=" "+" ".join(skipped)
     why+=f" Same-seed forecast at week {target}: {after_p[target-1]:.4f}, required at most {target_prob:.4f}; every horizon week below {threshold:.4f}. Paid capacity trimmed to the smallest valid paise amount." if status=="VALID" else " Available eligible capacity cannot bring the target and horizon safety conditions; this plan is INSUFFICIENT."

@@ -23,6 +23,8 @@ def planned_line(db,*,name="Trusted line",subject=SUBJECT,product="COLLECTIONS_P
     party=KoshCounterparty(seller_id=seller.id,name="Buyer",kind="CUSTOMER",treds_onboarded=True);db.add(party);db.flush()
     invoice=KoshInvoice(seller_id=seller.id,counterparty_id=party.id,direction="RECEIVABLE",invoice_number=f"INV-{seller.id}",invoice_date=date(2026,10,1),due_date=date(2026,12,2),amount_paise=100_000,status="OPEN",accepted_by_buyer=True);db.add(invoice);db.flush()
     run=KoshForecastRun(seller_id=seller.id,as_of_date=date(2026,10,13),n_paths=10,seed=42,params={},input_fingerprint="a"*64,include_forecast_sales=False,buffer_paise=1,status="SUCCESS",created_by_user_id=user.id);db.add(run);db.flush()
+    from app.finance.forecast import current_fingerprint
+    run.input_fingerprint=current_fingerprint(db,run)
     plan=KoshPlan(seller_id=seller.id,forecast_run_id=run.id,forecast_fingerprint=run.input_fingerprint,method="GREEDY",status="VALID",total_cost_paise=0,baseline_cost_paise=0,before_probabilities=[.8]*13,after_probabilities=[.1]*13,planning_details={"target_probability":".20","alert_threshold":".50","alert_week":6});db.add(plan);db.flush()
     terms={"funding_date":"2026-10-16" if product=="TREDS_INVOICE_DISCOUNTING" else "2026-10-14","repayment_date":"2026-12-02" if product=="TREDS_INVOICE_DISCOUNTING" else None,"days":47 if product=="TREDS_INVOICE_DISCOUNTING" else 0}
     line=KoshPlanLine(plan_id=plan.id,product_id=product,scope_ids=[invoice.id],amount_paise=50_000,arrival_week=1,cost_paise=0,effective_annual_rate="0",required_tier="T3" if product=="TREDS_INVOICE_DISCOUNTING" else "T2",evidence=[terms],status="VALID");db.add(line);db.flush()

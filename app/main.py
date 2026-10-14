@@ -159,6 +159,8 @@ def create_app(
     app.include_router(cash_reports.router)
     from app.api import tender_cash
     app.include_router(tender_cash.router)
+    from app.api import modules
+    app.include_router(modules.router)
     from app.api import financing
     app.include_router(financing.router)
     from app.api import policy

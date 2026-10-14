@@ -29,6 +29,8 @@ export interface FinancingPlan { target_probability:string;planning_details:{bas
 export interface ActionIntent { id:string; plan_line_id:number|null; action_type:string; tier:string; params:Record<string,unknown>; status:string; expires_at:string|null; policy_decision:Record<string,unknown> }
 export interface SandboxItem { id:string|number; intent_id:string; status:string; [key:string]:unknown }
 export const koshApi = {
+  modules:(id:number)=>apiClient.get<{role:string;items:{module:string;name:string;cash_feed:string;href:string;enabled:boolean}[]}>(`/kosh/sellers/${id}/modules`).then(r=>r.data),
+  toggleModule:(id:number,module:string,enabled:boolean)=>apiClient.put(`/kosh/sellers/${id}/modules/${module}`,{enabled}).then(r=>r.data),
   tenderCashList:(id:number)=>apiClient.get<{items:{tender_id:number;bid_number:string;title:string;buyer:string}[]}>(`/kosh/sellers/${id}/tender-to-cash`).then(r=>r.data),
   tenderCash:(id:number,tender:number,payload:Record<string,unknown>)=>apiClient.post<{status:string;missing:string[];working_capital_needed_paise?:number;safety?:string;financing_suggestions:{product:string;status:string;reason:string}[];scenario_weeks?:{week_index:number;p50_closing_balance_paise:number;prob_below_buffer:number}[]}>(`/kosh/sellers/${id}/tender-to-cash/${tender}`,payload).then(r=>r.data),
   registerCounterparty:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/counterparties`,payload).then(r=>r.data),
@@ -39,7 +41,7 @@ export const koshApi = {
   completeTask:(id:number,record:number,evidence:string)=>apiClient.post(`/kosh/sellers/${id}/operations/resources/${record}/complete`,{evidence_ref:evidence}).then(r=>r.data),
   createWorkflow:(id:number,draft:number)=>apiClient.post(`/kosh/sellers/${id}/operations/workflows`,{draft_id:draft,evidence_ref:`draft:${draft}`}).then(r=>r.data),
   advanceWorkflow:(id:number,record:number)=>apiClient.post(`/kosh/sellers/${id}/operations/workflows/${record}/advance`).then(r=>r.data),
-  notificationDraft:(id:number,record:number,counterparty:number)=>apiClient.post<{id:number;body:string}>(`/kosh/sellers/${id}/operations/notifications`,{record_id:record,counterparty_id:counterparty,evidence_ref:`record:${record}:update`}).then(r=>r.data),
+  notificationDraft:(id:number,record:number,counterparty:number,channel='EMAIL')=>apiClient.post<{id:number;body:string}>(`/kosh/sellers/${id}/operations/notifications`,{record_id:record,counterparty_id:counterparty,channel,evidence_ref:`record:${record}:update`}).then(r=>r.data),
   runAgent:(id:number,agent:string)=>apiClient.post(`/kosh/sellers/${id}/operations/agents/run`,{agent,evidence_ref:`owner-review:${agent}`}).then(r=>r.data),
   importMaterials:(id:number,text:string,evidence:string)=>apiClient.post(`/kosh/sellers/${id}/operations/materials/import`,{csv_text:text,evidence_ref:evidence}).then(r=>r.data),
   reports:(id:number)=>apiClient.get<{role:string;items:{id:number;status:string;evidence_ref:string;pdf_sha256:string}[];recipients:{id:string;label:string}[]}>(`/kosh/sellers/${id}/reports`).then(r=>r.data),
@@ -61,7 +63,7 @@ export const koshApi = {
   operationIntent:(id:number,draft:number)=>apiClient.post(`/kosh/sellers/${id}/operations/drafts/${draft}/intent`).then(r=>r.data),
   collections:(id:number)=>apiClient.get<{role:string;items:{invoice_id:number;invoice_number:string;party:string;amount_paise:number;interest:{status:string;interest_paise:number|null;annual_rate:string;reason:string}}[]}>(`/kosh/sellers/${id}/collections`).then(r=>r.data),
   collectionTerms:(id:number,invoice:number,payload:Record<string,unknown>)=>apiClient.put(`/kosh/sellers/${id}/collections/${invoice}/terms`,payload).then(r=>r.data),
-  reminderDraft:(id:number,invoice:number,tone:string)=>apiClient.post<{id:number;body:string}>(`/kosh/sellers/${id}/collections/drafts`,{invoice_id:invoice,tone}).then(r=>r.data),
+  reminderDraft:(id:number,invoice:number,tone:string,channel='EMAIL')=>apiClient.post<{id:number;body:string}>(`/kosh/sellers/${id}/collections/drafts`,{invoice_id:invoice,tone,channel}).then(r=>r.data),
   reminderIntent:(id:number,draft:number)=>apiClient.post(`/kosh/sellers/${id}/collections/drafts/${draft}/intent`).then(r=>r.data),
   cashEvents:(sellerId:number)=>apiClient.get<{role:string;items:{id:number;event_type:string;source_module:string;evidence_ref:string;event_date:string;amount_paise:number;status:string}[]}>(`/kosh/sellers/${sellerId}/cash-events`).then(r=>r.data),
   proposeCashEvent:(sellerId:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${sellerId}/cash-events`,payload).then(r=>r.data),

@@ -9,7 +9,7 @@ from app.api.deps import get_db
 from app.api.seller_authorization import AuthorizedSeller,require_seller_edit,require_seller_read
 from app.audit.ledger import append_event
 from app.core.config import get_settings
-from app.database.kosh_models import KoshFinancingEvaluation,KoshFinancingResult,KoshPlan,KoshPlanLine
+from app.database.kosh_models import KoshFinancingEvaluation,KoshFinancingResult,KoshPlan,KoshPlanLine,KoshForecastRun
 from app.finance.plan import propose_plan
 from app.finance.costs import financing_quote
 from app.lending.catalogue import load_catalogue
@@ -54,7 +54,10 @@ def _line_out(line):
     return result
 
 def _plan_out(db,row):
-    lines=db.scalars(select(KoshPlanLine).where(KoshPlanLine.plan_id==row.id)).all();return {"id":row.id,"seller_id":row.seller_id,"forecast_run_id":row.forecast_run_id,"forecast_fingerprint":row.forecast_fingerprint,"method":row.method,"status":row.status,"total_cost_paise":row.total_cost_paise,"baseline_cost_paise":row.baseline_cost_paise,"before_probabilities":row.before_probabilities,"after_probabilities":row.after_probabilities,"planning_details":row.planning_details,"target_probability":row.planning_details.get("target_probability"),"why_this_plan":row.planning_details.get("why_this_plan") or next((e["why_this_plan"] for line in lines for e in line.evidence if "why_this_plan" in e),"No eligible capacity was selected."),"lines":[_line_out(x) for x in lines]}
+    from app.finance.plan_freshness import display_status
+    status=display_status(db,row);details=dict(row.planning_details)
+    if status=='STALE':details['baseline_status']='STALE';details['why_this_plan']='Forecast inputs or the selected basis changed. Re-evaluate financing and build a current plan.'
+    lines=db.scalars(select(KoshPlanLine).where(KoshPlanLine.plan_id==row.id)).all();return {"id":row.id,"seller_id":row.seller_id,"forecast_run_id":row.forecast_run_id,"forecast_fingerprint":row.forecast_fingerprint,"method":row.method,"status":status,"total_cost_paise":row.total_cost_paise,"baseline_cost_paise":row.baseline_cost_paise,"before_probabilities":row.before_probabilities,"after_probabilities":row.after_probabilities,"planning_details":details,"target_probability":row.planning_details.get("target_probability"),"why_this_plan":details.get("why_this_plan") or next((e["why_this_plan"] for line in lines for e in line.evidence if "why_this_plan" in e),"No eligible capacity was selected."),"lines":[_line_out(x) for x in lines]}
 class PlanIn(BaseModel):
     target_probability:Decimal|None=Field(default=None,ge=0,lt=1)
     loan_repayment_date:date|None=None

@@ -36,14 +36,14 @@ def listing(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Dep
     record(db,seller_id,access,"intelligence.read",{});return {"items":items,"history":history,"role":access.role,"history_label":"Optional owner-confirmed additional payment observations; switchable"}
 @router.post("/history")
 def propose_history(seller_id:int,payload:HistoryIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id)
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source="ADDON:customer_intelligence")
     if payload.observed_date.isoformat()>(get_settings().kosh_as_of_date or date.today().isoformat()):raise HTTPException(422,'Payment observations cannot be future facts')
     if any(day<0 or day>730 for day in payload.delay_days):raise HTTPException(422,"Delay observations must be between zero and 730 days")
     if db.scalar(select(KoshCounterparty.id).where(KoshCounterparty.id==payload.counterparty_id,KoshCounterparty.seller_id==seller_id)) is None:raise HTTPException(404,"Customer not found")
     row=KoshOperationRecord(seller_id=seller_id,kind="PAYMENT_HISTORY",evidence_ref=payload.evidence_ref,data=payload.model_dump(mode="json"),status="PROPOSED",created_by_user_id=access.user_id);db.add(row);db.flush();record(db,seller_id,access,"intelligence.history.propose",{"id":row.id},"T1");return {"id":row.id,"status":row.status}
 @router.post("/history/{record_id}/confirm")
 def confirm_history(seller_id:int,record_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_owner)):
-    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id)
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source="ADDON:customer_intelligence")
     row=db.scalar(select(KoshOperationRecord).where(KoshOperationRecord.id==record_id,KoshOperationRecord.seller_id==seller_id,KoshOperationRecord.kind=="PAYMENT_HISTORY").with_for_update())
     if row is None:raise HTTPException(404,"History evidence not found")
     row.status="CONFIRMED";row.updated_at=utcnow();record(db,seller_id,access,"intelligence.history.confirm",{"id":row.id},"T1");return {"id":row.id,"status":row.status}

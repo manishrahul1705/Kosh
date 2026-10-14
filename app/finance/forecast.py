@@ -70,12 +70,13 @@ def load_inputs(db:Session,seller_id:int,as_of:date,*,include_addon_events:bool=
     from app.finance.sandbox_ledger import overlay
     delta,events,reductions=overlay(db,seller_id,as_of)
     from app.database.kosh_models import KoshCashEvent
-    addon=tuple({"date":row.event_date.isoformat(),"amount_paise":row.amount_paise*(1 if row.event_type=="EXPECTED_RECEIVABLE" or row.cost_direction=="DECREASE" else -1),"component":"addon","event_id":row.id,"source_module":row.source_module} for row in db.scalars(select(KoshCashEvent).where(KoshCashEvent.seller_id==seller_id,KoshCashEvent.status=="CONFIRMED",KoshCashEvent.event_type!="FINANCING_NEED").order_by(KoshCashEvent.id))) if include_addon_events else ()
-    if include_customer_history:
+    from app.finance.modules import enabled
+    addon=tuple({"date":row.event_date.isoformat(),"amount_paise":row.amount_paise*(1 if row.event_type=="EXPECTED_RECEIVABLE" or row.cost_direction=="DECREASE" else -1),"component":"addon","event_id":row.id,"source_module":row.source_module} for row in db.scalars(select(KoshCashEvent).where(KoshCashEvent.seller_id==seller_id,KoshCashEvent.status=="CONFIRMED",KoshCashEvent.event_type!="FINANCING_NEED").order_by(KoshCashEvent.id)) if enabled(db,seller_id,row.source_module)) if include_addon_events else ()
+    if include_customer_history and enabled(db,seller_id,"customer_intelligence"):
         from app.finance.intelligence import enriched_delays
         customer=enriched_delays(db,seller_id,as_of,{key:tuple(value) for key,value in customer.items()})
     from app.finance.revenue import revenue_signal
-    predictions=tuple(w["predicted_revenue_paise"] for w in revenue_signal(sales)["weeks"]) if include_revenue_signal else ()
+    predictions=tuple(w["predicted_revenue_paise"] for w in revenue_signal(sales)["weeks"]) if include_revenue_signal and enabled(db,seller_id,"revenue") else ()
     return ForecastInputs((bank.balance_paise if bank else 0)+delta,tuple(open_rows),obligations,tuple(portfolio or [30,45,60]),{key:tuple(value) for key,value in customer.items()},tuple(sales),tuple(purchases),review,addon_cash_events=addon,sandbox_cash_events=events,sandbox_invoice_reductions=reductions,revenue_predictions=predictions)
 
 def buffer_for_seller(db:Session,seller_id:int,default:int=100_000_000)->int:
@@ -139,3 +140,8 @@ def simulate(inputs:ForecastInputs,*,as_of:date,n_paths:int=2000,seed:int=42,inc
         expected=[int((Decimal(row[idx])/n_paths).quantize(Decimal("1"),rounding=ROUND_HALF_UP)) for row in totals]
         weeks.append({"week_index":idx+1,"week_start":starts[idx],"week_end":starts[idx]+timedelta(days=6),"p10_closing_balance_paise":_paise(values,".10"),"p50_closing_balance_paise":_paise(values,".50"),"p90_closing_balance_paise":_paise(values,".90"),"expected_inflow_committed_paise":expected[0],"expected_inflow_forecast_paise":expected[1],"expected_outflow_committed_paise":expected[2],"expected_outflow_forecast_paise":expected[3],"expected_inflow_revenue_paise":expected[8],"expected_inflow_addon_paise":expected[6],"expected_outflow_addon_paise":expected[7],"expected_inflow_sandbox_paise":expected[4],"expected_outflow_sandbox_paise":expected[5],"prob_below_buffer":sum(value<buffer_paise for value in values)/n_paths,"expected_shortfall_paise":int((Decimal(sum(shortfalls))/n_paths).quantize(Decimal("1"),rounding=ROUND_HALF_UP))})
     return {"as_of_date":as_of,"horizon_weeks":13,"n_paths":n_paths,"seed":seed,"buffer_paise":buffer_paise,"under_review_paise":inputs.under_review_paise,"weeks":weeks}
+
+
+def current_fingerprint(db,run):
+    inputs=load_inputs(db,run.seller_id,run.as_of_date,include_addon_events=run.params.get('include_addon_events',True),include_customer_history=run.params.get('include_customer_history',False),include_revenue_signal=run.params.get('include_revenue_signal',False))
+    return fingerprint(inputs,{**run.params,'n_paths':run.n_paths,'seed':run.seed,'include_forecast_sales':run.include_forecast_sales,'as_of_date':run.as_of_date,'buffer_paise':run.buffer_paise})

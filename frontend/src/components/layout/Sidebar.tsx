@@ -9,6 +9,8 @@ const NAV_ITEMS = [
 ]
 
 const KOSH_ITEMS = [
+  { to: '/modules', icon: Building2, label: 'Kosh modules' },
+  { to: '/operations', icon: ListChecks, label: 'Operations' },
   { to: '/cash', icon: Wallet, label: 'Cash' },
   { to: '/ledger', icon: BookOpen, label: 'Ledger' },
   { to: '/plan', icon: Route, label: 'Plan' },

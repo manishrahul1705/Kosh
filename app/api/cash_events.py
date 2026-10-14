@@ -35,7 +35,7 @@ def listing(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Dep
 @router.post("")
 def propose(seller_id:int,payload:CashEventIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
     reserve_sqlite_writer(db,renew_read=True)
-    gate(db,seller_id,access.user_id)
+    gate(db,seller_id,access.user_id,source=f"ADDON:{payload.source_module}")
     existing=db.scalar(select(KoshCashEvent).where(KoshCashEvent.seller_id==seller_id,KoshCashEvent.source_module==payload.source_module,KoshCashEvent.event_type==payload.event_type,KoshCashEvent.evidence_ref==payload.evidence_ref))
     if existing:
         if any(getattr(existing,key)!=value for key,value in payload.model_dump().items()):raise HTTPException(409,"Evidence already used with different parameters")
@@ -49,5 +49,6 @@ def confirm(seller_id:int,event_id:int,db:Session=Depends(get_db),access:Authori
     row=db.scalar(select(KoshCashEvent).where(KoshCashEvent.id==event_id,KoshCashEvent.seller_id==seller_id).with_for_update())
     if row is None:raise HTTPException(404,"Cash event not found")
     if row.status not in {"PROPOSED","CONFIRMED"}:raise HTTPException(409,"Rejected event cannot be confirmed")
+    gate(db,seller_id,access.user_id,source=f"ADDON:{row.source_module}")
     row.status="CONFIRMED";row.confirmed_at=row.confirmed_at or utcnow();row.confirmed_by_user_id=access.user_id
     record(db,seller_id,access,"cash_event.confirm",{"id":row.id,"amount_paise":row.amount_paise});return out(row)

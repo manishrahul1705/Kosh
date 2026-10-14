@@ -14,6 +14,7 @@ vi.mock('@/app/SellerContext', () => ({
 }))
 vi.mock('@/lib/api/kosh', () => ({
   koshApi: {
+    modules:vi.fn().mockResolvedValue({role:'OWNER',items:[{module:'sales',name:'Sales intake',cash_feed:'Expected receivables',href:'/operations/sales',enabled:true},{module:'collections',name:'Collections module',cash_feed:'Approved reminders',href:'/operations/collections',enabled:false}]}),toggleModule:vi.fn().mockResolvedValue({}),
     cashEvents:vi.fn().mockResolvedValue({role:'OWNER',items:[]}),
     ledger: vi.fn().mockResolvedValue({ seller_id: 7, totals: { open_receivables_paise:0,open_payables_paise:0,overdue_receivables_paise:0,review_count:0,latest_bank_balance_paise:null,bank_balance_as_of:null }, items: [] }),
     forecast: vi.fn().mockResolvedValue({seller_id:7,run:{id:1,as_of_date:'2026-10-13',buffer_paise:100000000,include_forecast_sales:true},weeks:[{week_index:1,week_start:'2026-10-12',week_end:'2026-10-18',p10_closing_balance_paise:80000000,p50_closing_balance_paise:120000000,p90_closing_balance_paise:150000000,expected_inflow_committed_paise:1,expected_inflow_forecast_paise:2,expected_outflow_committed_paise:3,expected_outflow_forecast_paise:4,prob_below_buffer:.6,expected_shortfall_paise:20000000}],under_review_paise:48000000,alert:{id:1,week_index:1,probability:.6,expected_shortfall_paise:20000000,peak_expected_shortfall_paise:20000000,causes:[{type:'CUSTOMER',customer:'ABC Industries',amount_paise:140000000,contribution_paise:10000000}],summary:'Week 1 warning'}}),
@@ -38,6 +39,20 @@ import { router } from '@/app/router'
 import { koshApi } from '@/lib/api/kosh'
 
 describe('Kosh protected routes', () => {
+  it('lists disabled native modules and preserves all existing navigation', async () => {
+    await router.navigate('/modules')
+    const client=new QueryClient({defaultOptions:{queries:{retry:false}}})
+    render(<QueryClientProvider client={client}><RouterProvider router={router}/></QueryClientProvider>)
+    expect(await screen.findByRole('region',{name:'Kosh modules'})).toBeInTheDocument()
+    expect(await screen.findByRole('link',{name:'Collections module'})).toHaveAttribute('href','/operations/collections')
+    expect(screen.getByRole('link',{name:'Sales intake'})).toBeInTheDocument()
+    expect(screen.getByRole('link',{name:'My Tenders'})).toBeInTheDocument()
+    expect(screen.getByRole('link',{name:'Seller Profile'})).toBeInTheDocument()
+    const switches=screen.getAllByRole('checkbox');expect(switches).toHaveLength(2)
+    fireEvent.click(switches[0]);await waitFor(()=>expect(koshApi.toggleModule).toHaveBeenCalledWith(7,'sales',false))
+    cleanup();client.clear()
+  })
+
   it('requires a T3 OTP, displays exact parameters and confirms owner kill changes', async () => {
     vi.mocked(koshApi.actionInbox).mockResolvedValue({role:'OWNER',items:[{id:'test-intent',plan_line_id:11,action_type:'TREDS_FINANCE',tier:'T3',params:{amount_paise:48000000,invoice_id:9},status:'PROPOSED',expires_at:null,policy_decision:{rule_ids:['ALLOWLIST']}}]})
     vi.mocked(koshApi.approveIntent).mockResolvedValueOnce({approval_token:'private-token',expires_at:new Date(Date.now()+300000).toISOString()})
@@ -88,38 +103,33 @@ describe('Kosh protected routes', () => {
     cleanup()
     client.clear()
   })
-  it('renders Kosh pages in the existing layout and loads the active seller', async () => {
-    const pages = [
-      ['/cash', 'Cash forecast', null, koshApi.forecast],
-      ['/ledger', 'Ledger', null, koshApi.ledger],
-      ['/plan', 'Financing plan', null, koshApi.financingOptions],
-      ['/approvals', 'Approvals', null, koshApi.actionInbox],
-      ['/audit', 'Audit', null, koshApi.audit],
-      ['/connect', 'Connect', null, koshApi.documents],
-    ] as const
-    for (const [path, title, stage, load] of pages) {
-      await router.navigate(path)
-      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-      render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>)
-      expect(await screen.findByRole('region', { name: title })).toBeInTheDocument()
-      if(stage!==null)expect(screen.getByText(`Coming in Stage ${stage}`)).toBeInTheDocument()
-      expect(screen.getByRole('complementary', { name: 'Main navigation' })).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: 'My Tenders' })).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: 'Seller Profile' })).toBeInTheDocument()
-      await waitFor(() => expect(load).toHaveBeenCalledWith(7))
-      if (path === '/plan') {
-        expect(screen.getByRole('columnheader', { name: 'Days' })).toBeInTheDocument()
-        expect(screen.getByRole('columnheader', { name: 'Absolute cost' })).toBeInTheDocument()
-        expect(screen.getByText('Cheapest available capacity arriving before the alert.')).toBeInTheDocument()
-        expect(screen.getByText('Safety target not verified; build a new plan.')).toBeInTheDocument()
-        expect(screen.getByText('NBFC baseline insufficient or not verified; savings unavailable.')).toBeInTheDocument()
-      }
-      if (path === '/audit') {
-        expect(screen.getByRole('button', { name: 'Export JSONL' })).toBeInTheDocument()
-        expect(await screen.findByText('injection detections: 1')).toBeInTheDocument()
-      }
-      cleanup()
-      client.clear()
+  it.each([
+    ['/cash','Cash forecast',koshApi.forecast],
+    ['/ledger','Ledger',koshApi.ledger],
+    ['/plan','Financing plan',koshApi.financingOptions],
+    ['/approvals','Approvals',koshApi.actionInbox],
+    ['/audit','Audit',koshApi.audit],
+    ['/connect','Connect',koshApi.documents],
+  ] as const)('renders protected Kosh route %s in the existing layout', async(path,title,load)=>{
+    await router.navigate(path)
+    const client=new QueryClient({defaultOptions:{queries:{retry:false}}})
+    render(<QueryClientProvider client={client}><RouterProvider router={router}/></QueryClientProvider>)
+    expect(await screen.findByRole('region',{name:title})).toBeInTheDocument()
+    expect(screen.getByRole('complementary',{name:'Main navigation'})).toBeInTheDocument()
+    expect(screen.getByRole('link',{name:'My Tenders'})).toBeInTheDocument()
+    expect(screen.getByRole('link',{name:'Seller Profile'})).toBeInTheDocument()
+    await waitFor(()=>expect(load).toHaveBeenCalledWith(7))
+    if(path==='/plan'){
+      expect(screen.getByRole('columnheader',{name:'Days'})).toBeInTheDocument()
+      expect(screen.getByRole('columnheader',{name:'Absolute cost'})).toBeInTheDocument()
+      expect(screen.getByText('Cheapest available capacity arriving before the alert.')).toBeInTheDocument()
+      expect(screen.getByText('Safety target not verified; build a new plan.')).toBeInTheDocument()
+      expect(screen.getByText('NBFC baseline insufficient or not verified; savings unavailable.')).toBeInTheDocument()
     }
+    if(path==='/audit'){
+      expect(screen.getByRole('button',{name:'Export JSONL'})).toBeInTheDocument()
+      expect(await screen.findByText('injection detections: 1')).toBeInTheDocument()
+    }
+    cleanup();client.clear()
   })
 })

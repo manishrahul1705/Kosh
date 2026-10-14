@@ -15,6 +15,10 @@ PRODUCT_ACTIONS={"COLLECTIONS_PUSH":"COLLECTIONS_REMINDER","SUPPLIER_TERM_EXTENS
 REGISTERED_MODULES={"collections","sales","procurement","pricing","customer_intelligence","revenue","reports","tender_to_cash"}
 
 def decision_for(db,intent,*,phase="propose",actor_role=None,approved=False,otp_verified=False,consent_valid=None):
+    from app.finance.modules import enabled
+    from app.policy.rules import PolicyDecision
+    feature=intent.params.get('feature_module') or (intent.source.split(':',1)[1] if intent.source.startswith('ADDON:') else {'COLLECTIONS_PUSH':'collections','SUPPLIER_TERM_EXTENSION':'procurement'}.get(intent.params.get('product_code')))
+    if feature and not enabled(db,intent.seller_id,feature):return PolicyDecision(intent.tier,'DENY',('MODULE_DISABLED',),('This module is disabled for the seller.',))
     if consent_valid is None:
         from app.consent.sharing import active
         consent_valid=active(db,seller_id=intent.seller_id,purpose=intent.params.get("sharing_purpose"),recipient_id=intent.params.get("recipient_id"),fields=intent.params.get("sharing_fields",[])) is not None if intent.params.get("sharing_fields") else False
@@ -32,6 +36,8 @@ def create_from_plan_line(db,*,seller_id,plan_line_id,creator_id,source="PLANNER
     if Decimal(str(plan.after_probabilities[alert_week-1]))>target or any(Decimal(str(p))>=Decimal(plan.planning_details["alert_threshold"]) for p in plan.after_probabilities):raise ValueError("PLAN_PROOF_INVALID")
     latest=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if not latest or latest.id!=plan.forecast_run_id or latest.input_fingerprint!=plan.forecast_fingerprint:raise ValueError("STALE_PLAN")
+    from app.finance.forecast import current_fingerprint
+    if current_fingerprint(db,latest)!=latest.input_fingerprint:raise ValueError("STALE_PLAN_INPUTS")
     action=PRODUCT_ACTIONS.get(line.product_id)
     if action is None:raise ValueError("UNSUPPORTED_PLAN_PRODUCT")
     existing=db.scalar(select(KoshActionIntent).where(KoshActionIntent.plan_line_id==line.id,KoshActionIntent.action_type==action))

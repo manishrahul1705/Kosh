@@ -14,6 +14,12 @@ vi.mock('@/app/SellerContext', () => ({
 }))
 vi.mock('@/lib/api/kosh', () => ({
   koshApi: {
+    messagingStatus:vi.fn().mockResolvedValue({transport:'SANDBOX_ONLY',device_pairing:'BLOCKED_OFFLINE',reason:'No external account linking',owner_command:''}),
+    chat:vi.fn().mockResolvedValue({status:'REFUSED',reason:'Read-only cash chat cannot send payments.',facts:[]}),
+    operations:vi.fn().mockResolvedValue({role:'OWNER',items:[],counterparties:[],drafts:[],market_sample:[]}),operationDashboard:vi.fn().mockResolvedValue({inventory:[],workflows:[],timeline:[]}),
+    collections:vi.fn().mockResolvedValue({role:'OWNER',items:[]}),intelligence:vi.fn().mockResolvedValue({role:'OWNER',items:[],history:[]}),
+    revenueSignal:vi.fn().mockResolvedValue({model:'Dependency-free level and trend',reason:'Optional estimated input',explainability:'Exact contributions',cash_timing:'Assumed payment delay',source:'Owned invoices',weeks:[]}),
+    reports:vi.fn().mockResolvedValue({role:'OWNER',items:[],recipients:[]}),sharingConsents:vi.fn().mockResolvedValue({items:[]}),tenderCashList:vi.fn().mockResolvedValue({items:[]}),
     modules:vi.fn().mockResolvedValue({role:'OWNER',items:[{module:'sales',name:'Sales intake',cash_feed:'Expected receivables',href:'/operations/sales',enabled:true},{module:'collections',name:'Collections module',cash_feed:'Approved reminders',href:'/operations/collections',enabled:false}]}),toggleModule:vi.fn().mockResolvedValue({}),
     cashEvents:vi.fn().mockResolvedValue({role:'OWNER',items:[]}),
     ledger: vi.fn().mockResolvedValue({ seller_id: 7, totals: { open_receivables_paise:0,open_payables_paise:0,overdue_receivables_paise:0,review_count:0,latest_bank_balance_paise:null,bank_balance_as_of:null }, items: [] }),
@@ -39,6 +45,36 @@ import { router } from '@/app/router'
 import { koshApi } from '@/lib/api/kosh'
 
 describe('Kosh protected routes', () => {
+  it('keeps the ported theme control and read-only chat refusal',async()=>{
+    await router.navigate('/cash')
+    const client=new QueryClient({defaultOptions:{queries:{retry:false}}})
+    render(<QueryClientProvider client={client}><RouterProvider router={router}/></QueryClientProvider>)
+    fireEvent.click(await screen.findByRole('button',{name:'Use dark theme'}))
+    expect(screen.getByRole('button',{name:'Use light theme'})).toHaveAttribute('aria-pressed','true')
+    fireEvent.click(screen.getByRole('button',{name:'Cash chat'}))
+    fireEvent.change(screen.getByLabelText('Question'),{target:{value:'pay supplier X'}})
+    fireEvent.click(screen.getByRole('button',{name:'Ask'}))
+    await waitFor(()=>expect(koshApi.chat).toHaveBeenCalledWith(7,'pay supplier X'))
+    expect(await screen.findByText(/REFUSED: Read-only cash chat/)).toBeInTheDocument()
+    cleanup();client.clear()
+  })
+  it.each([
+    ['/operations','Operations'],
+    ['/operations/resources','Operations'],
+    ['/operations/collections','Collections'],
+    ['/operations/customer-intelligence','Customer intelligence'],
+    ['/operations/revenue','Revenue signal'],
+    ['/operations/reports','Cash reports'],
+    ['/operations/tender-to-cash','Tender to cash'],
+  ] as const)('renders the native port at %s',async(path,region)=>{
+    await router.navigate(path)
+    const client=new QueryClient({defaultOptions:{queries:{retry:false}}})
+    render(<QueryClientProvider client={client}><RouterProvider router={router}/></QueryClientProvider>)
+    expect(await screen.findByRole('region',{name:region})).toBeInTheDocument()
+    expect(screen.getByRole('link',{name:'My Tenders'})).toBeInTheDocument()
+    cleanup();client.clear()
+  })
+
   it('lists disabled native modules and preserves all existing navigation', async () => {
     await router.navigate('/modules')
     const client=new QueryClient({defaultOptions:{queries:{retry:false}}})

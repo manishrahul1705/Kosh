@@ -18,6 +18,7 @@ def process_private_document(session:Session,*,document:KoshPrivateDocument,vers
         result=extract_invoice_pdf(path);reasons=result["reasons"]
         if not result["invoice_number"]:reasons.append("MISSING_INVOICE_NUMBER")
         if not result["invoice_date"]:reasons.append("MISSING_INVOICE_DATE")
+        if not result["due_date"]:reasons.append("MISSING_DUE_DATE")
         if result["amounts"]["total"] is None:reasons.append("MISSING_TOTAL")
         if result["invoice_number"] and result["invoice_date"] and result["amounts"]["total"] is not None:
             direction="RECEIVABLE" if document.kind=="SALES_INVOICE" else "PAYABLE"

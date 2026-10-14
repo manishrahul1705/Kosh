@@ -106,7 +106,7 @@ def run(db,intent):
             if p.get("report_id"):
                 from app.database.kosh_models import KoshOperationRecord
                 report=db.scalar(select(KoshOperationRecord).where(KoshOperationRecord.id==p['report_id'],KoshOperationRecord.seller_id==intent.seller_id,KoshOperationRecord.kind=="REPORT"))
-                if report is None or hashlib.sha256(base64.b64decode(report.data['pdf_base64'])).hexdigest()!=p['pdf_sha256']:raise AdapterError("REPORT_INTEGRITY_FAILED")
+                if report is None or report.status!='DRAFT' or hashlib.sha256(base64.b64decode(report.data['pdf_base64'])).hexdigest()!=p['pdf_sha256']:raise AdapterError("REPORT_INTEGRITY_FAILED")
             row.result={"provider":"SANDBOX_SHARING","recipient_id":p["recipient_id"],"shared_fields":p["sharing_fields"],"evidence_reference":p.get("evidence_reference")}
         if p.get("sharing_fields"):
             record(db,intent,"sharing.submit.sandbox",{"execution_id":row.id,"consent_id":consent.id,"recipient_id":p["recipient_id"],"fields":p["sharing_fields"]})

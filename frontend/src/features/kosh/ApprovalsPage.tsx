@@ -32,11 +32,13 @@ export const ApprovalsPage=()=>{
       <h4>{intent.action_type} · {intent.tier} · {intent.status}</h4>{intent.plan_line_id?<Link to={`/plan#plan-line-${intent.plan_line_id}`}>Plan line {intent.plan_line_id}</Link>:<Link to="/operations/collections">Native module evidence</Link>}
       <h5>Exact parameters</h5><pre className="whitespace-pre-wrap">{JSON.stringify(intent.params,null,2)}</pre>
       <h5>Policy reasons</h5><pre className="whitespace-pre-wrap">{JSON.stringify(intent.policy_decision,null,2)}</pre><p>{countdown(token?.expires_at??intent.expires_at)}</p>
+      {canApprove&&['BLOCKED','EXPIRED','FAILED'].includes(intent.status)&&<button disabled={busy} onClick={()=>void run(()=>koshApi.recheckIntent(activeSellerId!,intent.id))}>Recheck current policy {intent.id}</button>}
       {canApprove&&['PROPOSED','PENDING_APPROVAL'].includes(intent.status)&&<>
         {intent.tier==='T3'&&<><button disabled={busy} onClick={()=>void run(()=>koshApi.requestOtp(activeSellerId!,intent.id))}>Request OTP</button><label>OTP for {intent.id}<input aria-label={`OTP for ${intent.id}`} inputMode="numeric" maxLength={6} value={codes[intent.id]??''} onChange={e=>setCodes({...codes,[intent.id]:e.target.value})}/></label></>}
         <button disabled={busy||(intent.tier==='T3'&&!/^\d{6}$/.test(codes[intent.id]??''))} onClick={()=>void run(async()=>{const value=await koshApi.approveIntent(activeSellerId!,intent.id,codes[intent.id]);setTokens({...tokens,[intent.id]:value});setCodes({...codes,[intent.id]:''})})}>Approve {intent.id}</button>
         <button disabled={busy} onClick={()=>void run(()=>koshApi.rejectIntent(activeSellerId!,intent.id))}>Reject {intent.id}</button>
       </>}
+      {canApprove&&intent.status==='APPROVED'&&<button disabled={busy} onClick={()=>void run(()=>koshApi.rejectIntent(activeSellerId!,intent.id))}>Reject approved intent {intent.id}</button>}
       {canApprove&&intent.status==='APPROVED'&&token&&<button disabled={busy||Date.parse(token.expires_at)<=now} onClick={()=>void run(async()=>{await koshApi.executeIntent(activeSellerId!,intent.id,token.approval_token);setTokens(current=>{const next={...current};delete next[intent.id];return next})})}>Execute in sandbox {intent.id}</button>}
     </article>})}
     <h3>Sandbox inbox · private OTP deliveries</h3>{inbox.isError&&<p>Private OTP inbox unavailable in this environment.</p>}{inbox.data?.items.map(item=><pre className="whitespace-pre-wrap" key={item.id}>{JSON.stringify(item,null,2)}</pre>)}

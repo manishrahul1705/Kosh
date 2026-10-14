@@ -87,3 +87,7 @@ class ConversationIn(Evidence):
     counterparty_id:StrictInt=Field(gt=0)
     channel:Literal['WEB','EMAIL','WHATSAPP']
     text:str=Field(min_length=1,max_length=2000)
+
+class SurchargeIn(Evidence):
+    sales_order_id:StrictInt=Field(gt=0)
+    cost_change_percent:Decimal=Field(ge=-100,le=100)

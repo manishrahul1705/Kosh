@@ -52,6 +52,7 @@ def revoke_unused(db,intent_id,now):
 
 def recheck(db,*,seller_id,intent_id,actor_id):
     intent,role=locked(db,seller_id,intent_id,actor_id)
+    if intent.status=="APPROVED" and intent.expires_at and intent.expires_at<=utcnow():intent.status="EXPIRED"
     if intent.status not in {"BLOCKED","EXPIRED","FAILED"}:denied(db,intent,actor_id,"RECHECK_STATE","Only blocked, expired or failed intents can be rechecked.",status_code=409)
     decision=decision_for(db,intent)
     intent.policy_decision=decision.as_dict()

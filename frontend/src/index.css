@@ -109,3 +109,8 @@
     @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
   }
 }
+
+[data-kosh-theme="dark"] { color: #e5e7eb; background: #0f172a; }
+[data-kosh-theme="dark"] .bg-white, [data-kosh-theme="dark"] .bg-gray-50 { background: #162033; color: #e5e7eb; }
+[data-kosh-theme="dark"] .text-gray-900, [data-kosh-theme="dark"] .text-gray-600, [data-kosh-theme="dark"] .text-gray-500 { color: #d1d5db; }
+[data-kosh-theme="dark"] input, [data-kosh-theme="dark"] select, [data-kosh-theme="dark"] textarea { background: #0f172a; color: #e5e7eb; }

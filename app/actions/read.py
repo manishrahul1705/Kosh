@@ -13,7 +13,9 @@ def day_used(db,seller_id,*,now=None,exclude_intent_id=None):
     return sum(row.params.get("amount_paise",0) for row in rows if row.id!=exclude_intent_id)
 
 def out(row):
-    return {c.name:(getattr(row,c.name).isoformat()+"Z" if isinstance(getattr(row,c.name),datetime) else getattr(row,c.name)) for c in row.__table__.columns}
+    result={c.name:(getattr(row,c.name).isoformat()+"Z" if isinstance(getattr(row,c.name),datetime) else getattr(row,c.name)) for c in row.__table__.columns}
+    if result.get('status')=='APPROVED' and getattr(row,'expires_at',None) and row.expires_at<=utcnow():result['status']='EXPIRED'
+    return result
 
 def owned(db,seller_id,intent_id,*,lock=False):
     stmt=select(KoshActionIntent).where(KoshActionIntent.id==intent_id,KoshActionIntent.seller_id==seller_id)

@@ -46,6 +46,10 @@ def download(seller_id:int,report_id:int,db:Session=Depends(get_db),access:Autho
 @router.post("/{report_id}/share")
 def share(seller_id:int,report_id:int,payload:ShareIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
     reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source="ADDON:reports");report=owned(db,seller_id,report_id)
+    if report.status!="DRAFT":raise HTTPException(409,"Only an active internal report draft may be shared")
     if payload.recipient_id not in {p['id'] for p in load_catalogue()}:raise HTTPException(422,"Unknown registered recipient")
+    existing=next((d for d in db.scalars(select(KoshAddonDraft).where(KoshAddonDraft.seller_id==seller_id,KoshAddonDraft.module=="reports",KoshAddonDraft.kind=="SHARE_DATA_PACK")) if d.params.get('report_id')==report.id and d.params.get('recipient_id')==payload.recipient_id),None)
+    if existing:
+        intent=create_from_draft(db,seller_id=seller_id,draft_id=existing.id,creator_id=access.user_id);db.commit();return out(intent)
     row=KoshAddonDraft(seller_id=seller_id,module="reports",kind="SHARE_DATA_PACK",params={"feature_module":"reports","amount_paise":0,"report_id":report.id,"pdf_sha256":report.data['pdf_sha256'],"allowlist_key":f"recipient:{payload.recipient_id}","recipient_id":payload.recipient_id,"sharing_purpose":"SHARE_DATA_PACK","sharing_fields":["cash_report_pdf","forecast","plan","options","audit_hash"],"evidence_reference":f"report:{report.id}:{report.data['pdf_sha256']}","funding_date":report.data['snapshot']['as_of'],"days":0,"cost_paise":0},body=f"Internal cash-position application pack #{report.id}",evidence_hash="",status="DRAFT",created_by_user_id=access.user_id);row.evidence_hash=draft_hash(row);db.add(row);db.flush()
     intent=create_from_draft(db,seller_id=seller_id,draft_id=row.id,creator_id=access.user_id);db.commit();return out(intent)

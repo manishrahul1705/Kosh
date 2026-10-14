@@ -27,6 +27,10 @@ class OrderIn(StrictInput):
     material_code:str=Field(pattern=r"^[A-Z0-9_-]{1,40}$")
     evidence_ref:str=Field(min_length=1,max_length=160)
     estimated_cost_paise:StrictInt|None=Field(default=None,ge=0,le=9000000000000000)
+    quantity:StrictInt|None=Field(default=None,ge=1,le=1000000)
+    delivery_date:date|None=None
+    location:str|None=Field(default=None,max_length=160)
+    special_requirements:str|None=Field(default=None,max_length=1000)
 class PricingIn(StrictInput):
     purchase_order_id:StrictInt=Field(gt=0)
     change_percent:Decimal=Field(ge=-100,le=100)
@@ -220,3 +224,56 @@ def conversation(seller_id:int,payload:ConversationIn,db:Session=Depends(get_db)
     row=KoshOperationRecord(seller_id=seller_id,kind='CONVERSATION',evidence_ref=evidence,data=data,status='REVIEW_REQUIRED',created_by_user_id=access.user_id);db.add(row);db.flush()
     if GUARD.search(payload.text):append_event(db,seller_id=seller_id,actor_type='SYSTEM',actor_id=None,action='security.injection_detected',tier='T0',payload={'conversation_id':row.id},policy_decision='DENY')
     record(db,seller_id,access,'operations.conversation.record',{'id':row.id,'channel':payload.channel});return out(row)
+
+
+@router.post('/records/{record_id}/reject')
+def reject_record(seller_id:int,record_id:int,payload:CompletionIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_owner)):
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id);row=owned(db,seller_id,record_id)
+    if row.status in {'EXECUTED','COMPLETED','SUPERSEDED'}:raise HTTPException(409,'Executed or superseded evidence cannot be rejected')
+    if row.kind=='WORKFLOW' and row.data.get('intent_id'):
+        from app.actions.approvals import reject,ActionError
+        try:reject(db,seller_id=seller_id,intent_id=row.data['intent_id'],actor_id=access.user_id)
+        except ActionError as exc:raise HTTPException(exc.status_code,str(exc))
+    if row.data.get('cash_event_id'):
+        event=db.scalar(select(KoshCashEvent).where(KoshCashEvent.id==row.data['cash_event_id'],KoshCashEvent.seller_id==seller_id).with_for_update())
+        if event is not None:event.status='REJECTED'
+    row.status='REJECTED';row.data={**row.data,'rejection_evidence':payload.evidence_ref};row.updated_at=utcnow();record(db,seller_id,access,'operations.record.reject',{'id':row.id,'evidence_ref':payload.evidence_ref});return out(row)
+
+@router.post('/demo')
+def demo(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id);facts=analytics(db,seller_id)
+    steps=[{'name':'Observe owned cash and inventory','status':'DONE','inventory_records':len(facts['inventory'])},{'name':'Review shortage proposals','status':'DONE','shortage_count':sum(bool(r['shortage_units']) for r in facts['inventory'])},{'name':'Check quote evidence','status':'REVIEW_REQUIRED' if not facts['quotes'] or any(q['status']=='REVIEW_REQUIRED' for q in facts['quotes']) else 'DONE'},{'name':'Human approval before any outbound step','status':'PAUSED'}]
+    row=KoshOperationRecord(seller_id=seller_id,kind='DEMO_RUN',evidence_ref='owner:offline-business-review',data={'steps':steps,'cash_posted_paise':0,'messages_sent':0,'basis':'Owned facts only; no source inputs changed or outcomes invented'},status='INTERNAL_REVIEW',created_by_user_id=access.user_id);db.add(row);db.flush();record(db,seller_id,access,'operations.demo.review',{'id':row.id});return out(row)
+
+
+from app.schemas.native_operations import SurchargeIn
+from fastapi import Query
+@router.get('/knowledge/search')
+def knowledge_search(seller_id:int,q:str=Query(min_length=1,max_length=100),db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
+    tokens=set(q.lower().split());items=[]
+    for row in db.scalars(select(KoshOperationRecord).where(KoshOperationRecord.seller_id==seller_id,KoshOperationRecord.kind=='KNOWLEDGE')):
+        text=' '.join(str(row.data.get(k,'')) for k in ('title','text','topic','tags'));count=sum(token in text.lower() for token in tokens)
+        if count:items.append({'id':row.id,'status':row.status,'evidence_ref':row.evidence_ref,'match_count':count,'data':row.data,'execution_authority':'NONE'})
+    items.sort(key=lambda r:(-r['match_count'],r['id']));record(db,seller_id,access,'operations.knowledge.search',{'matches':len(items)},'T0');return {'items':items}
+@router.get('/orders/{record_id}/document')
+def order_document(seller_id:int,record_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
+    row=owned(db,seller_id,record_id)
+    if row.kind not in {'SALE','PO'}:raise HTTPException(404,'Order document not found')
+    recipient=party(db,seller_id,row.data['counterparty_id'])
+    body=f"INTERNAL {'PURCHASE ORDER' if row.kind=='PO' else 'SALES ORDER'} #{row.id}\nStatus: {row.status}\nCounterparty: {recipient.name}\nMaterial: {row.data['material_code']}\nAmount: INR {Decimal(row.data['amount_paise'])/100:,.2f}\nPayment date: {row.data['payment_date']}\nEvidence: {row.evidence_ref}\nNo external commitment or dispatch is implied. Approval-gated sandbox outreach only."
+    record(db,seller_id,access,'operations.order.document.read',{'id':row.id},'T0');return {'id':row.id,'body':body,'internal_only':True}
+@router.post('/surcharge')
+def surcharge(seller_id:int,payload:SurchargeIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
+    reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source='ADDON:pricing');sale=owned(db,seller_id,payload.sales_order_id,'SALE');cost=sale.data.get('estimated_cost_paise')
+    if sale.status!='CONFIRMED' or cost is None:result={'status':'REVIEW_REQUIRED','reason':'Confirmed sales order and documented estimated production cost required.'}
+    else:
+        delta=int((Decimal(cost)*payload.cost_change_percent/100).quantize(Decimal(1),rounding=ROUND_HALF_UP));result={'status':'COMPUTED_SCENARIO','original_margin_paise':sale.data['amount_paise']-cost,'cost_delta_paise':delta,'revised_margin_without_surcharge_paise':sale.data['amount_paise']-cost-delta,'surcharge_to_preserve_estimated_margin_paise':delta,'reason':'Owner-supplied cost estimate; hypothetical pass-through is not a customer commitment or receipt.'}
+    row=KoshOperationRecord(seller_id=seller_id,kind='SURCHARGE_SCENARIO',evidence_ref=payload.evidence_ref,data={'sales_order_id':sale.id,'result':result},status=result['status'],created_by_user_id=access.user_id);db.add(row);db.flush();record(db,seller_id,access,'operations.surcharge.scenario',{'id':row.id});return result
+
+
+@router.get('/messaging-status')
+def messaging_status(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
+    import importlib.util
+    missing=[name for name in ('segno','neonize') if importlib.util.find_spec(name) is None]
+    result={'transport':'SANDBOX_ONLY','external_delivery':False,'device_pairing':'BLOCKED_OFFLINE','qr_code':None,'missing_packages':missing,'reason':'Live device pairing requires unavailable dependencies and external account authentication. Native notifications use the approved sandbox adapter and Kosh login. Installing packages alone does not authorize or enable live delivery.','owner_command':'.\\.venv\\Scripts\\python.exe -m pip install segno neonize'}
+    record(db,seller_id,access,'operations.messaging_status.read',{},'T0');return result

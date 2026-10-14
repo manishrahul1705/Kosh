@@ -29,6 +29,15 @@ export interface FinancingPlan { target_probability:string;planning_details:{bas
 export interface ActionIntent { id:string; plan_line_id:number|null; action_type:string; tier:string; params:Record<string,unknown>; status:string; expires_at:string|null; policy_decision:Record<string,unknown> }
 export interface SandboxItem { id:string|number; intent_id:string; status:string; [key:string]:unknown }
 export const koshApi = {
+  messagingStatus:(id:number)=>apiClient.get<{transport:string;device_pairing:string;reason:string;owner_command:string}>(`/kosh/sellers/${id}/operations/messaging-status`).then(r=>r.data),
+  knowledgeSearch:(id:number,q:string)=>apiClient.get<{items:{id:number;status:string;evidence_ref:string;data:Record<string,unknown>}[]}>(`/kosh/sellers/${id}/operations/knowledge/search`,{params:{q}}).then(r=>r.data),
+  orderDocument:(id:number,record:number)=>apiClient.get<{body:string}>(`/kosh/sellers/${id}/operations/orders/${record}/document`).then(r=>r.data),
+  surchargeScenario:(id:number,sale:number,percent:string,evidence:string)=>apiClient.post<Record<string,unknown>>(`/kosh/sellers/${id}/operations/surcharge`,{sales_order_id:sale,cost_change_percent:percent,evidence_ref:evidence}).then(r=>r.data),
+  rejectOperation:(id:number,record:number,evidence:string)=>apiClient.post(`/kosh/sellers/${id}/operations/records/${record}/reject`,{evidence_ref:evidence}).then(r=>r.data),
+  demoOperations:(id:number)=>apiClient.post(`/kosh/sellers/${id}/operations/demo`).then(r=>r.data),
+  recheckIntent:(id:number,intent:string)=>apiClient.post(`/kosh/sellers/${id}/actions/intents/${intent}/recheck`).then(r=>r.data),
+  sharingConsents:(id:number)=>apiClient.get<{items:{id:number;purpose:string;recipient_id:string;fields:string[];expires_at:string;status:string}[]}>(`/kosh/sellers/${id}/consents/sharing`).then(r=>r.data),
+  revokeSharingConsent:(id:number,consent:number)=>apiClient.post(`/kosh/sellers/${id}/consents/sharing/${consent}/revoke`).then(r=>r.data),
   modules:(id:number)=>apiClient.get<{role:string;items:{module:string;name:string;cash_feed:string;href:string;enabled:boolean}[]}>(`/kosh/sellers/${id}/modules`).then(r=>r.data),
   toggleModule:(id:number,module:string,enabled:boolean)=>apiClient.put(`/kosh/sellers/${id}/modules/${module}`,{enabled}).then(r=>r.data),
   tenderCashList:(id:number)=>apiClient.get<{items:{tender_id:number;bid_number:string;title:string;buyer:string}[]}>(`/kosh/sellers/${id}/tender-to-cash`).then(r=>r.data),

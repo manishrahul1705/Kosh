@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse,hashlib,json,uuid,sys
-from datetime import date,datetime,timedelta
+from datetime import date,datetime,timedelta,timezone
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
@@ -61,6 +61,27 @@ def seed(database_url:str,data_dir:Path,storage:Path)->dict:
             if not existing:session.add(KoshObligation(seller_id=seller.id,**values))
             else:
                 for key,value in values.items():setattr(existing,key,value)
+        session.commit()
+        from app.policy.controls import editable_control
+        from app.consent.sharing import grant
+        from app.utils.dates import utcnow
+        control = editable_control(session, seller.id)
+        parties = session.scalars(select(KoshCounterparty).where(KoshCounterparty.seller_id == seller.id)).all()
+        allowlist = [{"key": f"counterparty:{p.id}", "added_at": (utcnow() - timedelta(days=2)).isoformat() + "Z"} for p in parties]
+        allowlist.append({"key": "recipient:TREDS_INVOICE_DISCOUNTING", "added_at": (utcnow() - timedelta(days=2)).isoformat() + "Z"})
+        allowlist.append({"key": "recipient:COLLECTIONS_PUSH", "added_at": (utcnow() - timedelta(days=2)).isoformat() + "Z"})
+        allowlist.append({"key": "recipient:BANK_OD_DRAWDOWN", "added_at": (utcnow() - timedelta(days=2)).isoformat() + "Z"})
+        control.allowlist = allowlist
+        session.commit()
+        grant(
+            session,
+            seller_id=seller.id,
+            actor_id=user.id,
+            purpose="TREDS_FINANCE",
+            recipient_id="TREDS_INVOICE_DISCOUNTING",
+            fields=["invoice_id", "amount_paise", "due_date"],
+            expires_at=(utcnow() + timedelta(days=365)).replace(tzinfo=timezone.utc),
+        )
         session.commit()
         from app.api.cash import get_ledger
         ledger=get_ledger(seller.id,session,None)

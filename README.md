@@ -28,6 +28,16 @@ $env:DATABASE_URL = 'sqlite:///./kosh_work.db'
 
 The generated data and private storage are ignored. Keep all worker and collection flags disabled while using this local demo.
 
+### Documentation for Judges
+
+- **[System Architecture](docs/kosh/ARCHITECTURE.md)**: System design diagram, 7-step closed loop, 18 modules, Monte Carlo forecasting with Common Random Numbers, least-cost optimization, policy tiers, and audit hash chaining.
+- **[5-Minute Demo Walkthrough](docs/kosh/demo_walkthrough.md)**: Exact click-path and expected on-screen values from reset to execution.
+- **[Canonical Demo Numbers](docs/kosh/demo_numbers.md)**: Deterministic figures for Meenakshi Precision Components (seed 42, as-of `2026-10-13`).
+- **[Security Self-Assessment](docs/kosh/SECURITY_SELF_ASSESSMENT.md)**: Threat model, OWASP Top 10 for LLMs, DPDP Act 2023, RBI Digital Lending Directions 2025, FREE-AI controls, penetration attack test results, and known risks.
+- **[Statutory Compliance Map](docs/kosh/COMPLIANCE_MAP.md)**: Direct mapping from regulations (MSMED Act Sections 15/16, PMMY caps, TReDS mandate) to Kosh implementations and automated tests.
+- **[Automated Test Evidence](docs/kosh/TEST_EVIDENCE.md)**: Test counts (315 Kosh, 1359 backend, 30 frontend), reproduction instructions, and proof mapping.
+- **[Financing Product Catalogue](docs/kosh/financing_catalogue.md)**: Comprehensive specification of all 8 evaluated credit products.
+
 ### Judge quick start
 
 To run the complete Kosh demo end-to-end (seed 42, as-of `2026-10-13`, forecast, financing evaluation, gap-closing plan at target 0.20, and Stage 4 sandbox execution):

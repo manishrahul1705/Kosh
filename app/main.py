@@ -151,6 +151,8 @@ def create_app(
     app.include_router(native_operations.router)
     from app.api import intelligence
     app.include_router(intelligence.router)
+    from app.api import revenue
+    app.include_router(revenue.router)
     from app.api import financing
     app.include_router(financing.router)
     from app.api import policy

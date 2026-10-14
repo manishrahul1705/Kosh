@@ -11,7 +11,7 @@ from app.sandbox.adapters import run,reconcile,AdapterError
 from app.utils.dates import utcnow
 
 def persist_forecast(db,*,seller_id,actor_id,basis,result,inputs):
-    params={"include_customer_history":basis.params.get("include_customer_history",False),"include_addon_events":basis.params.get("include_addon_events",True),"n_paths":basis.n_paths,"seed":basis.seed,"include_forecast_sales":basis.include_forecast_sales}
+    params={"include_revenue_signal":basis.params.get("include_revenue_signal",False),"include_customer_history":basis.params.get("include_customer_history",False),"include_addon_events":basis.params.get("include_addon_events",True),"n_paths":basis.n_paths,"seed":basis.seed,"include_forecast_sales":basis.include_forecast_sales}
     digest=fingerprint(inputs,{**params,"as_of_date":basis.as_of_date,"buffer_paise":basis.buffer_paise})
     row=KoshForecastRun(seller_id=seller_id,as_of_date=basis.as_of_date,horizon_weeks=13,n_paths=basis.n_paths,seed=basis.seed,params=params,input_fingerprint=digest,include_forecast_sales=basis.include_forecast_sales,buffer_paise=basis.buffer_paise,status="SUCCESS",created_by_user_id=actor_id)
     db.add(row);db.flush()
@@ -28,7 +28,7 @@ def execute(db,*,seller_id,intent_id,actor_id,token):
     if not verify_chain(db).valid:denied(db,intent,actor_id,"AUDIT_CHAIN_INVALID","Audit integrity must be valid before execution.",new_status="BLOCKED")
     basis=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if basis is None:denied(db,intent,actor_id,"FORECAST_REQUIRED","A successful forecast is required.")
-    before_inputs=load_inputs(db,seller_id,basis.as_of_date,include_addon_events=basis.params.get("include_addon_events",True),include_customer_history=basis.params.get("include_customer_history",False))
+    before_inputs=load_inputs(db,seller_id,basis.as_of_date,include_addon_events=basis.params.get("include_addon_events",True),include_customer_history=basis.params.get("include_customer_history",False),include_revenue_signal=basis.params.get("include_revenue_signal",False))
     kwargs={"as_of":basis.as_of_date,"n_paths":basis.n_paths,"seed":basis.seed,"include_forecast_sales":basis.include_forecast_sales,"buffer_paise":basis.buffer_paise}
     before=simulate(before_inputs,**kwargs)
     intent.status="EXECUTING";intent.updated_at=utcnow()
@@ -48,7 +48,7 @@ def execute(db,*,seller_id,intent_id,actor_id,token):
     if line is not None:line.status="EXECUTED"
     # Flush settled state before the read-only overlay loads it.
     db.flush()
-    after_inputs=load_inputs(db,seller_id,basis.as_of_date,include_addon_events=basis.params.get("include_addon_events",True),include_customer_history=basis.params.get("include_customer_history",False));after=simulate(after_inputs,**kwargs)
+    after_inputs=load_inputs(db,seller_id,basis.as_of_date,include_addon_events=basis.params.get("include_addon_events",True),include_customer_history=basis.params.get("include_customer_history",False),include_revenue_signal=basis.params.get("include_revenue_signal",False));after=simulate(after_inputs,**kwargs)
     after_run=persist_forecast(db,seller_id=seller_id,actor_id=actor_id,basis=basis,result=after,inputs=after_inputs)
     if line is None:
         from app.database.kosh_models import KoshAddonDraft

@@ -60,6 +60,6 @@ def whatif(seller_id:int,payload:ScenarioIn,db:Session=Depends(get_db),access:Au
         if po is None:raise HTTPException(404,"Confirmed purchase not found")
         delta=int((Decimal(po.data['amount_paise'])*payload.price_change_percent/100).quantize(Decimal(1),rounding=ROUND_HALF_UP));extras.append({"date":po.data['payment_date'],"amount_paise":-delta})
     elif payload.price_change_percent:raise HTTPException(422,"Specify the confirmed purchase exposure")
-    inputs=load_inputs(db,seller_id,run.as_of_date,include_addon_events=run.params.get('include_addon_events',True),include_customer_history=run.params.get('include_customer_history',False))
+    inputs=load_inputs(db,seller_id,run.as_of_date,include_addon_events=run.params.get('include_addon_events',True),include_customer_history=run.params.get('include_customer_history',False),include_revenue_signal=run.params.get('include_revenue_signal',False))
     result=simulate(inputs,as_of=run.as_of_date,n_paths=run.n_paths,seed=run.seed,include_forecast_sales=run.include_forecast_sales,buffer_paise=run.buffer_paise,customer_delay_shift_days=shifts,extra_inflows=extras)
     record(db,seller_id,access,"intelligence.whatif",{"base_run_id":run.id,"scenario":payload.model_dump(mode="json")});return {"base_run_id":run.id,"scenario_only":True,"assumptions":"Owned customer delay shift; percentage applied only to the chosen confirmed PO.",**result}

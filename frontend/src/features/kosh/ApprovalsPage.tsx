@@ -29,7 +29,7 @@ export const ApprovalsPage=()=>{
     {canApprove&&plan.data?.status==='VALID'&&<div><h3>Create an intent from the current valid plan</h3>{plan.data.lines.map(line=><button key={line.id} disabled={busy} onClick={()=>void run(()=>koshApi.proposeIntent(activeSellerId!,line.id))}>Propose {line.product_id} line {line.id}</button>)}</div>}
     <h3>Intent inbox</h3>{!intents.data?.items.length&&<p>No action intents.</p>}
     {intents.data?.items.map(intent=>{const token=tokens[intent.id];return <article key={intent.id} className="rounded border p-3 space-y-2">
-      <h4>{intent.action_type} · {intent.tier} · {intent.status}</h4><Link to={`/plan#plan-line-${intent.plan_line_id}`}>Plan line {intent.plan_line_id}</Link>
+      <h4>{intent.action_type} · {intent.tier} · {intent.status}</h4>{intent.plan_line_id?<Link to={`/plan#plan-line-${intent.plan_line_id}`}>Plan line {intent.plan_line_id}</Link>:<Link to="/operations/collections">Native module evidence</Link>}
       <h5>Exact parameters</h5><pre className="whitespace-pre-wrap">{JSON.stringify(intent.params,null,2)}</pre>
       <h5>Policy reasons</h5><pre className="whitespace-pre-wrap">{JSON.stringify(intent.policy_decision,null,2)}</pre><p>{countdown(token?.expires_at??intent.expires_at)}</p>
       {canApprove&&['PROPOSED','PENDING_APPROVAL'].includes(intent.status)&&<>

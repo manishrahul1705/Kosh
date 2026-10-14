@@ -344,7 +344,7 @@ class KoshActionIntent(Base):
     source:Mapped[str]=mapped_column(sa.String(64),nullable=False)
     action_type:Mapped[str]=mapped_column(sa.String(48),nullable=False)
     params:Mapped[dict]=mapped_column(sa.JSON,nullable=False)
-    plan_line_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("kosh_plan_lines.id",ondelete="RESTRICT"),nullable=False)
+    plan_line_id:Mapped[int|None]=mapped_column(PK,sa.ForeignKey("kosh_plan_lines.id",ondelete="RESTRICT"),nullable=True)
     tier:Mapped[str]=mapped_column(sa.String(2),nullable=False)
     params_hash:Mapped[str]=mapped_column(sa.CHAR(64),nullable=False)
     status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
@@ -474,3 +474,27 @@ class KoshCashEvent(Base):
     confirmed_by_user_id:Mapped[int|None]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id"))
     created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
     confirmed_at:Mapped[datetime|None]=mapped_column(sa.DateTime)
+
+
+class KoshAddonDraft(Base):
+    __tablename__="kosh_addon_drafts"
+    id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False,index=True)
+    module:Mapped[str]=mapped_column(sa.String(48),nullable=False)
+    kind:Mapped[str]=mapped_column(sa.String(48),nullable=False)
+    params:Mapped[dict]=mapped_column(sa.JSON,nullable=False)
+    body:Mapped[str]=mapped_column(sa.Text,nullable=False)
+    evidence_hash:Mapped[str]=mapped_column(sa.CHAR(64),nullable=False)
+    status:Mapped[str]=mapped_column(sa.String(24),nullable=False,default="DRAFT")
+    created_by_user_id:Mapped[int]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id"),nullable=False)
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+
+class KoshCollectionTerms(Base):
+    __tablename__="kosh_collection_terms"
+    invoice_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("kosh_invoices.id",ondelete="RESTRICT"),primary_key=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False)
+    acceptance_date:Mapped[date]=mapped_column(sa.Date,nullable=False)
+    agreement_status:Mapped[str]=mapped_column(sa.String(16),nullable=False)
+    agreed_days:Mapped[int|None]=mapped_column(sa.Integer)
+    supplier_mse:Mapped[bool]=mapped_column(sa.Boolean,nullable=False)
+    evidence_ref:Mapped[str]=mapped_column(sa.String(160),nullable=False)

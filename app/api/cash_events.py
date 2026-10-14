@@ -11,6 +11,7 @@ from app.database.kosh_models import KoshCashEvent
 from app.database.session import reserve_sqlite_writer
 from app.audit.ledger import append_event
 from app.utils.dates import utcnow
+from app.policy.internal import gate
 router=APIRouter(prefix="/api/kosh/sellers/{seller_id}/cash-events",tags=["kosh-cash-events"])
 class CashEventIn(BaseModel):
     model_config=ConfigDict(extra="forbid")
@@ -29,11 +30,13 @@ def listing(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Dep
 @router.post("")
 def propose(seller_id:int,payload:CashEventIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
     reserve_sqlite_writer(db,renew_read=True)
+    gate(db,seller_id,access.user_id)
     row=KoshCashEvent(seller_id=seller_id,created_by_user_id=access.user_id,status="PROPOSED",**payload.model_dump());db.add(row);db.flush()
     record(db,seller_id,access,"cash_event.propose",{"id":row.id,"event_type":row.event_type,"amount_paise":row.amount_paise});return out(row)
 @router.post("/{event_id}/confirm")
 def confirm(seller_id:int,event_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_owner)):
     reserve_sqlite_writer(db,renew_read=True)
+    gate(db,seller_id,access.user_id)
     row=db.scalar(select(KoshCashEvent).where(KoshCashEvent.id==event_id,KoshCashEvent.seller_id==seller_id).with_for_update())
     if row is None:raise HTTPException(404,"Cash event not found")
     if row.status not in {"PROPOSED","CONFIRMED"}:raise HTTPException(409,"Rejected event cannot be confirmed")

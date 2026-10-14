@@ -44,11 +44,18 @@ def execute(db,*,seller_id,intent_id,actor_id,token):
         intent.status="FAILED";append_event(db,seller_id=seller_id,actor_type="SYSTEM",actor_id=None,action="security.reconciliation_mismatch",tier=intent.tier,payload={"intent_id":intent.id,"execution_id":execution.id},policy_decision="DENY")
         raise ActionError("RECONCILIATION_MISMATCH","Sandbox ledger does not match expected entries.",409)
     intent.status="SUCCEEDED";intent.executed_at=utcnow()
-    line=db.get(KoshPlanLine,intent.plan_line_id);line.status="EXECUTED"
+    line=db.get(KoshPlanLine,intent.plan_line_id) if intent.plan_line_id is not None else None
+    if line is not None:line.status="EXECUTED"
     # Flush settled state before the read-only overlay loads it.
     db.flush()
     after_inputs=load_inputs(db,seller_id,basis.as_of_date,include_addon_events=basis.params.get("include_addon_events",True));after=simulate(after_inputs,**kwargs)
     after_run=persist_forecast(db,seller_id=seller_id,actor_id=actor_id,basis=basis,result=after,inputs=after_inputs)
+    if line is None:
+        from app.database.kosh_models import KoshAddonDraft
+        draft=db.get(KoshAddonDraft,intent.params["draft_id"]);draft.status="EXECUTED"
+        execution.result={**execution.result,"before_forecast_run_id":basis.id,"after_forecast_run_id":after_run.id,"before_probabilities":[w["prob_below_buffer"] for w in before["weeks"]],"after_probabilities":[w["prob_below_buffer"] for w in after["weeks"]],"target_met":None,"seed":basis.seed,"as_of_date":basis.as_of_date.isoformat()}
+        append_event(db,seller_id=seller_id,actor_type="SYSTEM",actor_id=None,action="addon.intent.succeeded",tier=intent.tier,payload={"intent_id":intent.id,"execution_id":execution.id,"draft_id":draft.id},policy_decision="ALLOW")
+        return execution
     plan=db.get(KoshPlan,line.plan_id);details=dict(plan.planning_details)
     before_probabilities=[w["prob_below_buffer"] for w in before["weeks"]];after_probabilities=[w["prob_below_buffer"] for w in after["weeks"]]
     target_week=details["alert_week"];target=Decimal(details["target_probability"]);threshold=Decimal(details["alert_threshold"])

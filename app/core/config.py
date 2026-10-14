@@ -248,6 +248,7 @@ class Settings(BaseSettings):
     kosh_global_kill_switch: bool = False
     kosh_action_limit_paise: int = Field(default=200_000_000,ge=0)
     kosh_day_limit_paise: int = Field(default=1_000_000_000,ge=0)
+    kosh_rbi_bank_rate: Decimal = Field(default=Decimal("5.75"),ge=0,le=100)
     kosh_plan_target_prob: Decimal = Field(default=Decimal("0.20"), ge=0, lt=1)
     kosh_plan_percentile: int = Field(default=25, ge=10, le=50)
 

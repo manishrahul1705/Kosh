@@ -98,7 +98,7 @@ def run(db,intent):
         elif adapter=="MESSAGES":
             existing=db.scalar(select(KoshSandboxOutbox).where(KoshSandboxOutbox.execution_id==row.id))
             if existing is None:
-                message=KoshSandboxOutbox(id=str(uuid.uuid4()),seller_id=intent.seller_id,execution_id=row.id,intent_id=intent.id,channel="EMAIL",recipient_ref=p["allowlist_key"],body=f"Please review receivable #{p.get('invoice_id')} and arrange payment. Requested collection amount: INR {Decimal(p['amount_paise'])/100:,.2f}.",status="SUBMITTED",created_at=utcnow())
+                message=KoshSandboxOutbox(id=str(uuid.uuid4()),seller_id=intent.seller_id,execution_id=row.id,intent_id=intent.id,channel="EMAIL",recipient_ref=p["allowlist_key"],body=p.get("message_body") or f"Please review receivable #{p.get('invoice_id')} and arrange payment. Requested collection amount: INR {Decimal(p['amount_paise'])/100:,.2f}.",status="SUBMITTED",created_at=utcnow())
                 db.add(message)
             row.result={"provider":"SANDBOX_MESSAGES","channel":"EMAIL","recipient_ref":p["allowlist_key"],"cash_received_paise":0,"note":"Outbox submission is not evidence of a customer payment."}
         elif adapter=="SHARING":

@@ -157,6 +157,8 @@ def create_app(
     app.include_router(kosh_chat.router)
     from app.api import cash_reports
     app.include_router(cash_reports.router)
+    from app.api import tender_cash
+    app.include_router(tender_cash.router)
     from app.api import financing
     app.include_router(financing.router)
     from app.api import policy

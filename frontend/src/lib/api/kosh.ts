@@ -29,6 +29,8 @@ export interface FinancingPlan { target_probability:string;planning_details:{bas
 export interface ActionIntent { id:string; plan_line_id:number|null; action_type:string; tier:string; params:Record<string,unknown>; status:string; expires_at:string|null; policy_decision:Record<string,unknown> }
 export interface SandboxItem { id:string|number; intent_id:string; status:string; [key:string]:unknown }
 export const koshApi = {
+  tenderCashList:(id:number)=>apiClient.get<{items:{tender_id:number;bid_number:string;title:string;buyer:string}[]}>(`/kosh/sellers/${id}/tender-to-cash`).then(r=>r.data),
+  tenderCash:(id:number,tender:number,payload:Record<string,unknown>)=>apiClient.post<{status:string;missing:string[];working_capital_needed_paise?:number;safety?:string;financing_suggestions:{product:string;status:string;reason:string}[];scenario_weeks?:{week_index:number;p50_closing_balance_paise:number;prob_below_buffer:number}[]}>(`/kosh/sellers/${id}/tender-to-cash/${tender}`,payload).then(r=>r.data),
   registerCounterparty:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/counterparties`,payload).then(r=>r.data),
   recordConversation:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/conversations`,payload).then(r=>r.data),
   operationDashboard:(id:number)=>apiClient.get<Record<string,unknown>>(`/kosh/sellers/${id}/operations/dashboard`).then(r=>r.data),

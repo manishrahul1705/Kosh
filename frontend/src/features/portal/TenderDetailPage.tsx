@@ -88,6 +88,7 @@ export const TenderDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-4 max-w-5xl">
+        {m.match_status==='MATCHED'&&<Link to={`/operations/tender-to-cash/${id}`} className="underline">Can I afford this order?</Link>}
       <Link to="/" className="inline-flex items-center gap-1 text-sm text-[#1e5aab]"><ArrowLeft size={14} /> My tenders</Link>
 
       <Section title="Basic information">

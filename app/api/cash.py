@@ -80,9 +80,10 @@ def _latest(db,seller_id):return db.scalar(select(KoshForecastRun).where(KoshFor
 def _forecast_out(db,run):
     weeks=db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id==run.id).order_by(KoshForecastWeek.week_index)).all();alert=db.scalar(select(KoshAlert).where(KoshAlert.run_id==run.id).order_by(KoshAlert.id.desc()).limit(1))
     review=db.scalar(select(func.coalesce(func.sum(KoshInvoice.amount_paise-func.coalesce(KoshInvoice.paid_amount_paise,0)),0)).where(KoshInvoice.seller_id==run.seller_id,KoshInvoice.status=="REVIEW"))
-    return {"seller_id":run.seller_id,"run":{"id":run.id,"as_of_date":run.as_of_date,"horizon_weeks":run.horizon_weeks,"n_paths":run.n_paths,"seed":run.seed,"input_fingerprint":run.input_fingerprint,"include_addon_events":run.params.get("include_addon_events",True),"include_forecast_sales":run.include_forecast_sales,"buffer_paise":run.buffer_paise,"status":run.status,"created_at":run.created_at},"weeks":[_week_out(row) for row in weeks],"under_review_paise":review,"alert":_alert_out(alert)}
+    return {"seller_id":run.seller_id,"run":{"id":run.id,"as_of_date":run.as_of_date,"horizon_weeks":run.horizon_weeks,"n_paths":run.n_paths,"seed":run.seed,"input_fingerprint":run.input_fingerprint,"include_customer_history":run.params.get("include_customer_history",False),"include_addon_events":run.params.get("include_addon_events",True),"include_forecast_sales":run.include_forecast_sales,"buffer_paise":run.buffer_paise,"status":run.status,"created_at":run.created_at},"weeks":[_week_out(row) for row in weeks],"under_review_paise":review,"alert":_alert_out(alert)}
 
 class ForecastRunIn(BaseModel):
+    include_customer_history:bool=False
     include_addon_events:bool=True
     include_forecast_sales:bool=True;n_paths:int=Field(default=2000,ge=1,le=10000);seed:int=42
 class ScenarioCashIn(BaseModel):
@@ -95,7 +96,7 @@ class WhatIfIn(BaseModel):
 
 @router.post("/forecast/run")
 def run_forecast(seller_id:int,payload:ForecastRunIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    as_of=_as_of();inputs=load_inputs(db,seller_id,as_of,include_addon_events=payload.include_addon_events);buffer=buffer_for_seller(db,seller_id);params=payload.model_dump();digest=fingerprint(inputs,{**params,"as_of_date":as_of,"buffer_paise":buffer})
+    as_of=_as_of();inputs=load_inputs(db,seller_id,as_of,include_addon_events=payload.include_addon_events,include_customer_history=payload.include_customer_history);buffer=buffer_for_seller(db,seller_id);params=payload.model_dump();digest=fingerprint(inputs,{**params,"as_of_date":as_of,"buffer_paise":buffer})
     result=simulate(inputs,as_of=as_of,n_paths=payload.n_paths,seed=payload.seed,include_forecast_sales=payload.include_forecast_sales,buffer_paise=buffer)
     run=KoshForecastRun(seller_id=seller_id,as_of_date=as_of,horizon_weeks=13,n_paths=payload.n_paths,seed=payload.seed,params=params,input_fingerprint=digest,include_forecast_sales=payload.include_forecast_sales,buffer_paise=buffer,status="SUCCESS",created_by_user_id=access.user_id);db.add(run);db.flush()
     for week in result["weeks"]:db.add(KoshForecastWeek(run_id=run.id,**week))

@@ -50,7 +50,7 @@ class ForecastInputs:
     sandbox_invoice_reductions:dict[int,int]=field(default_factory=dict)
     addon_cash_events:tuple[dict,...]=()
 
-def load_inputs(db:Session,seller_id:int,as_of:date,*,include_addon_events:bool=True)->ForecastInputs:
+def load_inputs(db:Session,seller_id:int,as_of:date,*,include_addon_events:bool=True,include_customer_history:bool=False)->ForecastInputs:
     bank=db.scalar(select(KoshBankTransaction).where(KoshBankTransaction.seller_id==seller_id,KoshBankTransaction.txn_date<=as_of).order_by(KoshBankTransaction.txn_date.desc(),KoshBankTransaction.id.desc()).limit(1))
     rows=db.execute(select(KoshInvoice,KoshCounterparty).join(KoshCounterparty,KoshCounterparty.id==KoshInvoice.counterparty_id).where(KoshInvoice.seller_id==seller_id,KoshInvoice.invoice_date<=as_of)).all()
     cutoff=as_of-timedelta(days=730);portfolio=[];customer={};open_rows=[];review=0;sales=[0]*26;purchases=[0]*26;history_start=as_of-timedelta(weeks=26)
@@ -70,6 +70,9 @@ def load_inputs(db:Session,seller_id:int,as_of:date,*,include_addon_events:bool=
     delta,events,reductions=overlay(db,seller_id,as_of)
     from app.database.kosh_models import KoshCashEvent
     addon=tuple({"date":row.event_date.isoformat(),"amount_paise":row.amount_paise*(1 if row.event_type=="EXPECTED_RECEIVABLE" or row.cost_direction=="DECREASE" else -1),"component":"addon","event_id":row.id,"source_module":row.source_module} for row in db.scalars(select(KoshCashEvent).where(KoshCashEvent.seller_id==seller_id,KoshCashEvent.status=="CONFIRMED",KoshCashEvent.event_type!="FINANCING_NEED").order_by(KoshCashEvent.id))) if include_addon_events else ()
+    if include_customer_history:
+        from app.finance.intelligence import enriched_delays
+        customer=enriched_delays(db,seller_id,as_of,{key:tuple(value) for key,value in customer.items()})
     return ForecastInputs((bank.balance_paise if bank else 0)+delta,tuple(open_rows),obligations,tuple(portfolio or [30,45,60]),{key:tuple(value) for key,value in customer.items()},tuple(sales),tuple(purchases),review,addon_cash_events=addon,sandbox_cash_events=events,sandbox_invoice_reductions=reductions)
 
 def buffer_for_seller(db:Session,seller_id:int,default:int=100_000_000)->int:

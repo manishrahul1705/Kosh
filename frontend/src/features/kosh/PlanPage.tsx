@@ -132,12 +132,13 @@ export const PlanPage = () => {
     )
 
   const graph = (plan.data?.before_probabilities ?? []).map((before, i) => ({
-    week: i + 1,
-    before,
-    after: plan.data?.after_probabilities[i],
+    week: `W${i + 1}`,
+    before: Math.round(before * 10000) / 100,
+    after: plan.data?.after_probabilities[i] !== undefined ? Math.round(plan.data.after_probabilities[i] * 10000) / 100 : undefined,
   }))
   const saving = plan.data ? plan.data.baseline_cost_paise - plan.data.total_cost_paise : 0
   const isOwner = evidenceQuery.data?.role === 'OWNER'
+
 
   return (
     <section aria-label="Financing plan" className="space-y-6">
@@ -613,8 +614,9 @@ export const PlanPage = () => {
             <div>
               <h3 className="text-base font-semibold text-gray-900">Proposed gap-closing plan</h3>
               <p className="text-xs text-gray-600">
-                Validity check against the target probability ({Number(plan.data.target_probability) * 100}%) is strictly verified using the <strong>Guaranteed plan</strong>.
+                Validity check against the target probability ({Number(plan.data.target_probability) * 100}%) across {plan.data.planning_details?.target_scope === 'ALERT_WEEK' ? 'Alert Week' : 'All Horizon Weeks'} is strictly verified using the <strong>Guaranteed plan</strong>.
               </p>
+
             </div>
             <span
               className={`px-2 py-0.5 rounded text-xs font-semibold self-start sm:self-auto ${
@@ -723,17 +725,25 @@ export const PlanPage = () => {
           ) : (
             <p className="text-sm text-gray-600">NBFC baseline insufficient or not verified; savings unavailable.</p>
           )}
-          <div className="h-48 pt-2">
+          <div className="h-56 pt-2">
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+              <span className="font-medium">Per-week probability below buffer (Target: {plan.data.planning_details?.target_scope ?? 'ALL_WEEKS'} &le; {Number(plan.data.target_probability) * 100}%)</span>
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-red-600 inline-block" /> Pre-intervention</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-green-700 inline-block" /> Post-plan</span>
+              </div>
+            </div>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={graph}>
                 <XAxis dataKey="week" />
-                <YAxis />
-                <Tooltip />
-                <Line dataKey="before" stroke="#dc2626" strokeWidth={2} />
-                <Line dataKey="after" stroke="#15803d" strokeWidth={2} />
+                <YAxis unit="%" domain={[0, 100]} />
+                <Tooltip formatter={(value) => [`${value}%`]} />
+                <Line name="Pre-intervention" dataKey="before" stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} />
+                <Line name="Post-plan" dataKey="after" stroke="#15803d" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
+
         </div>
       ) : (
         <p className="text-sm text-gray-500">No proposed plan yet.</p>

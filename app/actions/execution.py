@@ -59,10 +59,15 @@ def execute(db,*,seller_id,intent_id,actor_id,token):
     plan=db.get(KoshPlan,line.plan_id);details=dict(plan.planning_details)
     before_probabilities=[w["prob_below_buffer"] for w in before["weeks"]];after_probabilities=[w["prob_below_buffer"] for w in after["weeks"]]
     target_week=details["alert_week"];target=Decimal(details["target_probability"]);threshold=Decimal(details["alert_threshold"])
-    target_met=Decimal(str(after_probabilities[target_week-1]))<=target and all(Decimal(str(p))<threshold for p in after_probabilities)
+    scope=details.get("target_scope","ALL_WEEKS")
+    if scope=="ALL_WEEKS":
+        target_met=all(Decimal(str(p))<=target for p in after_probabilities)
+    else:
+        target_met=Decimal(str(after_probabilities[target_week-1]))<=target and all(Decimal(str(p))<threshold for p in after_probabilities)
     details.setdefault("proposal_after_probabilities",plan.after_probabilities)
     details["actual_execution"]={"forecast_run_id":after_run.id,"before_probabilities":before_probabilities,"after_probabilities":after_probabilities,"target_met":target_met,"source":"SANDBOX"}
-    details["why_this_plan"]=("Sandbox execution meets the chosen safety target and every horizon week remains below the alert threshold." if target_met else "Executed cash effects have not met the chosen safety conditions. This plan is INSUFFICIENT; re-evaluate options. A sent reminder is not evidence of payment.")
+    details["why_this_plan"]=(f"Sandbox execution meets the chosen safety target ({scope}) and every horizon week remains below the alert threshold." if target_met else "Executed cash effects have not met the chosen safety conditions. This plan is INSUFFICIENT; re-evaluate options. A sent reminder is not evidence of payment.")
+
     plan.planning_details=details;plan.after_probabilities=after_probabilities;plan.status="VALID" if target_met else "INSUFFICIENT"
     execution.result={**execution.result,"before_forecast_run_id":basis.id,"after_forecast_run_id":after_run.id,"before_probabilities":before_probabilities,"after_probabilities":after_probabilities,"target_met":target_met,"seed":basis.seed,"as_of_date":basis.as_of_date.isoformat()}
     append_event(db,seller_id=seller_id,actor_type="SYSTEM",actor_id=None,action="intent.succeeded",tier=intent.tier,payload={"intent_id":intent.id,"execution_id":execution.id,"after_forecast_run_id":after_run.id,"target_met":target_met},policy_decision="ALLOW")

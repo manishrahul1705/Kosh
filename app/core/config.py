@@ -251,6 +251,7 @@ class Settings(BaseSettings):
     kosh_rbi_bank_rate: Decimal = Field(default=Decimal("5.75"),ge=0,le=100)
     kosh_plan_target_prob: Decimal = Field(default=Decimal("0.20"), ge=0, lt=1)
     kosh_plan_percentile: int = Field(default=25, ge=10, le=50)
+    kosh_plan_target_scope: Literal["ALL_WEEKS", "ALERT_WEEK"] = "ALL_WEEKS"
 
     @field_validator("log_level")
     @classmethod
@@ -259,9 +260,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _enforce_startup_safety(self) -> "Settings":
-        self.assert_startup_safe()
         if self.app_env.strip().lower() == "production" and (self.kosh_approval_secret is None or len(self.kosh_approval_secret.get_secret_value().encode("utf-8"))<32):
             raise ValueError("KOSH_APPROVAL_SECRET is required in production with at least 32 bytes")
+        self.assert_startup_safe()
         return self
 
     def assert_startup_safe(self) -> None:

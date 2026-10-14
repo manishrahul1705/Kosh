@@ -1,6 +1,7 @@
 """Seller-authorized financing evaluation and plan endpoints."""
 from datetime import date
 from decimal import Decimal
+from typing import Literal
 from fastapi import APIRouter,Depends,HTTPException
 from pydantic import BaseModel,Field
 from sqlalchemy import select
@@ -38,9 +39,33 @@ def options(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Dep
         matched=[x for x in candidates if x["status"]=="MATCHED"]
         selected=(matched or [x for x in candidates if x["status"]=="REVIEW_REQUIRED"] or candidates)[0]
         if product_id in {"COLLECTIONS_PUSH","TREDS_INVOICE_DISCOUNTING","SUPPLIER_TERM_EXTENSION"}:
-            amount=min(product["max_amount_paise"],sum(x["max_amount_paise"] for x in matched))
-            prod_status = "MATCHED" if matched else ("REVIEW_REQUIRED" if any(x["status"]=="REVIEW_REQUIRED" for x in candidates) else "NOT_MATCHED")
-            selected={**selected,"status":prod_status,**financing_quote(product,amount),"max_amount_paise":amount,"invoice_eligibility":[{"scope":x["scope"],"status":x["status"],"eligible":x["status"]=="MATCHED","max_amount_paise":x["max_amount_paise"],"reasons":x["reasons"],"evidence":x["evidence"]} for x in candidates if x["scope"]]}
+            seller_scope = next((x for x in candidates if not x.get("scope")), None)
+            seller_status = seller_scope["status"] if seller_scope else "MATCHED"
+            invoice_candidates = [x for x in candidates if x.get("scope")]
+            invoice_matched = [x for x in invoice_candidates if x["status"] == "MATCHED"]
+            if seller_status != "MATCHED":
+                prod_status = seller_status
+            else:
+                prod_status = "MATCHED" if invoice_matched else ("REVIEW_REQUIRED" if any(x["status"] == "REVIEW_REQUIRED" for x in invoice_candidates) else "NOT_MATCHED")
+            amount = min(product["max_amount_paise"], sum(x["max_amount_paise"] for x in invoice_matched)) if prod_status == "MATCHED" else 0
+            selected = {
+                **selected,
+                "status": prod_status,
+                **financing_quote(product, amount),
+                "max_amount_paise": amount,
+                "invoice_eligibility": [
+                    {
+                        "scope": x["scope"],
+                        "status": x["status"],
+                        "eligible": x["status"] == "MATCHED" and prod_status == "MATCHED",
+                        "max_amount_paise": x["max_amount_paise"],
+                        "reasons": x["reasons"],
+                        "evidence": x["evidence"],
+                    }
+                    for x in candidates
+                    if x["scope"]
+                ],
+            }
         grouped.append(selected)
     rows=grouped
     rows.sort(key=lambda x:(Decimal(x["effective_annual_rate"] or "999"),x["product_id"]));return {"seller_id":seller_id,"sort_rule":SORT_RULE,"items":rows}
@@ -60,25 +85,27 @@ def _plan_out(db,row):
     from app.finance.plan_freshness import display_status
     status=display_status(db,row);details=dict(row.planning_details)
     if status=='STALE':details['baseline_status']='STALE';details['why_this_plan']='Forecast inputs or the selected basis changed. Re-evaluate financing and build a current plan.'
-    lines=db.scalars(select(KoshPlanLine).where(KoshPlanLine.plan_id==row.id)).all();return {"id":row.id,"seller_id":row.seller_id,"forecast_run_id":row.forecast_run_id,"forecast_fingerprint":row.forecast_fingerprint,"method":row.method,"status":status,"total_cost_paise":row.total_cost_paise,"baseline_cost_paise":row.baseline_cost_paise,"guaranteed_plan":details.get("guaranteed_plan"),"expected_plan":details.get("expected_plan"),"before_probabilities":row.before_probabilities,"after_probabilities":row.after_probabilities,"planning_details":details,"target_probability":row.planning_details.get("target_probability"),"why_this_plan":details.get("why_this_plan") or next((e["why_this_plan"] for line in lines for e in line.evidence if "why_this_plan" in e),"No eligible capacity was selected."),"lines":[_line_out(x) for x in lines]}
+    lines=db.scalars(select(KoshPlanLine).where(KoshPlanLine.plan_id==row.id)).all();return {"id":row.id,"seller_id":row.seller_id,"forecast_run_id":row.forecast_run_id,"forecast_fingerprint":row.forecast_fingerprint,"method":row.method,"status":status,"total_cost_paise":row.total_cost_paise,"baseline_cost_paise":row.baseline_cost_paise,"guaranteed_plan":details.get("guaranteed_plan"),"expected_plan":details.get("expected_plan"),"before_probabilities":row.before_probabilities,"after_probabilities":row.after_probabilities,"planning_details":details,"target_probability":row.planning_details.get("target_probability"),"target_scope":row.planning_details.get("target_scope"),"why_this_plan":details.get("why_this_plan") or next((e["why_this_plan"] for line in lines for e in line.evidence if "why_this_plan" in e),"No eligible capacity was selected."),"lines":[_line_out(x) for x in lines]}
 class PlanIn(BaseModel):
     target_probability:Decimal|None=Field(default=None,ge=0,lt=1)
+    target_scope:Literal["ALL_WEEKS","ALERT_WEEK"]|None=None
     loan_repayment_date:date|None=None
 
 @router.get("/financing/safety-curve")
-def safety_curve(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
-    try:items=[propose_plan(db,seller_id,target_prob=target,persist=False) for target in (Decimal(".40"),Decimal(".30"),Decimal(".20"),Decimal(".10"))]
+def safety_curve(seller_id:int,target_scope:Literal["ALL_WEEKS","ALERT_WEEK"]|None=None,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
+    try:items=[propose_plan(db,seller_id,target_prob=target,target_scope=target_scope,persist=False) for target in (Decimal(".40"),Decimal(".30"),Decimal(".20"),Decimal(".10"))]
     except ValueError as exc:raise HTTPException(409,str(exc))
-    append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="plan.safety_curve.read",tier="T0_READ",payload={"targets":[x["target_probability"] for x in items]},policy_decision="ALLOW")
+    append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="plan.safety_curve.read",tier="T0_READ",payload={"targets":[x["target_probability"] for x in items],"target_scope":target_scope or str(get_settings().kosh_plan_target_scope)},policy_decision="ALLOW")
     db.commit()
-    return {"seller_id":seller_id,"default_target_probability":str(get_settings().kosh_plan_target_prob),"items":items}
+    return {"seller_id":seller_id,"default_target_probability":str(get_settings().kosh_plan_target_prob),"default_target_scope":get_settings().kosh_plan_target_scope,"items":items}
 
 @router.post("/plans")
 def create_plan(seller_id:int,payload:PlanIn=PlanIn(),db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
-    try:row=propose_plan(db,seller_id,target_prob=payload.target_probability,loan_repayment_date=payload.loan_repayment_date)
+    try:row=propose_plan(db,seller_id,target_prob=payload.target_probability,target_scope=payload.target_scope,loan_repayment_date=payload.loan_repayment_date)
     except ValueError as exc:raise HTTPException(409,str(exc))
-    append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="plan.propose",tier="T1_DRAFT",payload={"plan_id":row.id,"target_probability":row.planning_details["target_probability"],"loan_repayment_date":payload.loan_repayment_date},policy_decision="ALLOW");db.commit();return {"plan_id":row.id}
+    append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action="plan.propose",tier="T1_DRAFT",payload={"plan_id":row.id,"target_probability":row.planning_details["target_probability"],"target_scope":row.planning_details.get("target_scope"),"loan_repayment_date":payload.loan_repayment_date},policy_decision="ALLOW");db.commit();return {"plan_id":row.id}
 @router.get("/plans/latest")
+
 def latest(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
     row=db.scalar(select(KoshPlan).where(KoshPlan.seller_id==seller_id).order_by(KoshPlan.id.desc()).limit(1))
     if not row:raise HTTPException(404,"No plan")

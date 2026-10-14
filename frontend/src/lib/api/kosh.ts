@@ -42,14 +42,19 @@ export interface FinancingPlanSubSummary {
 }
 export interface FinancingPlan {
   target_probability: string
+  target_scope?: string
   planning_details: {
     baseline_status: string
+    target_scope?: string
     guaranteed_status?: string
     guaranteed_total_cost_paise?: number
     expected_total_cost_paise?: number
     guaranteed_plan?: FinancingPlanSubSummary
     expected_plan?: FinancingPlanSubSummary
+    best_achievable_max_prob?: number
+    best_achievable_cost_paise?: number
   }
+
   why_this_plan: string
   id: number
   status: string
@@ -281,7 +286,8 @@ export const koshApi = {
   evaluateFinancing:(sellerId:number)=>apiClient.post(`/kosh/sellers/${sellerId}/financing/evaluate`).then(r=>r.data),
   latestPlan:(sellerId:number)=>apiClient.get<FinancingPlan>(`/kosh/sellers/${sellerId}/plans/latest`).then(r=>r.data),
   safetyCurve:(sellerId:number)=>apiClient.get<{items:SafetyPlan[]}>(`/kosh/sellers/${sellerId}/financing/safety-curve`).then(r=>r.data),
-  createPlan:(sellerId:number,targetProbability="0.20")=>apiClient.post(`/kosh/sellers/${sellerId}/plans`,{target_probability:targetProbability}).then(r=>r.data),
+  createPlan:(sellerId:number,targetProbability="0.20",targetScope?:string)=>apiClient.post(`/kosh/sellers/${sellerId}/plans`,{target_probability:targetProbability,target_scope:targetScope}).then(r=>r.data),
+
   approvals: (sellerId: number) =>
     apiClient.get<KoshPlaceholder>(`/kosh/sellers/${sellerId}/approvals`).then((r) => r.data),
   audit: (sellerId: number) =>

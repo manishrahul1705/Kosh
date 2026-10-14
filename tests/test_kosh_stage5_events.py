@@ -20,6 +20,8 @@ def test_cash_events_confirm_and_switch_off_exactly(client,db):
     base=simulate(load_inputs(db,seller.id,args['as_of'],include_addon_events=False),**args)
     payload=dict(event_type="EXPECTED_RECEIVABLE",source_module="sales",evidence_ref="order:ABC-1",event_date="2026-10-16",amount_paise=12345)
     row=client.post(prefix,json=payload).json();assert row['status']=='PROPOSED'
+    assert client.post(prefix,json=payload).json()['id']==row['id']
+    assert client.post(prefix,json={**payload,'amount_paise':999}).status_code==409
     db.rollback();assert simulate(load_inputs(db,seller.id,args['as_of']),**args)==base
     assert client.post(prefix+f"/{row['id']}/confirm").status_code==200
     db.rollback();changed=simulate(load_inputs(db,seller.id,args['as_of']),**args)

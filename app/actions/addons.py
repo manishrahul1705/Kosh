@@ -12,9 +12,10 @@ def create_from_draft(db,*,seller_id,draft_id,creator_id):
     reserve_sqlite_writer(db,renew_read=True)
     draft=db.scalar(select(KoshAddonDraft).where(KoshAddonDraft.id==draft_id,KoshAddonDraft.seller_id==seller_id).with_for_update())
     if draft is None:raise LookupError("DRAFT_NOT_FOUND")
-    if draft.kind not in {"COLLECTIONS_REMINDER","SUPPLIER_TERM_REQUEST","RFQ_MESSAGE","SHARE_DATA_PACK"} or draft.module not in {"collections","procurement","reports","operations"}:raise ValueError("UNREGISTERED_DRAFT")
+    if draft.kind not in {"NOTIFICATION_MESSAGE","COLLECTIONS_REMINDER","SUPPLIER_TERM_REQUEST","RFQ_MESSAGE","SHARE_DATA_PACK"} or draft.module not in {"collections","procurement","reports","operations"}:raise ValueError("UNREGISTERED_DRAFT")
     if draft.evidence_hash!=draft_hash(draft):raise ValueError("DRAFT_TAMPERED")
     params=dict(draft.params)
+    if params.get("channel","EMAIL") not in {"EMAIL","WHATSAPP"}:raise ValueError("UNREGISTERED_MESSAGE_CHANNEL")
     if params.get("invoice_id"):
         invoice=db.scalar(select(KoshInvoice).where(KoshInvoice.id==params["invoice_id"],KoshInvoice.seller_id==seller_id,KoshInvoice.status=="OPEN"))
         if invoice is None or params["amount_paise"]!=max(0,invoice.amount_paise-(invoice.paid_amount_paise or 0)):raise ValueError("INVOICE_EVIDENCE_CHANGED")

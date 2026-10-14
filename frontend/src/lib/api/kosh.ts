@@ -29,6 +29,17 @@ export interface FinancingPlan { target_probability:string;planning_details:{bas
 export interface ActionIntent { id:string; plan_line_id:number|null; action_type:string; tier:string; params:Record<string,unknown>; status:string; expires_at:string|null; policy_decision:Record<string,unknown> }
 export interface SandboxItem { id:string|number; intent_id:string; status:string; [key:string]:unknown }
 export const koshApi = {
+  registerCounterparty:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/counterparties`,payload).then(r=>r.data),
+  recordConversation:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/conversations`,payload).then(r=>r.data),
+  operationDashboard:(id:number)=>apiClient.get<Record<string,unknown>>(`/kosh/sellers/${id}/operations/dashboard`).then(r=>r.data),
+  operationResource:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/resources`,payload).then(r=>r.data),
+  confirmResource:(id:number,record:number)=>apiClient.post(`/kosh/sellers/${id}/operations/resources/${record}/confirm`).then(r=>r.data),
+  completeTask:(id:number,record:number,evidence:string)=>apiClient.post(`/kosh/sellers/${id}/operations/resources/${record}/complete`,{evidence_ref:evidence}).then(r=>r.data),
+  createWorkflow:(id:number,draft:number)=>apiClient.post(`/kosh/sellers/${id}/operations/workflows`,{draft_id:draft,evidence_ref:`draft:${draft}`}).then(r=>r.data),
+  advanceWorkflow:(id:number,record:number)=>apiClient.post(`/kosh/sellers/${id}/operations/workflows/${record}/advance`).then(r=>r.data),
+  notificationDraft:(id:number,record:number,counterparty:number)=>apiClient.post<{id:number;body:string}>(`/kosh/sellers/${id}/operations/notifications`,{record_id:record,counterparty_id:counterparty,evidence_ref:`record:${record}:update`}).then(r=>r.data),
+  runAgent:(id:number,agent:string)=>apiClient.post(`/kosh/sellers/${id}/operations/agents/run`,{agent,evidence_ref:`owner-review:${agent}`}).then(r=>r.data),
+  importMaterials:(id:number,text:string,evidence:string)=>apiClient.post(`/kosh/sellers/${id}/operations/materials/import`,{csv_text:text,evidence_ref:evidence}).then(r=>r.data),
   reports:(id:number)=>apiClient.get<{role:string;items:{id:number;status:string;evidence_ref:string;pdf_sha256:string}[];recipients:{id:string;label:string}[]}>(`/kosh/sellers/${id}/reports`).then(r=>r.data),
   generateReport:(id:number)=>apiClient.post(`/kosh/sellers/${id}/reports`).then(r=>r.data),
   downloadReport:(id:number,report:number)=>apiClient.get<Blob>(`/kosh/sellers/${id}/reports/${report}/pdf`,{responseType:'blob'}).then(r=>r.data),
@@ -40,7 +51,7 @@ export const koshApi = {
   proposeHistory:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/intelligence/history`,payload).then(r=>r.data),
   confirmHistory:(id:number,record:number)=>apiClient.post(`/kosh/sellers/${id}/intelligence/history/${record}/confirm`).then(r=>r.data),
   intelligenceScenario:(id:number,payload:Record<string,unknown>)=>apiClient.post<{weeks:{week_index:number;p50_closing_balance_paise:number;prob_below_buffer:number}[]}>(`/kosh/sellers/${id}/intelligence/whatif`,payload).then(r=>r.data),
-  operations:(id:number)=>apiClient.get<{role:string;items:{id:number;kind:string;status:string;evidence_ref:string;data:Record<string,unknown>}[];counterparties:{id:number;name:string;kind:string}[];market_sample:{material_code:string;change_percent:string;source:string}[]}>(`/kosh/sellers/${id}/operations`).then(r=>r.data),
+  operations:(id:number)=>apiClient.get<{role:string;items:{id:number;kind:string;status:string;evidence_ref:string;data:Record<string,unknown>}[];counterparties:{id:number;name:string;kind:string}[];drafts?:{id:number;module:string;kind:string;body:string;status:string}[];market_sample:{material_code:string;change_percent:string;source:string}[]}>(`/kosh/sellers/${id}/operations`).then(r=>r.data),
   orderProposal:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/orders`,payload).then(r=>r.data),
   confirmOrder:(id:number,record:number)=>apiClient.post(`/kosh/sellers/${id}/operations/orders/${record}/confirm`).then(r=>r.data),
   priceProposal:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/pricing`,payload).then(r=>r.data),

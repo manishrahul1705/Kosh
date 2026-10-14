@@ -462,7 +462,7 @@ class KoshSandboxOutbox(Base):
 
 class KoshCashEvent(Base):
     __tablename__="kosh_cash_events"
-    __table_args__=(sa.CheckConstraint("status IN ('PROPOSED','CONFIRMED','REJECTED')",name="cash_event_status"),sa.CheckConstraint("event_type IN ('EXPECTED_RECEIVABLE','SCHEDULED_PAYABLE','COST_CHANGE','FINANCING_NEED')",name="cash_event_type"),sa.CheckConstraint("amount_paise>=0",name="cash_event_amount"),)
+    __table_args__=(sa.UniqueConstraint("seller_id","source_module","event_type","evidence_ref",name="uq_cash_event_evidence"),sa.CheckConstraint("status IN ('PROPOSED','CONFIRMED','REJECTED')",name="cash_event_status"),sa.CheckConstraint("event_type IN ('EXPECTED_RECEIVABLE','SCHEDULED_PAYABLE','COST_CHANGE','FINANCING_NEED')",name="cash_event_type"),sa.CheckConstraint("amount_paise>=0",name="cash_event_amount"),)
     id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
     seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False,index=True)
     event_type:Mapped[str]=mapped_column(sa.String(32),nullable=False)

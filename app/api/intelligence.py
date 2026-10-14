@@ -37,6 +37,7 @@ def listing(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Dep
 @router.post("/history")
 def propose_history(seller_id:int,payload:HistoryIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
     reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id)
+    if payload.observed_date.isoformat()>(get_settings().kosh_as_of_date or date.today().isoformat()):raise HTTPException(422,'Payment observations cannot be future facts')
     if any(day<0 or day>730 for day in payload.delay_days):raise HTTPException(422,"Delay observations must be between zero and 730 days")
     if db.scalar(select(KoshCounterparty.id).where(KoshCounterparty.id==payload.counterparty_id,KoshCounterparty.seller_id==seller_id)) is None:raise HTTPException(404,"Customer not found")
     row=KoshOperationRecord(seller_id=seller_id,kind="PAYMENT_HISTORY",evidence_ref=payload.evidence_ref,data=payload.model_dump(mode="json"),status="PROPOSED",created_by_user_id=access.user_id);db.add(row);db.flush();record(db,seller_id,access,"intelligence.history.propose",{"id":row.id},"T1");return {"id":row.id,"status":row.status}

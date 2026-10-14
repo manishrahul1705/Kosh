@@ -19,7 +19,7 @@ class CashEventIn(BaseModel):
     source_module:Literal["sales","procurement","pricing","collections","customer_intelligence","revenue","tender_to_cash","operations"]
     evidence_ref:str=Field(min_length=1,max_length=160)
     event_date:date
-    amount_paise:StrictInt=Field(ge=0)
+    amount_paise:StrictInt=Field(ge=0,le=9000000000000000)
     cost_direction:Literal["INCREASE","DECREASE"]|None=None
     @model_validator(mode="after")
     def cost_only(self):
@@ -36,6 +36,10 @@ def listing(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Dep
 def propose(seller_id:int,payload:CashEventIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
     reserve_sqlite_writer(db,renew_read=True)
     gate(db,seller_id,access.user_id)
+    existing=db.scalar(select(KoshCashEvent).where(KoshCashEvent.seller_id==seller_id,KoshCashEvent.source_module==payload.source_module,KoshCashEvent.event_type==payload.event_type,KoshCashEvent.evidence_ref==payload.evidence_ref))
+    if existing:
+        if any(getattr(existing,key)!=value for key,value in payload.model_dump().items()):raise HTTPException(409,"Evidence already used with different parameters")
+        record(db,seller_id,access,"cash_event.propose.repeat",{"id":existing.id});return out(existing)
     row=KoshCashEvent(seller_id=seller_id,created_by_user_id=access.user_id,status="PROPOSED",**payload.model_dump());db.add(row);db.flush()
     record(db,seller_id,access,"cash_event.propose",{"id":row.id,"event_type":row.event_type,"amount_paise":row.amount_paise});return out(row)
 @router.post("/{event_id}/confirm")

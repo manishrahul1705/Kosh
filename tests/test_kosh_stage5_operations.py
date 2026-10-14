@@ -25,7 +25,7 @@ def test_order_and_po_cash_direction_owner_confirmation_and_price_changes(client
     client.post(prefix+f"/orders/{price['id']}/confirm")
     db.rollback();result=simulate(load_inputs(db,seller.id,args['as_of']),**args);assert result['weeks'][0]['expected_outflow_addon_paise']==21600
     decrease=client.post(prefix+'/pricing',json={'purchase_order_id':po['id'],'change_percent':'-3','evidence_ref':'sample:steel-decrease'}).json();client.post(prefix+f"/orders/{decrease['id']}/confirm")
-    db.rollback();assert simulate(load_inputs(db,seller.id,args['as_of']),**args)['weeks'][0]['expected_inflow_addon_paise']==100600
+    db.rollback();latest=simulate(load_inputs(db,seller.id,args['as_of']),**args);assert latest['weeks'][0]['expected_inflow_addon_paise']==100600 and latest['weeks'][0]['expected_outflow_addon_paise']==20000
     assert simulate(load_inputs(db,seller.id,args['as_of'],include_addon_events=False),**args)==base
 
 def test_rfq_outbox_only_after_approval(client,db):

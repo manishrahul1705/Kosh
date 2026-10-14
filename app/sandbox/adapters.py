@@ -14,7 +14,7 @@ from app.utils.dates import utcnow
 
 class AdapterError(RuntimeError):pass
 
-ADAPTERS={"RFQ_MESSAGE":"MESSAGES","OD_DRAWDOWN":"BANK","TREDS_FINANCE":"TREDS","LOAN_APPLICATION":"LENDER","COLLECTIONS_REMINDER":"MESSAGES","SUPPLIER_TERM_REQUEST":"MESSAGES","SHARE_DATA_PACK":"SHARING"}
+ADAPTERS={"NOTIFICATION_MESSAGE":"MESSAGES","RFQ_MESSAGE":"MESSAGES","OD_DRAWDOWN":"BANK","TREDS_FINANCE":"TREDS","LOAN_APPLICATION":"LENDER","COLLECTIONS_REMINDER":"MESSAGES","SUPPLIER_TERM_REQUEST":"MESSAGES","SHARE_DATA_PACK":"SHARING"}
 
 def business_after(day):
     day+=timedelta(days=1)
@@ -98,9 +98,9 @@ def run(db,intent):
         elif adapter=="MESSAGES":
             existing=db.scalar(select(KoshSandboxOutbox).where(KoshSandboxOutbox.execution_id==row.id))
             if existing is None:
-                message=KoshSandboxOutbox(id=str(uuid.uuid4()),seller_id=intent.seller_id,execution_id=row.id,intent_id=intent.id,channel="EMAIL",recipient_ref=p["allowlist_key"],body=p.get("message_body") or f"Please review receivable #{p.get('invoice_id')} and arrange payment. Requested collection amount: INR {Decimal(p['amount_paise'])/100:,.2f}.",status="SUBMITTED",created_at=utcnow())
+                message=KoshSandboxOutbox(id=str(uuid.uuid4()),seller_id=intent.seller_id,execution_id=row.id,intent_id=intent.id,channel=p.get("channel","EMAIL"),recipient_ref=p["allowlist_key"],body=p.get("message_body") or f"Please review receivable #{p.get('invoice_id')} and arrange payment. Requested collection amount: INR {Decimal(p['amount_paise'])/100:,.2f}.",status="SUBMITTED",created_at=utcnow())
                 db.add(message)
-            row.result={"provider":"SANDBOX_MESSAGES","channel":"EMAIL","recipient_ref":p["allowlist_key"],"cash_received_paise":0,"note":"Outbox submission is not evidence of a customer payment."}
+            row.result={"provider":"SANDBOX_MESSAGES","channel":p.get("channel","EMAIL"),"recipient_ref":p["allowlist_key"],"cash_received_paise":0,"note":"Outbox submission is not evidence of a customer payment."}
         elif adapter=="SHARING":
             if not p.get("evidence_reference"):raise AdapterError("SHARING_EVIDENCE_REQUIRED")
             if p.get("report_id"):

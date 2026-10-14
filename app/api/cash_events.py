@@ -2,7 +2,7 @@
 from datetime import date
 from typing import Literal
 from fastapi import APIRouter,Depends,HTTPException
-from pydantic import BaseModel,ConfigDict,StrictInt,Field
+from pydantic import BaseModel,ConfigDict,StrictInt,Field,model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
@@ -20,6 +20,11 @@ class CashEventIn(BaseModel):
     evidence_ref:str=Field(min_length=1,max_length=160)
     event_date:date
     amount_paise:StrictInt=Field(ge=0)
+    cost_direction:Literal["INCREASE","DECREASE"]|None=None
+    @model_validator(mode="after")
+    def cost_only(self):
+        if self.cost_direction is not None and self.event_type!="COST_CHANGE":raise ValueError("Cost direction applies only to cost changes")
+        return self
 def out(row):return {c.name:getattr(row,c.name) for c in row.__table__.columns}
 def record(db,seller_id,access,action,payload,tier="T1"):
     append_event(db,seller_id=seller_id,actor_type="HUMAN",actor_id=str(access.user_id),action=action,tier=tier,payload=payload,policy_decision="ALLOW");db.commit()

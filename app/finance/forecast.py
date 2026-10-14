@@ -69,7 +69,7 @@ def load_inputs(db:Session,seller_id:int,as_of:date,*,include_addon_events:bool=
     from app.finance.sandbox_ledger import overlay
     delta,events,reductions=overlay(db,seller_id,as_of)
     from app.database.kosh_models import KoshCashEvent
-    addon=tuple({"date":row.event_date.isoformat(),"amount_paise":row.amount_paise*(1 if row.event_type=="EXPECTED_RECEIVABLE" else -1),"component":"addon","event_id":row.id,"source_module":row.source_module} for row in db.scalars(select(KoshCashEvent).where(KoshCashEvent.seller_id==seller_id,KoshCashEvent.status=="CONFIRMED",KoshCashEvent.event_type!="FINANCING_NEED").order_by(KoshCashEvent.id))) if include_addon_events else ()
+    addon=tuple({"date":row.event_date.isoformat(),"amount_paise":row.amount_paise*(1 if row.event_type=="EXPECTED_RECEIVABLE" or row.cost_direction=="DECREASE" else -1),"component":"addon","event_id":row.id,"source_module":row.source_module} for row in db.scalars(select(KoshCashEvent).where(KoshCashEvent.seller_id==seller_id,KoshCashEvent.status=="CONFIRMED",KoshCashEvent.event_type!="FINANCING_NEED").order_by(KoshCashEvent.id))) if include_addon_events else ()
     return ForecastInputs((bank.balance_paise if bank else 0)+delta,tuple(open_rows),obligations,tuple(portfolio or [30,45,60]),{key:tuple(value) for key,value in customer.items()},tuple(sales),tuple(purchases),review,addon_cash_events=addon,sandbox_cash_events=events,sandbox_invoice_reductions=reductions)
 
 def buffer_for_seller(db:Session,seller_id:int,default:int=100_000_000)->int:

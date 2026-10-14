@@ -147,6 +147,8 @@ def create_app(
     app.include_router(cash_events.router)
     from app.api import collections
     app.include_router(collections.router)
+    from app.api import native_operations
+    app.include_router(native_operations.router)
     from app.api import financing
     app.include_router(financing.router)
     from app.api import policy

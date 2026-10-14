@@ -465,6 +465,7 @@ class KoshCashEvent(Base):
     id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
     seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False,index=True)
     event_type:Mapped[str]=mapped_column(sa.String(32),nullable=False)
+    cost_direction:Mapped[str|None]=mapped_column(sa.String(8))
     source_module:Mapped[str]=mapped_column(sa.String(48),nullable=False)
     evidence_ref:Mapped[str]=mapped_column(sa.String(160),nullable=False)
     event_date:Mapped[date]=mapped_column(sa.Date,nullable=False)
@@ -498,3 +499,16 @@ class KoshCollectionTerms(Base):
     agreed_days:Mapped[int|None]=mapped_column(sa.Integer)
     supplier_mse:Mapped[bool]=mapped_column(sa.Boolean,nullable=False)
     evidence_ref:Mapped[str]=mapped_column(sa.String(160),nullable=False)
+
+
+class KoshOperationRecord(Base):
+    __tablename__="kosh_operation_records"
+    id:Mapped[int]=mapped_column(PK,primary_key=True,autoincrement=True)
+    seller_id:Mapped[int]=mapped_column(PK,sa.ForeignKey("sellers.id",ondelete="RESTRICT"),nullable=False,index=True)
+    kind:Mapped[str]=mapped_column(sa.String(48),nullable=False)
+    evidence_ref:Mapped[str]=mapped_column(sa.String(160),nullable=False)
+    data:Mapped[dict]=mapped_column(sa.JSON,nullable=False)
+    status:Mapped[str]=mapped_column(sa.String(24),nullable=False,default="PROPOSED")
+    created_by_user_id:Mapped[int]=mapped_column(sa.Integer,sa.ForeignKey("app_users.id"),nullable=False)
+    created_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)
+    updated_at:Mapped[datetime]=mapped_column(sa.DateTime,nullable=False,default=utcnow)

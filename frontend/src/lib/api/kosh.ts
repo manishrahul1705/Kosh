@@ -29,6 +29,12 @@ export interface FinancingPlan { target_probability:string;planning_details:{bas
 export interface ActionIntent { id:string; plan_line_id:number|null; action_type:string; tier:string; params:Record<string,unknown>; status:string; expires_at:string|null; policy_decision:Record<string,unknown> }
 export interface SandboxItem { id:string|number; intent_id:string; status:string; [key:string]:unknown }
 export const koshApi = {
+  operations:(id:number)=>apiClient.get<{role:string;items:{id:number;kind:string;status:string;evidence_ref:string;data:Record<string,unknown>}[];counterparties:{id:number;name:string;kind:string}[];market_sample:{material_code:string;change_percent:string;source:string}[]}>(`/kosh/sellers/${id}/operations`).then(r=>r.data),
+  orderProposal:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/orders`,payload).then(r=>r.data),
+  confirmOrder:(id:number,record:number)=>apiClient.post(`/kosh/sellers/${id}/operations/orders/${record}/confirm`).then(r=>r.data),
+  priceProposal:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/operations/pricing`,payload).then(r=>r.data),
+  rfqDraft:(id:number,payload:Record<string,unknown>)=>apiClient.post<{id:number;body:string}>(`/kosh/sellers/${id}/operations/rfqs`,payload).then(r=>r.data),
+  operationIntent:(id:number,draft:number)=>apiClient.post(`/kosh/sellers/${id}/operations/drafts/${draft}/intent`).then(r=>r.data),
   collections:(id:number)=>apiClient.get<{role:string;items:{invoice_id:number;invoice_number:string;party:string;amount_paise:number;interest:{status:string;interest_paise:number|null;annual_rate:string;reason:string}}[]}>(`/kosh/sellers/${id}/collections`).then(r=>r.data),
   collectionTerms:(id:number,invoice:number,payload:Record<string,unknown>)=>apiClient.put(`/kosh/sellers/${id}/collections/${invoice}/terms`,payload).then(r=>r.data),
   reminderDraft:(id:number,invoice:number,tone:string)=>apiClient.post<{id:number;body:string}>(`/kosh/sellers/${id}/collections/drafts`,{invoice_id:invoice,tone}).then(r=>r.data),

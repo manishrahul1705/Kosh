@@ -20,8 +20,9 @@ Generate and seed the deterministic fictional demo only against an explicitly se
 
 ```powershell
 & .\.venv\Scripts\python.exe scripts/kosh_generate_demo.py --seed 42 --out demo_data
-& .\.venv\Scripts\python.exe scripts/kosh_seed_demo.py --database-url sqlite:///./kosh_work.db --data demo_data --storage private_storage
 $env:DATABASE_URL = 'sqlite:///./kosh_work.db'
+& .\.venv\Scripts\python.exe scripts/migrate.py
+& .\.venv\Scripts\python.exe scripts/kosh_seed_demo.py --database-url sqlite:///./kosh_work.db --data demo_data --storage private_storage
 & .\.venv\Scripts\python.exe scripts/verify_audit_chain.py --export-jsonl private_notes/kosh-audit.jsonl
 ```
 
@@ -31,29 +32,146 @@ The generated data and private storage are ignored. Keep all worker and collecti
 
 To run the complete Kosh demo end-to-end (seed 42, as-of `2026-10-13`, forecast, financing evaluation, gap-closing plan at target 0.20, and Stage 4 sandbox execution):
 
+#### Prerequisites
+- **Python**: Python 3.11 (tested on `3.11.9`).
+- **Node & npm**: Node 24 and npm 11 (tested on Node `v24.21.0`, npm `11.11.1`).
+- **OCR (Optional)**: Tesseract CLI on PATH or `OCR_EXECUTABLE`. If missing, image-only documents remain honestly marked as `REVIEW_REQUIRED` without raising errors.
+
+#### Option A: Windows PowerShell
+
 ```powershell
-# Safe offline environment variables
+# 1. Clone repository
+git clone -b kosh https://github.com/manishrahul1705/Kosh.git
+Set-Location Kosh
+
+# 2. Create and activate Python 3.11 virtual environment
+py -3.11 -m venv .venv
+& .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+# 3. Install frontend dependencies
+Push-Location frontend
+npm.cmd ci
+Pop-Location
+
+# 4. Copy configuration
+Copy-Item .env.example .env
+# Offline defaults work out of the box (SQLite, mock/offline AI, local auth).
+# For dev-mode sign in without Supabase, DEV_LOGIN_ENABLED=true is used below.
+
+# 5. Run database migrations
+$env:DATABASE_URL = 'sqlite:///./kosh_work.db'
+& .\.venv\Scripts\python.exe scripts/migrate.py
+
+# 6. Generate and seed demo data (Meenakshi Precision Components, seed 42)
+& .\.venv\Scripts\python.exe scripts/kosh_generate_demo.py --seed 42 --out demo_data
+& .\.venv\Scripts\python.exe scripts/kosh_seed_demo.py --database-url sqlite:///./kosh_work.db --data demo_data --storage private_storage
+
+# 7. Start backend API server on port 8010 (Terminal 1)
+$env:DATABASE_URL = 'sqlite:///./kosh_work.db'
 $env:SCHEDULER_ENABLED = 'false'
 $env:AUTO_MIGRATE = 'false'
 $env:COLLECT_ON_STARTUP = 'false'
 $env:STARTUP_RECOVERY_ENABLED = 'false'
 $env:APP_ENV = 'development'
+$env:DEV_LOGIN_ENABLED = 'true'
 $env:KOSH_AS_OF_DATE = '2026-10-13'
+& .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8010
 
-# 1. Run canonical demonstration pipeline and view exact numbers
-& .\.venv\Scripts\python.exe scripts/kosh_demo_numbers.py
-# Output document: docs/kosh/demo_numbers.md
+# 8. Start frontend dev server on port 5180 (Terminal 2)
+Push-Location frontend
+npm.cmd run dev -- --host 127.0.0.1 --port 5180
+Pop-Location
 
-# 2. Run backend test suite
-& .\.venv\Scripts\python.exe -m pytest -q --tb=line -p no:warnings tests/test_kosh_*
-
-# 3. Frontend checks
-Set-Location frontend
-npx.cmd tsc -b
+# 9. Verify and run test suites (Terminal 3)
+& .\.venv\Scripts\python.exe -m pytest -q --tb=line -p no:warnings (Get-ChildItem tests\test_kosh_*.py)
+Push-Location frontend
 npm.cmd run test -- --run
 npm.cmd run build
-Set-Location ..
+Pop-Location
+
+# 10. Run canonical demonstration numbers script & audit verification
+& .\.venv\Scripts\python.exe scripts/kosh_demo_numbers.py
+# (Note: runs 2,000 Monte Carlo paths; takes 3-7 minutes)
+& .\.venv\Scripts\python.exe scripts/verify_audit_chain.py
 ```
+
+#### Option B: macOS / Linux bash
+
+```bash
+# 1. Clone repository
+git clone -b kosh https://github.com/manishrahul1705/Kosh.git
+cd Kosh
+
+# 2. Create and activate Python 3.11 virtual environment
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# 3. Install frontend dependencies
+(cd frontend && npm ci)
+
+# 4. Copy configuration
+cp .env.example .env
+# Offline defaults work out of the box (SQLite, mock/offline AI, local auth).
+# For dev-mode sign in without Supabase, DEV_LOGIN_ENABLED=true is used below.
+
+# 5. Run database migrations
+export DATABASE_URL="sqlite:///./kosh_work.db"
+python scripts/migrate.py
+
+# 6. Generate and seed demo data (Meenakshi Precision Components, seed 42)
+python scripts/kosh_generate_demo.py --seed 42 --out demo_data
+python scripts/kosh_seed_demo.py --database-url sqlite:///./kosh_work.db --data demo_data --storage private_storage
+
+# 7. Start backend API server on port 8010 (Terminal 1)
+export DATABASE_URL="sqlite:///./kosh_work.db"
+export SCHEDULER_ENABLED="false"
+export AUTO_MIGRATE="false"
+export COLLECT_ON_STARTUP="false"
+export STARTUP_RECOVERY_ENABLED="false"
+export APP_ENV="development"
+export DEV_LOGIN_ENABLED="true"
+export KOSH_AS_OF_DATE="2026-10-13"
+uvicorn app.main:app --host 127.0.0.1 --port 8010
+
+# 8. Start frontend dev server on port 5180 (Terminal 2)
+(cd frontend && npm run dev -- --host 127.0.0.1 --port 5180)
+
+# 9. Verify and run test suites (Terminal 3)
+source .venv/bin/activate
+pytest -q --tb=line -p no:warnings tests/test_kosh_*.py
+(cd frontend && npm run test -- --run && npm run build)
+
+# 10. Run canonical demonstration numbers script & audit verification
+python scripts/kosh_demo_numbers.py
+# (Note: runs 2,000 Monte Carlo paths; takes 3-7 minutes)
+python scripts/verify_audit_chain.py
+```
+
+#### Logging in and What to Click First
+
+1. Open `http://127.0.0.1:5180/login` in your web browser.
+2. In the **Local Dev Sign-In** box, enter any email address (e.g. `judge@example.com` or `demo@meenakshi.example`). Click **Sign in**.
+3. **What to click first**:
+   - **Connect**: View the 18 ingested documents, including commercial invoices, bank statements, and the poisoned invoice marked with `INSTRUCTION_TEXT_DETECTED`.
+   - **Cash**: View the 13-week cash forecast with the Week 6 critical cash-gap alert (79.95% shortfall probability below ₹10,00,000 buffer).
+   - **Plan**: Inspect all 8 financing products evaluated against catalogue rules, the cost-minimized Guaranteed Plan (TReDS on Invoice 395 saving 81.7% vs NBFC baseline), and the Safety vs Cost curve.
+   - **Approvals**: Review proposed action intents, submit OTP step-up for T3 actions, and execute sandbox settlement.
+   - **Audit**: Verify the cryptographic SHA-256 tamper-evident hash chain and inspect security incident counters.
+
+#### Expected Canonical Demo Numbers
+- **Baseline Week 6 Shortfall Probability**: 79.95% before $\rightarrow$ 6.25% after execution
+- **Horizon-Wide Safety Target**: All 13 horizon weeks achieve $\le$ 20.00% probability below buffer
+- **Guaranteed Plan Cost**: ₹15,407.10 (TReDS Invoice 395) vs ₹84,128.14 (NBFC Unsecured baseline) $\rightarrow$ **81.7% cost savings**
+- **Audit Chain**: 167 entries, status **`VALID`** (0 broken links)
+
+#### Troubleshooting
+- **Port already in use**: If port 8010 or 5180 is taken by another service, change `--port <port>` (if changing backend port, update Vite's proxy in `frontend/vite.config.ts`).
+- **Wrong Python version**: Ensure Python 3.11 is used (`python --version` or `py -3.11`). Python 3.12+ may encounter package compatibility issues.
+- **Tesseract missing**: Tesseract is entirely optional. If missing from `PATH`, OCR fields remain honestly marked as `REVIEW_REQUIRED` without halting ingestion.
+- **Private repository access**: If cloning prompts for GitHub credentials, ensure your account has collaborator access or clone via SSH (`git clone git@github.com:manishrahul1705/Kosh.git`).
+- **PowerShell Execution Policy**: If `.venv\Scripts\Activate.ps1` gives an execution policy error, run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`, or execute Python directly via `& .\.venv\Scripts\python.exe`.
+
 
 ### Tender-to-Cash
 

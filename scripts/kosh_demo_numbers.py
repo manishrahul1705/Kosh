@@ -63,6 +63,7 @@ def run_demo(db_path: Path, out_md_path: Path):
 
     demo_data_dir = ROOT / "demo_data"
     storage_dir = ROOT / "private_storage"
+    print("[1/10] Generating demo data and seeding database...", flush=True)
     generate(seed=42, out=demo_data_dir, as_of=as_of)
     seed(database_url=db_url, data_dir=demo_data_dir, storage=storage_dir)
 
@@ -77,6 +78,7 @@ def run_demo(db_path: Path, out_md_path: Path):
         owner_user_id = owner_mem.user_id
 
         # 0. Business Snapshot
+        print("[2/10] Loading ledger totals and business snapshot...", flush=True)
         from app.api.cash import get_ledger
         ledger_data = get_ledger(seller.id, session, None)
         totals = ledger_data.get("totals", {})
@@ -87,6 +89,7 @@ def run_demo(db_path: Path, out_md_path: Path):
 
 
         # 1. Baseline Forecast
+        print("[3/10] Running 13-week baseline Monte Carlo forecast (2000 paths, seed 42)...", flush=True)
         inputs = load_inputs(session, seller.id, as_of, include_addon_events=True, include_customer_history=False, include_revenue_signal=False)
         params = {"include_forecast_sales": True, "n_paths": 2000, "seed": 42}
         digest = fingerprint(inputs, {**params, "as_of_date": as_of, "buffer_paise": buffer})
@@ -123,6 +126,7 @@ def run_demo(db_path: Path, out_md_path: Path):
         session.commit()
 
         # 2. Financing Evaluation
+        print("[4/10] Evaluating 8 financing catalogue products...", flush=True)
         eval_row = run_evaluation(session, seller.id, as_of)
         session.commit()
 
@@ -164,10 +168,12 @@ def run_demo(db_path: Path, out_md_path: Path):
             })
 
         # 3. Propose Plan at target 0.20 (ALL_WEEKS default)
+        print("[5/10] Computing cost-optimal gap-closing plan (target 0.20, ALL_WEEKS)...", flush=True)
         plan = propose_plan(session, seller.id, target_prob=Decimal("0.20"), target_scope="ALL_WEEKS", persist=True)
         session.commit()
 
         # 4. Safety-vs-cost Curve (0.40, 0.30, 0.20, 0.10)
+        print("[6/10] Calculating safety-vs-cost curve (40%, 30%, 20%, 10%)...", flush=True)
         safety_curve_points = []
         for t in (Decimal(".40"), Decimal(".30"), Decimal(".20"), Decimal(".10")):
             p_data = propose_plan(session, seller.id, target_prob=t, target_scope="ALL_WEEKS", persist=False)
@@ -203,6 +209,7 @@ def run_demo(db_path: Path, out_md_path: Path):
         session.commit()
 
         # 5. Stage 4 Intent Creation, Approval, and Execution
+        print("[7/10] Creating action intents, approvals, and executing sandbox settlement...", flush=True)
         lines = session.scalars(select(KoshPlanLine).where(KoshPlanLine.plan_id == plan.id)).all()
         intents = []
         for line in lines:
@@ -222,6 +229,7 @@ def run_demo(db_path: Path, out_md_path: Path):
             session.commit()
 
         # 6. Stage 4 Security Tests (Token replay, tampered amount, kill switch, document payment attack)
+        print("[8/10] Running security flow verifications (replay, tamper, injection, kill switch)...", flush=True)
         security_results = []
         # Test 1: OTP Step-up for T3
         security_results.append({
@@ -335,10 +343,12 @@ def run_demo(db_path: Path, out_md_path: Path):
         sandbox_entries = session.scalars(select(KoshSandboxLedgerEntry)).all()
 
         # 8. Audit Chain Verification
+        print("[9/10] Verifying cryptographic SHA-256 audit chain...", flush=True)
         chain_verification = verify_chain(session)
         audit_count = session.scalar(select(func.count()).select_from(KoshAuditEntry).where(KoshAuditEntry.seller_id == seller.id))
 
         # 9. MSMED Statutory Example & ABC Analysis
+        print("[10/10] Testing MSMED statutory calculation & add-on events shift...", flush=True)
         # Reference calculation: INR 100,000 accepted 2026-01-01, NONE agreed (15-day statutory limit, due 2026-01-16), as-of 2026-03-16
         # 2 monthly rests @ 17.25% p.a. (3x 5.75% RBI rate)
         msmed_ex = msmed_interest(10_000_000, date(2026, 1, 1), date(2026, 3, 16), agreement_status="NONE", supplier_mse=True, bank_rate="5.75")

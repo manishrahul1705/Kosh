@@ -24,13 +24,16 @@ def invoice_out(i,party):return {"id":i.id,"direction":i.direction,"party":party
 @router.get("/ledger")
 def get_ledger(seller_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_read)):
     rows=db.execute(select(KoshInvoice,KoshCounterparty).join(KoshCounterparty,KoshCounterparty.id==KoshInvoice.counterparty_id).where(KoshInvoice.seller_id==seller_id).order_by(KoshInvoice.due_date)).all()
-    invoices=[invoice_out(i,p) for i,p in rows];today=date.today()
+    invoices=[invoice_out(i,p) for i,p in rows];today=_as_of()
     def remaining(i):return max(0,i.amount_paise-(i.paid_amount_paise or 0))
-    open_receivables=sum(remaining(i) for i,_ in rows if i.direction=="RECEIVABLE" and i.status!="PAID")
-    open_payables=sum(remaining(i) for i,_ in rows if i.direction=="PAYABLE" and i.status!="PAID")
-    overdue=sum(remaining(i) for i,_ in rows if i.direction=="RECEIVABLE" and i.status!="PAID" and i.due_date<today)
+    open_receivables=sum(remaining(i) for i,_ in rows if i.direction=="RECEIVABLE" and i.status not in {"PAID","REVIEW"})
+    open_payables=sum(remaining(i) for i,_ in rows if i.direction=="PAYABLE" and i.status not in {"PAID","REVIEW"})
+    held_for_review_payables=sum(remaining(i) for i,_ in rows if i.direction=="PAYABLE" and i.status=="REVIEW")
+    held_for_review_receivables=sum(remaining(i) for i,_ in rows if i.direction=="RECEIVABLE" and i.status=="REVIEW")
+    held_for_review=sum(remaining(i) for i,_ in rows if i.status=="REVIEW")
+    overdue=sum(remaining(i) for i,_ in rows if i.direction=="RECEIVABLE" and i.status not in {"PAID","REVIEW"} and i.due_date<today)
     latest=db.scalar(select(KoshBankTransaction).where(KoshBankTransaction.seller_id==seller_id).order_by(KoshBankTransaction.txn_date.desc(),KoshBankTransaction.id.desc()).limit(1))
-    return {"seller_id":seller_id,"totals":{"open_receivables_paise":open_receivables,"open_payables_paise":open_payables,"overdue_receivables_paise":overdue,"review_count":sum(i.status=="REVIEW" for i,_ in rows),"latest_bank_balance_paise":latest.balance_paise if latest else None,"bank_balance_as_of":latest.txn_date if latest else None},"items":invoices}
+    return {"seller_id":seller_id,"totals":{"open_receivables_paise":open_receivables,"open_payables_paise":open_payables,"held_for_review_payables_paise":held_for_review_payables,"held_for_review_receivables_paise":held_for_review_receivables,"held_for_review_paise":held_for_review,"overdue_receivables_paise":overdue,"review_count":sum(i.status=="REVIEW" for i,_ in rows),"latest_bank_balance_paise":latest.balance_paise if latest else None,"bank_balance_as_of":latest.txn_date if latest else None},"items":invoices}
 
 class InvoicePatch(BaseModel):
     amount_paise:int|None=None;invoice_date:date|None=None;due_date:date|None=None;invoice_number:str|None=None

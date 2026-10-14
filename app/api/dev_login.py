@@ -87,6 +87,17 @@ def _ensure_demo_seller(db: Session, user, email: str) -> None:
     from app.database.models import Seller, SellerRevision
     from app.eligibility.utils import calculate_seller_fingerprint
 
+    # If the canonical Kosh demo seller exists, ensure the dev user has OWNER access to it.
+    demo_seller = db.query(Seller).filter(Seller.name == "Meenakshi Precision Components").first()
+    if demo_seller is not None:
+        mem = db.query(SellerMembership).filter(
+            SellerMembership.user_id == user.id,
+            SellerMembership.seller_id == demo_seller.id,
+        ).first()
+        if mem is None:
+            db.add(SellerMembership(user_id=user.id, seller_id=demo_seller.id, role="OWNER", status="ACTIVE"))
+        return
+
     if db.query(SellerMembership).filter(SellerMembership.user_id == user.id).first() is not None:
         return
     now = datetime.utcnow()

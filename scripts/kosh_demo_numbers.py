@@ -85,6 +85,7 @@ def run_demo(db_path: Path, out_md_path: Path):
         bank_balance = totals.get("latest_bank_balance_paise", 0)
         open_receivables = totals.get("open_receivables_paise", 0)
         open_payables = totals.get("open_payables_paise", 0)
+        held_for_review_payables = totals.get("held_for_review_payables_paise", 0)
         buffer = buffer_for_seller(session, seller.id)
 
 
@@ -410,7 +411,8 @@ def run_demo(db_path: Path, out_md_path: Path):
             f"- **As-Of Date**: `{as_of.isoformat()}`",
             f"- **Latest Bank Balance**: ₹{bank_balance / 100:,.2f} ({bank_balance:,} paise)",
             f"- **Open Receivables**: ₹{open_receivables / 100:,.2f} ({open_receivables:,} paise)",
-            f"- **Open Payables**: ₹{open_payables / 100:,.2f} ({open_payables:,} paise)",
+            f"- **Open Payables**: ₹{open_payables / 100:,.2f} ({open_payables:,} paise) *(verified only)*",
+            f"- **Held for Review (Payables)**: ₹{held_for_review_payables / 100:,.2f} ({held_for_review_payables:,} paise) *(quarantined poisoned invoices POISON-001 & POISON-002)*",
             f"- **Cash Buffer Target**: ₹{buffer / 100:,.2f} ({buffer:,} paise)",
             "",
             "## 2. Baseline Cash Forecast & Alert",

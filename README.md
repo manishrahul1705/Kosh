@@ -152,14 +152,22 @@ python scripts/verify_audit_chain.py
 
 1. Open `http://127.0.0.1:5180/login` in your web browser.
 2. In the **Local Dev Sign-In** box, enter any email address (e.g. `judge@example.com` or `demo@meenakshi.example`). Click **Sign in**.
+   - *Automatic Demo Seller Association*: Any dev sign-in email automatically receives `OWNER` access to the seeded demo seller **Meenakshi Precision Components** (accessible via `/api/sellers` and `/api/kosh/sellers/{id}/ledger`).
+   - *Production Guard*: `DEV_LOGIN_ENABLED` is strictly refused and blocked when `APP_ENV=production` (enforced by both `Settings.assert_startup_safe` and `dev_login.install`).
 3. **What to click first**:
-   - **Connect**: View the 18 ingested documents, including commercial invoices, bank statements, and the poisoned invoice marked with `INSTRUCTION_TEXT_DETECTED`.
+   - **Connect**: View the 18 ingested documents, including commercial invoices, bank statements, and the quarantined poisoned invoice marked with `INSTRUCTION_TEXT_DETECTED`.
    - **Cash**: View the 13-week cash forecast with the Week 6 critical cash-gap alert (79.95% shortfall probability below ₹10,00,000 buffer).
    - **Plan**: Inspect all 8 financing products evaluated against catalogue rules, the cost-minimized Guaranteed Plan (TReDS on Invoice 395 saving 81.7% vs NBFC baseline), and the Safety vs Cost curve.
    - **Approvals**: Review proposed action intents, submit OTP step-up for T3 actions, and execute sandbox settlement.
    - **Audit**: Verify the cryptographic SHA-256 tamper-evident hash chain and inspect security incident counters.
 
 #### Expected Canonical Demo Numbers
+- **Business Snapshot**:
+  - Bank Balance: ₹24,97,318.42 (249,731,842 paise)
+  - Open Receivables: ₹1,09,48,317.40 (1,094,831,740 paise)
+  - Open Payables (Verified): ₹38,03,973.22 (380,397,322 paise)
+  - Held for Review (Payables): ₹9,60,000.00 (96,000,000 paise) *(quarantined poisoned invoices POISON-001 & POISON-002)*
+  - Cash Buffer Target: ₹10,00,000.00 (100,000,000 paise)
 - **Baseline Week 6 Shortfall Probability**: 79.95% before $\rightarrow$ 6.25% after execution
 - **Horizon-Wide Safety Target**: All 13 horizon weeks achieve $\le$ 20.00% probability below buffer
 - **Guaranteed Plan Cost**: ₹15,407.10 (TReDS Invoice 395) vs ₹84,128.14 (NBFC Unsecured baseline) $\rightarrow$ **81.7% cost savings**

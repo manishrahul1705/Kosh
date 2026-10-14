@@ -8,7 +8,8 @@ Deterministic simulation numbers generated from seed 42 with as-of date `2026-10
 - **As-Of Date**: `2026-10-13`
 - **Latest Bank Balance**: ₹2,497,318.42 (249,731,842 paise)
 - **Open Receivables**: ₹10,948,317.40 (1,094,831,740 paise)
-- **Open Payables**: ₹4,763,973.22 (476,397,322 paise)
+- **Open Payables**: ₹3,803,973.22 (380,397,322 paise) *(verified only)*
+- **Held for Review (Payables)**: ₹960,000.00 (96,000,000 paise) *(quarantined poisoned invoices POISON-001 & POISON-002)*
 - **Cash Buffer Target**: ₹1,000,000.00 (100,000,000 paise)
 
 ## 2. Baseline Cash Forecast & Alert

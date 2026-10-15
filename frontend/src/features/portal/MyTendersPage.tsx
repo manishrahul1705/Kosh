@@ -97,7 +97,7 @@ export const MyTendersPage: React.FC = () => {
             <Tile label="Closing within 3 days" value={summary.data.closing_within_3_days} tone={summary.data.closing_within_3_days > 0 ? 'text-rose-600 dark:text-rose-400' : undefined} />
             <Tile label="Last matched" value={summary.data.last_matched_at ? formatDate(summary.data.last_matched_at) : '—'} />
           </div>
-          {summary.data.guidance.map((g) => (
+          {summary.data.guidance?.map((g) => (
             <p key={g} className="text-xs bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 rounded-xl p-3.5">
               Add your products or categories to find relevant tenders.{' '}
               <Link to="/profile" className="font-semibold underline">Update profile</Link>
@@ -188,7 +188,7 @@ export const MyTendersPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
-                {list.data.items.map((t) => (
+                {list.data?.items?.map((t) => (
                   <tr key={t.tender_id} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
                     <td className="py-3">
                       <Link to={`/tenders/${t.tender_id}`} className="font-bold text-primary-600 dark:text-primary-400 hover:underline">

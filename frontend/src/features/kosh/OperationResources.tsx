@@ -201,13 +201,13 @@ export const OperationResources = () => {
 
   const relation = (key: string) =>
     key === 'supplier_id'
-      ? query.data?.counterparties.map((p) => ({ id: p.id, label: p.name }))
+      ? query.data?.counterparties?.map((p) => ({ id: p.id, label: p.name }))
       : key === 'rfq_draft_id'
       ? query.data?.drafts
           ?.filter((d) => d.kind === 'RFQ_MESSAGE')
           .map((d) => ({ id: d.id, label: `RFQ ${d.id}` }))
       : query.data?.items
-          .filter(
+          ?.filter(
             (r) =>
               r.kind ===
               (({
@@ -715,7 +715,7 @@ export const OperationResources = () => {
               className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
             >
               <option value="">Select counterparty</option>
-              {query.data?.counterparties.map((p) => (
+              {query.data?.counterparties?.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -735,7 +735,7 @@ export const OperationResources = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {query.data?.items.map((r) => (
+          {query.data?.items?.map((r) => (
             <article
               key={r.id}
               className="card space-y-3 p-4 border-border bg-card hover:border-primary-300 dark:hover:border-primary-700 transition-colors"

@@ -20,7 +20,28 @@ export interface Consent { id:number; purpose:string; data_types:string[]; expir
 export interface AuditResponse { seller_id:number; status:string; items:{sequence:number;recorded_at:string;actor_type:string;action:string;tier:string;policy_decision:string}[] }
 export interface ForecastWeek { expected_inflow_revenue_paise?:number; expected_inflow_addon_paise?:number;expected_outflow_addon_paise?:number; expected_inflow_sandbox_paise?:number;expected_outflow_sandbox_paise?:number; week_index:number;week_start:string;week_end:string;p10_closing_balance_paise:number;p50_closing_balance_paise:number;p90_closing_balance_paise:number;expected_inflow_committed_paise:number;expected_inflow_forecast_paise:number;expected_outflow_committed_paise:number;expected_outflow_forecast_paise:number;prob_below_buffer:number;expected_shortfall_paise:number }
 export interface ForecastAlert { id?:number;week_index:number;probability:number;expected_shortfall_paise:number;peak_expected_shortfall_paise:number;causes:{type:string;customer?:string;counterparty_id?:number;invoice_numbers?:string[];amount_paise:number;contribution_paise:number}[];summary?:string;status?:string }
-export interface Forecast { seller_id:number;run:{id:number;n_paths?:number;seed?:number;include_addon_events?:boolean;include_customer_history?:boolean;include_revenue_signal?:boolean;as_of_date:string;buffer_paise:number;include_forecast_sales?:boolean};weeks:ForecastWeek[];under_review_paise:number;alert:ForecastAlert|null }
+export interface ForecastRun { id:number;n_paths?:number;seed?:number;include_addon_events?:boolean;include_customer_history?:boolean;include_revenue_signal?:boolean;as_of_date:string;buffer_paise:number;include_forecast_sales?:boolean;status?:string;created_at?:string }
+export interface ForecastResult { seller_id:number;run:ForecastRun;weeks:ForecastWeek[];under_review_paise:number;alert:ForecastAlert|null;status?:string }
+export type Forecast = ForecastResult | KoshPlaceholder
+
+export function isForecastPlaceholder(data: unknown): data is KoshPlaceholder {
+  return Boolean(
+    data &&
+      typeof data === 'object' &&
+      'status' in data &&
+      (data as { status?: unknown }).status === 'NOT_IMPLEMENTED'
+  )
+}
+
+export function isValidForecast(data: unknown): data is ForecastResult {
+  if (!data || typeof data !== 'object') return false
+  const candidate = data as Partial<ForecastResult>
+  return (
+    candidate.status !== 'NOT_IMPLEMENTED' &&
+    Boolean(candidate.run && typeof candidate.run === 'object' && typeof candidate.run.buffer_paise === 'number') &&
+    Array.isArray(candidate.weeks)
+  )
+}
 export interface FinancingOption { invoice_eligibility?:{scope:string;status:string;eligible:boolean;max_amount_paise:number;reasons:{criterion:string;reason:string;reason_code:string;status:string}[];evidence:{invoice_number?:string;buyer?:string;due_date?:string}[]}[]; quote_basis:string; amount_paise:number;days:number;cost_paise:number;cost_assumption:string; product_id:string;display_name:string;provider_label:string;scope:string|null;status:'MATCHED'|'NOT_MATCHED'|'REVIEW_REQUIRED';max_amount_paise:number;effective_annual_rate:string|null;arrival_business_days:number;reasons:{reason:string;reason_code:string;product_clause?:{quote?:string}}[];evidence:Record<string,unknown>[];assumption:boolean;verify_before_relying:boolean }
 export interface FinancingOptions { seller_id:number;sort_rule:string;items:FinancingOption[] }
 export interface SafetyPlan { target_probability:string;status:string;total_cost_paise:number;alert_week_probability:number;lines:{product_id:string;amount_paise:number;days:number;cost_paise:number}[] }
@@ -271,7 +292,7 @@ export const koshApi = {
     apiClient.get<Ledger>(`/kosh/sellers/${sellerId}/ledger`).then((r) => r.data),
   forecast: (sellerId: number) => apiClient.get<Forecast>(`/kosh/sellers/${sellerId}/forecast/latest`).then((r) => r.data),
   runForecast: (sellerId:number,payload:Record<string,unknown>={}) => apiClient.post(`/kosh/sellers/${sellerId}/forecast/run`,payload).then(r=>r.data),
-  whatIf: (sellerId:number,payload:Record<string,unknown>) => apiClient.post<Forecast>(`/kosh/sellers/${sellerId}/forecast/whatif`,payload).then(r=>r.data),
+  whatIf: (sellerId:number,payload:Record<string,unknown>) => apiClient.post<ForecastResult>(`/kosh/sellers/${sellerId}/forecast/whatif`,payload).then(r=>r.data),
   acknowledgeAlert: (sellerId:number,id:number) => apiClient.post(`/kosh/sellers/${sellerId}/alerts/${id}/acknowledge`).then(r=>r.data),
   backtest: (sellerId:number) => apiClient.get<Record<string,unknown>>(`/kosh/sellers/${sellerId}/forecast/backtest/latest`).then(r=>r.data),
   runBacktest: (sellerId:number) => apiClient.post(`/kosh/sellers/${sellerId}/forecast/backtest`).then(r=>r.data),

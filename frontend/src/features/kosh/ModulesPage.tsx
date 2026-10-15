@@ -52,7 +52,7 @@ export const ModulesPage = () => {
 
       {/* Module Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {query.data?.items.map((item) => (
+        {query.data?.items?.map((item) => (
           <article
             key={item.module}
             className={`card p-5 space-y-3.5 flex flex-col justify-between transition-all ${

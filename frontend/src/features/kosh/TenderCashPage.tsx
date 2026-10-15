@@ -221,7 +221,7 @@ export const TenderCashPage = () => {
                   className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                 >
                   <option value="">Select a matched GeM tender</option>
-                  {query.data?.items.map((t) => (
+                  {query.data?.items?.map((t) => (
                     <option key={t.tender_id} value={t.tender_id}>
                       {t.bid_number} · {t.title}
                     </option>

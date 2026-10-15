@@ -116,7 +116,7 @@ export const ReportsPage = () => {
                 className="select text-xs"
               >
                 <option value="">Select recipient</option>
-                {query.data?.recipients.map((r) => (
+                {query.data?.recipients?.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.label}
                   </option>
@@ -159,7 +159,7 @@ export const ReportsPage = () => {
           </Card>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {query.data?.items.map((r) => (
+          {query.data?.items?.map((r) => (
             <article key={r.id} className="card p-5 space-y-3">
               <div className="flex items-center justify-between border-b border-metal-100 dark:border-metal-800 pb-2.5">
                 <h4 className="font-bold text-sm text-metal-900 dark:text-white">
@@ -218,7 +218,7 @@ export const ReportsPage = () => {
           <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Sharing consent scope and revocation</h3>
         </div>
         <div className="space-y-2">
-          {consents.data?.items.map((c) => (
+          {consents.data?.items?.map((c) => (
             <div
               key={c.id}
               className="p-3.5 rounded-xl bg-metal-50 dark:bg-metal-800/60 border border-metal-200 dark:border-metal-700 flex flex-wrap items-center justify-between text-xs gap-2"

@@ -26,7 +26,7 @@ import {
 import { useSeller } from '@/app/SellerContext'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
-import { koshApi, Forecast } from '@/lib/api/kosh'
+import { koshApi, ForecastResult, isForecastPlaceholder, isValidForecast } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -40,7 +40,7 @@ export const CashPage = () => {
   const [showForecast, setShowForecast] = useState(true)
   const [drawer, setDrawer] = useState(false)
   const [shift, setShift] = useState(0)
-  const [scenario, setScenario] = useState<Forecast | null>(null)
+  const [scenario, setScenario] = useState<ForecastResult | null>(null)
 
   useQuery({
     queryKey: ['kosh', 'ledger', activeSellerId],
@@ -82,18 +82,112 @@ export const CashPage = () => {
   if (forecast.isLoading) return <PageLoader />
   if (forecast.isError)
     return (
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Cash</h2>
-        <ErrorAlert message="No forecast is available." />
-        <Button variant="primary" onClick={() => run.mutate()}>
-          Run forecast
+      <section aria-label="Cash forecast" className="space-y-6">
+        <div className="flex items-center gap-2 border-b border-metal-200/80 dark:border-metal-800 pb-4">
+          <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+          <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">13-week cash forecast</h2>
+        </div>
+        <ErrorAlert message="Failed to load cash forecast from server. Please verify your connection." />
+        <Button variant="primary" onClick={() => forecast.refetch()}>
+          Retry
         </Button>
       </section>
     )
 
-  const data = scenario ?? forecast.data
-  if (!data) return <p className="text-metal-500">Select a seller.</p>
+  if (!activeSellerId) {
+    return (
+      <section aria-label="Cash forecast" className="space-y-6">
+        <p className="text-metal-500">Select a seller to view cash forecast.</p>
+      </section>
+    )
+  }
 
+  const rawData = scenario ?? forecast.data
+  if (!rawData) {
+    return (
+      <section aria-label="Cash forecast" className="space-y-6">
+        <p className="text-metal-500">Select a seller to view cash forecast.</p>
+      </section>
+    )
+  }
+
+  if (isForecastPlaceholder(rawData)) {
+    return (
+      <section aria-label="Cash forecast" className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+              <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">13-week cash forecast</h2>
+            </div>
+            <p className="text-xs sm:text-sm text-metal-600 dark:text-metal-400 mt-1 ml-3.5">
+              Monte Carlo probabilistic trajectory with verifiable business evidence inputs.
+            </p>
+          </div>
+        </div>
+
+        <Card className="p-8 text-center space-y-4 max-w-xl mx-auto my-8">
+          <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 flex items-center justify-center mx-auto">
+            <Calendar size={24} />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-metal-900 dark:text-white">No forecast has been generated</h3>
+            <p className="text-xs text-metal-600 dark:text-metal-400 max-w-md mx-auto">
+              A 13-week Monte Carlo forecast has not been generated for this seller. Run the simulation to project cash runway, identify shortfall weeks, and quantify buffer risk.
+            </p>
+          </div>
+          {run.isError && (
+            <div role="alert" className="text-xs text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 p-2.5 rounded-xl border border-rose-200 dark:border-rose-900">
+              Failed to run forecast simulation. Please try again.
+            </div>
+          )}
+          <Button
+            variant="primary"
+            className="mx-auto"
+            disabled={run.isPending}
+            onClick={() => run.mutate()}
+          >
+            {run.isPending ? 'Running simulation...' : 'Run forecast'}
+          </Button>
+        </Card>
+      </section>
+    )
+  }
+
+  if (!isValidForecast(rawData)) {
+    return (
+      <section aria-label="Cash forecast" className="space-y-6">
+        <div className="flex items-center gap-2 border-b border-metal-200/80 dark:border-metal-800 pb-4">
+          <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+          <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">13-week cash forecast</h2>
+        </div>
+        <div role="alert" className="p-5 rounded-2xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-800 dark:text-rose-200 space-y-3">
+          <p className="font-bold text-sm">Incompatible or malformed forecast data received</p>
+          <p>The server returned an unrecognized response format for this seller's forecast. Run the forecast simulation to regenerate valid projections.</p>
+          <Button variant="primary" onClick={() => run.mutate()} disabled={run.isPending}>
+            {run.isPending ? 'Running simulation...' : 'Regenerate forecast'}
+          </Button>
+        </div>
+      </section>
+    )
+  }
+
+  if (rawData.weeks.length === 0) {
+    return (
+      <section aria-label="Cash forecast" className="space-y-6">
+        <div className="flex items-center gap-2 border-b border-metal-200/80 dark:border-metal-800 pb-4">
+          <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+          <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">13-week cash forecast</h2>
+        </div>
+        <Card className="p-8 text-center text-xs text-metal-500 space-y-2">
+          <p className="font-semibold text-metal-800 dark:text-metal-200">No weekly forecast projections generated.</p>
+          <p className="text-metal-400">Simulation completed but produced 0 weekly periods.</p>
+        </Card>
+      </section>
+    )
+  }
+
+  const data: ForecastResult = rawData
   const alert = data.alert
   const chart = data.weeks.map((row) => ({
     ...row,
@@ -319,7 +413,7 @@ export const CashPage = () => {
               Contributing Causes
             </span>
             <ol className="list-decimal pl-5 text-xs text-amber-900 dark:text-amber-300 space-y-1">
-              {alert.causes.map((cause, index) => (
+              {alert.causes?.map((cause, index) => (
                 <li key={index}>
                   <strong>{cause.customer ?? cause.type}</strong>: {formatPaiseINR(cause.amount_paise)} (
                   {formatPaiseINR(cause.contribution_paise)} contribution)

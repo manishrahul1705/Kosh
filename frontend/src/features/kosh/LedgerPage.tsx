@@ -12,6 +12,7 @@ import {
   Filter,
   Search,
   FileSpreadsheet,
+  FileText,
 } from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
@@ -45,6 +46,38 @@ export const LedgerPage = () => {
   if (query.isLoading) return <PageLoader />
   if (query.isError) return <ErrorAlert message="Unable to load the cash ledger. Please ensure the backend is connected." />
   if (!query.data) return <p className="text-metal-500">Select a seller to view ledger.</p>
+
+  if ('status' in query.data && (query.data as { status?: string }).status === 'NOT_IMPLEMENTED') {
+    return (
+      <section aria-label="Ledger" className="space-y-6">
+        <SandboxBanner />
+        <div className="flex items-center gap-2 border-b border-metal-200/80 dark:border-metal-800 pb-4">
+          <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+          <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Ledger & Invoices</h2>
+        </div>
+        <Card className="p-8 text-center space-y-3 max-w-xl mx-auto my-8">
+          <FileText size={36} className="mx-auto text-metal-400" />
+          <h3 className="text-base font-bold text-metal-900 dark:text-white">No ledger records available</h3>
+          <p className="text-xs text-metal-600 dark:text-metal-400 max-w-md mx-auto">
+            Connect accounting software or ingest sales invoices and purchase bills to populate the ledger.
+          </p>
+        </Card>
+      </section>
+    )
+  }
+
+  if (!query.data.totals || !Array.isArray(query.data.items)) {
+    return (
+      <section aria-label="Ledger" className="space-y-6">
+        <SandboxBanner />
+        <div className="flex items-center gap-2 border-b border-metal-200/80 dark:border-metal-800 pb-4">
+          <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+          <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Ledger & Invoices</h2>
+        </div>
+        <ErrorAlert message="Received an incompatible or malformed ledger response from the server." />
+      </section>
+    )
+  }
 
   const t = query.data.totals
 

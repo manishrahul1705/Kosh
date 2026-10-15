@@ -60,9 +60,9 @@ export const ConnectPage = () => {
 
   if (docs.isLoading || consents.isLoading) return <PageLoader />
 
-  const processedCount = docs.data?.filter((d) => d.status === 'PROCESSED').length ?? 0
-  const reviewCount = docs.data?.filter((d) => d.status === 'REVIEW').length ?? 0
-  const activeConsentsCount = consents.data?.filter((c) => c.status === 'ACTIVE').length ?? 0
+  const processedCount = Array.isArray(docs.data) ? docs.data.filter((d) => d.status === 'PROCESSED').length : 0
+  const reviewCount = Array.isArray(docs.data) ? docs.data.filter((d) => d.status === 'REVIEW').length : 0
+  const activeConsentsCount = Array.isArray(consents.data) ? consents.data.filter((c) => c.status === 'ACTIVE').length : 0
 
   return (
     <section aria-label="Connect" className="space-y-6">

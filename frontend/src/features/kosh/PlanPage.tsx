@@ -140,7 +140,7 @@ export const PlanPage = () => {
   const graph = (plan.data?.before_probabilities ?? []).map((before, i) => ({
     week: `W${i + 1}`,
     before: Math.round(before * 10000) / 100,
-    after: plan.data?.after_probabilities[i] !== undefined ? Math.round(plan.data.after_probabilities[i] * 10000) / 100 : undefined,
+    after: plan.data?.after_probabilities?.[i] !== undefined ? Math.round(plan.data.after_probabilities[i] * 10000) / 100 : undefined,
   }))
   const saving = plan.data ? plan.data.baseline_cost_paise - plan.data.total_cost_paise : 0
   const isOwner = evidenceQuery.data?.role === 'OWNER'
@@ -219,7 +219,7 @@ export const PlanPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
-                {curve.data?.items.map((item) => (
+                {curve.data?.items?.map((item) => (
                   <tr key={item.target_probability} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
                     <td className="font-bold text-metal-900 dark:text-white">{Number(item.target_probability) * 100}%</td>
                     <td className="font-semibold text-metal-900 dark:text-white">{formatPaiseINR(item.total_cost_paise)}</td>
@@ -266,7 +266,7 @@ export const PlanPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
-              {options.data?.items.map((item, i) => (
+              {options.data?.items?.map((item, i) => (
                 <tr key={`${item.product_id}-${i}`} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
                   <td className="py-3">
                     <div className="font-bold text-metal-900 dark:text-white">{item.display_name}</div>
@@ -287,7 +287,7 @@ export const PlanPage = () => {
                         Evidence and Why not?
                       </summary>
                       <div className="mt-1 space-y-1 pl-2 border-l-2 border-metal-200 dark:border-metal-700">
-                        {item.reasons.map((r, j) => (
+                        {item.reasons?.map((r, j) => (
                           <p key={j} className="text-[11px] text-metal-700 dark:text-metal-300">
                             <span className="font-bold text-metal-900 dark:text-white">{r.reason_code}:</span> {r.reason}{' '}
                             {r.product_clause?.quote && (
@@ -386,7 +386,7 @@ export const PlanPage = () => {
         <div className="space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-metal-700 dark:text-metal-300">Missing criteria across review options</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {evidenceQuery.data?.missing_criteria.map((prod) => (
+            {evidenceQuery.data?.missing_criteria?.map((prod) => (
               <div key={prod.product_id} className="rounded-xl border border-metal-200/80 dark:border-metal-800 p-3.5 bg-metal-50/70 dark:bg-metal-800/40 text-xs space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-metal-900 dark:text-white">{prod.display_name}</span>
@@ -399,7 +399,7 @@ export const PlanPage = () => {
                   </span>
                 </div>
                 <ul className="space-y-1.5 pl-1">
-                  {prod.criteria.map((c) => (
+                  {prod.criteria?.map((c) => (
                     <li key={c.criterion} className="flex items-start justify-between gap-2">
                       <div>
                         <span className="font-semibold text-metal-800 dark:text-metal-200">{c.label}</span>
@@ -447,7 +447,7 @@ export const PlanPage = () => {
               className="rounded-xl border border-primary-300 dark:border-primary-700 bg-white dark:bg-metal-800 px-3 py-1.5 text-xs font-semibold text-metal-800 dark:text-white shadow-xs focus:ring-2 focus:ring-primary-500"
             >
               <option value="">-- Apply a demonstration fixture --</option>
-              {evidenceQuery.data?.fixtures.map((f) => (
+              {evidenceQuery.data?.fixtures?.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.label} ({f.id})
                 </option>
@@ -779,7 +779,9 @@ export const PlanPage = () => {
                 <span className="font-bold text-metal-800 dark:text-metal-200">
                   {plan.data.expected_plan
                     ? `${(plan.data.expected_plan.alert_week_probability * 100).toFixed(1)}%`
-                    : `${(plan.data.after_probabilities[plan.data.after_probabilities.length > 5 ? 5 : 0] * 100).toFixed(1)}%`}
+                    : Array.isArray(plan.data.after_probabilities) && plan.data.after_probabilities.length > 0
+                    ? `${(plan.data.after_probabilities[plan.data.after_probabilities.length > 5 ? 5 : 0] * 100).toFixed(1)}%`
+                    : 'N/A'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
@@ -802,7 +804,7 @@ export const PlanPage = () => {
           <div className="space-y-2">
             <h4 className="text-xs font-bold uppercase tracking-wider text-metal-500">Executed Plan Levers</h4>
             <ul className="list-disc pl-5 text-xs text-metal-700 dark:text-metal-300 space-y-1.5">
-              {plan.data.lines.map((line) => (
+              {plan.data.lines?.map((line) => (
                 <li key={line.id} id={`plan-line-${line.id}`} className="leading-relaxed">
                   <span className="font-bold text-metal-900 dark:text-white">{line.product_id}:</span> {formatPaiseINR(line.amount_paise)}, week {line.arrival_week},{' '}
                   {line.days > 0 ? `${line.days} days (${line.funding_date} to ${line.repayment_date})` : 'timing only; no financing tenor'},{' '}

@@ -181,7 +181,7 @@ export const OperationsPage = () => {
                   className="w-full px-3 py-2 text-xs rounded-xl border border-metal-200 dark:border-metal-700 bg-white dark:bg-metal-800 text-metal-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                 >
                   <option value="">Select counterparty</option>
-                  {query.data?.counterparties.map((p) => (
+                  {query.data?.counterparties?.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
@@ -377,7 +377,7 @@ export const OperationsPage = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {query.data?.market_sample.map((item) => (
+              {query.data?.market_sample?.map((item) => (
                 <div
                   key={item.material_code}
                   className="p-3.5 rounded-xl border border-metal-200 dark:border-metal-700 bg-white dark:bg-metal-800 space-y-1 shadow-xs"
@@ -592,7 +592,7 @@ export const OperationsPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {query.data?.items.map((row) => (
+          {query.data?.items?.map((row) => (
             <article
               key={row.id}
               className="card space-y-3 p-4 border-metal-200/80 dark:border-metal-800 bg-white dark:bg-metal-900 hover:border-primary-300 dark:hover:border-primary-700 transition-colors"

@@ -12,7 +12,8 @@ vi.mock('@/app/SellerContext', () => ({
   SellerProvider: ({ children }: { children: ReactNode }) => children,
   useSeller: () => ({ activeSellerId: 7, sellers: [{ id: 7, name: 'Test business' }], loading: false, error: null, setActiveSellerId: vi.fn() }),
 }))
-vi.mock('@/lib/api/kosh', () => ({
+vi.mock('@/lib/api/kosh', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/api/kosh')>(),
   koshApi: {
     messagingStatus:vi.fn().mockResolvedValue({transport:'SANDBOX_ONLY',device_pairing:'BLOCKED_OFFLINE',reason:'No external account linking',owner_command:''}),
     chat:vi.fn().mockResolvedValue({status:'REFUSED',reason:'Read-only cash chat cannot send payments.',facts:[]}),

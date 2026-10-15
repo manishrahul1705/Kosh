@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-kosh-theme="dark"], [data-kosh-theme="dark"] *));
+
 @theme {
   --color-primary-50: #f0fdf6;
   --color-primary-100: #dcfceb;

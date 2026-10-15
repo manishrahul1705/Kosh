@@ -152,7 +152,7 @@ export const AuditPage = () => {
 
         {query.data?.items.length ? (
           <div className="space-y-2">
-            {query.data.items.map((row) => (
+            {query.data?.items?.map((row) => (
               <div
                 key={row.sequence}
                 className="card p-4 flex flex-wrap items-center justify-between gap-2 hover:border-primary-300 dark:hover:border-primary-700 transition-colors text-xs"

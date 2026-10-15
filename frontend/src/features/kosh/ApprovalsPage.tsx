@@ -173,7 +173,7 @@ export const ApprovalsPage = () => {
             </h3>
           </div>
           <div className="flex flex-wrap gap-2">
-            {plan.data.lines.map((line) => (
+            {plan.data?.lines?.map((line) => (
               <button
                 className="btn-secondary text-xs py-1.5 px-3 bg-white dark:bg-metal-800 hover:bg-primary-50 dark:hover:bg-metal-700 hover:text-primary-700"
                 key={line.id}
@@ -208,7 +208,7 @@ export const ApprovalsPage = () => {
         )}
 
         <div className="space-y-4">
-          {intents.data?.items.map((intent) => {
+          {intents.data?.items?.map((intent) => {
             const token = tokens[intent.id]
             return (
               <article
@@ -398,12 +398,12 @@ export const ApprovalsPage = () => {
           {inbox.isError && (
             <p className="text-xs text-metal-400">Private OTP inbox unavailable in this environment.</p>
           )}
-          {inbox.data?.items.map((item) => (
+          {inbox.data?.items?.map((item) => (
             <pre className="p-3 rounded-xl bg-metal-50 dark:bg-metal-800/80 border border-metal-200 dark:border-metal-700 text-[11px] font-mono whitespace-pre-wrap text-metal-700 dark:text-metal-300" key={item.id}>
               {JSON.stringify(item, null, 2)}
             </pre>
           ))}
-          {!inbox.data?.items.length && !inbox.isError && (
+          {!inbox.data?.items?.length && !inbox.isError && (
             <p className="text-xs text-metal-400">No OTP deliveries in inbox.</p>
           )}
         </Card>
@@ -416,12 +416,12 @@ export const ApprovalsPage = () => {
               Sandbox messages · no external delivery
             </h3>
           </div>
-          {outbox.data?.items.map((item) => (
+          {outbox.data?.items?.map((item) => (
             <pre className="p-3 rounded-xl bg-metal-50 dark:bg-metal-800/80 border border-metal-200 dark:border-metal-700 text-[11px] font-mono whitespace-pre-wrap text-metal-700 dark:text-metal-300" key={item.id}>
               {JSON.stringify(item, null, 2)}
             </pre>
           ))}
-          {!outbox.data?.items.length && (
+          {!outbox.data?.items?.length && (
             <p className="text-xs text-metal-400">No sandbox outbox messages.</p>
           )}
         </Card>
@@ -434,7 +434,7 @@ export const ApprovalsPage = () => {
               Executions timeline · before and after forecast
             </h3>
           </div>
-          {timeline.data?.items.map((item) => (
+          {timeline.data?.items?.map((item) => (
             <pre className="p-3 rounded-xl bg-metal-50 dark:bg-metal-800/80 border border-metal-200 dark:border-metal-700 text-[11px] font-mono whitespace-pre-wrap text-metal-700 dark:text-metal-300" key={item.id}>
               {JSON.stringify(item, null, 2)}
             </pre>

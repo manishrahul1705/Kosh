@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { ChatDrawer } from '@/features/kosh/ChatDrawer'
 import { Moon, Sun } from 'lucide-react'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
 
@@ -62,7 +63,9 @@ export const AppLayout: React.FC = () => {
             </div>
           </div>
 
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
 
           {/* Unobtrusive footer */}
           <footer className="pt-8 pb-4 border-t border-metal-200 text-center text-xs text-metal-400">

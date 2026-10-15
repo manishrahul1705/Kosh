@@ -20,11 +20,13 @@ import { ApprovalsPage } from '@/features/kosh/ApprovalsPage'
 import { AuditPage } from '@/features/kosh/AuditPage'
 import { ConnectPage } from '@/features/kosh/ConnectPage'
 import { LedgerPage } from '@/features/kosh/LedgerPage'
+import { RouteErrorBoundary } from '@/components/RouteErrorBoundary'
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
+  { path: '/login', element: <LoginPage />, errorElement: <RouteErrorBoundary /> },
   {
     path: '/',
+    errorElement: <RouteErrorBoundary />,
     element: (
       <RequireAuth>
         <SellerProvider>

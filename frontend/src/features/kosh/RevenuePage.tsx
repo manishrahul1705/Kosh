@@ -92,7 +92,7 @@ export const RevenuePage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
-              {query.data?.weeks.map((w) => (
+              {query.data?.weeks?.map((w) => (
                 <tr key={w.week_index} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
                   <td className="font-bold text-metal-900 dark:text-white">Week {w.week_index}</td>
                   <td className="font-bold text-primary-700 dark:text-primary-300">{formatPaiseINR(w.predicted_revenue_paise)}</td>

@@ -137,6 +137,15 @@ export const PlanPage = () => {
       </section>
     )
 
+  if (options.data && !Array.isArray(options.data.items)) {
+    return (
+      <section aria-label="Financing plan" className="space-y-6">
+        <SandboxBanner />
+        <ErrorAlert message="Received an incompatible or malformed financing options response from the server." />
+      </section>
+    )
+  }
+
   const graph = (plan.data?.before_probabilities ?? []).map((before, i) => ({
     week: `W${i + 1}`,
     before: Math.round(before * 10000) / 100,

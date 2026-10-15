@@ -47,6 +47,17 @@ export const AuditPage = () => {
     )
   }
 
+  if (query.data && !Array.isArray(query.data.items)) {
+    return (
+      <section aria-label="Audit" className="space-y-4">
+        <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Audit</h2>
+        <div role="alert" className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-4 text-xs font-semibold text-rose-700 dark:text-rose-300">
+          Received an incompatible or malformed audit response from the server.
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section aria-label="Audit" className="space-y-6">
       {/* Header */}

@@ -33,9 +33,11 @@ export const RouteErrorBoundary: React.FC = () => {
           </p>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-metal-50 dark:bg-metal-800/60 border border-metal-200 dark:border-metal-700 text-left text-xs font-mono text-metal-700 dark:text-metal-300 overflow-x-auto max-h-36">
-          {errorMessage}
-        </div>
+        {import.meta.env.DEV && (
+          <div className="p-3.5 rounded-xl bg-metal-50 dark:bg-metal-800/60 border border-metal-200 dark:border-metal-700 text-left text-xs font-mono text-metal-700 dark:text-metal-300 overflow-x-auto max-h-36">
+            {errorMessage}
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <button

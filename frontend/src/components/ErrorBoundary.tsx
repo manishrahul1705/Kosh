@@ -36,29 +36,31 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
               </p>
             </div>
 
-            <div className="p-3 rounded-xl bg-metal-50 dark:bg-metal-800/60 border border-metal-200 dark:border-metal-700 text-left text-xs font-mono text-metal-700 dark:text-metal-300 overflow-x-auto max-h-32">
-              {this.state.error?.message ?? 'Unknown component error'}
-            </div>
+            {import.meta.env.DEV && this.state.error?.message && (
+              <div className="p-3 rounded-xl bg-metal-50 dark:bg-metal-800/60 border border-metal-200 dark:border-metal-700 text-left text-xs font-mono text-metal-700 dark:text-metal-300 overflow-x-auto max-h-32">
+                {this.state.error.message}
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
               <button
-                className="btn-primary text-xs py-1.5 px-3.5 inline-flex items-center gap-1.5"
+                className="btn-primary text-xs py-1.5 px-3.5 inline-flex items-center gap-1.5 cursor-pointer"
                 onClick={() => this.setState({ hasError: false, error: null })}
               >
                 <RotateCcw size={13} /> Try again
               </button>
-              <a
-                href="/"
-                className="btn-secondary text-xs py-1.5 px-3.5 inline-flex items-center gap-1.5"
+              <button
+                onClick={() => window.location.assign('/')}
+                className="btn-secondary text-xs py-1.5 px-3.5 inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <Home size={13} /> Dashboard
-              </a>
-              <a
-                href="/ledger"
-                className="btn-secondary text-xs py-1.5 px-3.5 inline-flex items-center gap-1.5"
+              </button>
+              <button
+                onClick={() => window.location.assign('/ledger')}
+                className="btn-secondary text-xs py-1.5 px-3.5 inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <FileText size={13} /> Ledger
-              </a>
+              </button>
             </div>
           </div>
         </div>

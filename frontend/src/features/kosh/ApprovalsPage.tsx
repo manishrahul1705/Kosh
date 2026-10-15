@@ -17,6 +17,7 @@ import {
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
 import { SandboxBanner } from '@/components/ui/SandboxBanner'
+import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { formatEnumLabel } from '@/lib/koshLabels'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -102,6 +103,15 @@ export const ApprovalsPage = () => {
     expiry
       ? `${Math.max(0, Math.ceil((Date.parse(expiry) - now) / 1000))} seconds remaining`
       : 'No approval token issued'
+
+  if (intents.data && !Array.isArray(intents.data.items)) {
+    return (
+      <section aria-label="Approvals" className="space-y-6">
+        <SandboxBanner />
+        <ErrorAlert message="Received an incompatible or malformed action intents response from the server." />
+      </section>
+    )
+  }
 
   return (
     <section aria-label="Approvals" className="space-y-6">

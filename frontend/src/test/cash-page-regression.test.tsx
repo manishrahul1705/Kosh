@@ -179,6 +179,11 @@ describe('CashPage Regression & Robust State Handling', () => {
             amount_paise: 140000000,
             contribution_paise: 10000000,
           },
+          {
+            type: 'OBLIGATION_CLUSTER',
+            amount_paise: 218000000,
+            contribution_paise: 218000000,
+          },
         ],
         summary: 'Week 1: 60% chance below buffer',
       },
@@ -190,25 +195,66 @@ describe('CashPage Regression & Robust State Handling', () => {
     expect(screen.getByLabelText('Include forecast sales')).toBeChecked()
     expect(screen.getByText('Under review: ₹4,80,000.00 excluded')).toBeInTheDocument()
     expect(screen.getByText('Week 1: 60% chance below buffer')).toBeInTheDocument()
+    expect(screen.getByText(/View 2 contributing root causes/)).toBeInTheDocument()
     expect(screen.getByText('ABC Industries')).toBeInTheDocument()
+    expect(screen.getByText('Clustered vendor & statutory obligations')).toBeInTheDocument()
     expect(screen.getByText(/What-if/)).toBeInTheDocument()
   })
 
-  it('renders ErrorBoundary with recovery options when an unexpected render error occurs', () => {
+  it('rejects a forecast containing malformed or non-numeric week rows', async () => {
+    vi.mocked(koshApi.forecast).mockResolvedValueOnce({
+      seller_id: 7,
+      run: { id: 1, buffer_paise: 100000000, as_of_date: '2026-10-15' },
+      weeks: [
+        {
+          week_index: 1,
+          p10_closing_balance_paise: 'not_a_number', // Malformed non-numeric type
+          p50_closing_balance_paise: 120000000,
+          p90_closing_balance_paise: 150000000,
+        },
+      ],
+      under_review_paise: 0,
+    } as any)
+
+    renderWithClient(<CashPage />)
+
+    expect(await screen.findByText('Incompatible or malformed forecast data received')).toBeInTheDocument()
+  })
+
+  it('renders ErrorBoundary with recovery options and suppresses sensitive error messages when DEV is false', () => {
     const ProblemChild = () => {
-      throw new Error('Simulated runtime error')
+      throw new Error('Sensitive database credentials or internal trace')
     }
 
-    render(
-      <ErrorBoundary>
-        <ProblemChild />
-      </ErrorBoundary>
-    )
+    const originalDev = import.meta.env.DEV
 
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument()
-    expect(screen.getByText('Simulated runtime error')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Dashboard/ })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Ledger/ })).toBeInTheDocument()
+    try {
+      // In development mode, technical details are visible
+      const { unmount } = render(
+        <ErrorBoundary>
+          <ProblemChild />
+        </ErrorBoundary>
+      )
+
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Dashboard/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Ledger/ })).toBeInTheDocument()
+
+      unmount()
+
+      // When DEV is false (production), internal stack/message must be hidden
+      ;(import.meta.env as any).DEV = false
+      render(
+        <ErrorBoundary>
+          <ProblemChild />
+        </ErrorBoundary>
+      )
+
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument()
+      expect(screen.queryByText('Sensitive database credentials or internal trace')).not.toBeInTheDocument()
+    } finally {
+      ;(import.meta.env as any).DEV = originalDev
+    }
   })
 })

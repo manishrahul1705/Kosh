@@ -33,14 +33,33 @@ export function isForecastPlaceholder(data: unknown): data is KoshPlaceholder {
   )
 }
 
+export function isValidForecastWeek(row: unknown): row is ForecastWeek {
+  if (!row || typeof row !== 'object') return false
+  const w = row as Partial<ForecastWeek>
+  return (
+    typeof w.week_index === 'number' &&
+    typeof w.p10_closing_balance_paise === 'number' &&
+    typeof w.p50_closing_balance_paise === 'number' &&
+    typeof w.p90_closing_balance_paise === 'number' &&
+    typeof w.expected_inflow_forecast_paise === 'number' &&
+    typeof w.prob_below_buffer === 'number' &&
+    typeof w.expected_shortfall_paise === 'number'
+  )
+}
+
 export function isValidForecast(data: unknown): data is ForecastResult {
   if (!data || typeof data !== 'object') return false
   const candidate = data as Partial<ForecastResult>
-  return (
-    candidate.status !== 'NOT_IMPLEMENTED' &&
-    Boolean(candidate.run && typeof candidate.run === 'object' && typeof candidate.run.buffer_paise === 'number') &&
-    Array.isArray(candidate.weeks)
-  )
+  if (candidate.status === 'NOT_IMPLEMENTED') return false
+  if (!candidate.run || typeof candidate.run !== 'object') return false
+  if (
+    typeof candidate.run.id !== 'number' ||
+    typeof candidate.run.buffer_paise !== 'number'
+  ) {
+    return false
+  }
+  if (!Array.isArray(candidate.weeks)) return false
+  return candidate.weeks.every(isValidForecastWeek)
 }
 export interface FinancingOption { invoice_eligibility?:{scope:string;status:string;eligible:boolean;max_amount_paise:number;reasons:{criterion:string;reason:string;reason_code:string;status:string}[];evidence:{invoice_number?:string;buyer?:string;due_date?:string}[]}[]; quote_basis:string; amount_paise:number;days:number;cost_paise:number;cost_assumption:string; product_id:string;display_name:string;provider_label:string;scope:string|null;status:'MATCHED'|'NOT_MATCHED'|'REVIEW_REQUIRED';max_amount_paise:number;effective_annual_rate:string|null;arrival_business_days:number;reasons:{reason:string;reason_code:string;product_clause?:{quote?:string}}[];evidence:Record<string,unknown>[];assumption:boolean;verify_before_relying:boolean }
 export interface FinancingOptions { seller_id:number;sort_rule:string;items:FinancingOption[] }

@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       aria-label="Main navigation"
     >
       {/* Brand Header */}
-      <div className="bg-gradient-to-b from-emerald-50/70 via-green-50/30 to-white px-4 py-4 border-b border-metal-200 flex items-center justify-between shrink-0">
+      <div className="bg-gradient-to-b from-emerald-50/70 via-green-50/30 to-white dark:from-metal-900 dark:via-metal-900 dark:to-metal-900 px-4 py-4 border-b border-metal-200 dark:border-metal-800 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white shadow-sm shadow-emerald-500/25 shrink-0">
             <Gem size={20} className="text-white" aria-hidden="true" />
@@ -78,12 +78,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!collapsed && (
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-metal-900 font-extrabold text-base tracking-tight truncate">Kosh</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <span className="text-metal-900 dark:text-white font-extrabold text-base tracking-tight truncate">Kosh</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                   SANDBOX
                 </span>
               </div>
-              <p className="text-metal-500 text-xs font-medium truncate">SME Finance Copilot</p>
+              <p className="text-metal-500 dark:text-metal-400 text-xs font-medium truncate">SME Finance Copilot</p>
             </div>
           )}
         </div>

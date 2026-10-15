@@ -14,6 +14,9 @@ import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatEnumLabel } from '@/lib/koshLabels'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 
 export const AuditPage = () => {
   const { activeSellerId } = useSeller()
@@ -36,8 +39,8 @@ export const AuditPage = () => {
   if (query.isError) {
     return (
       <section aria-label="Audit" className="space-y-4">
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Audit</h2>
-        <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-700">
+        <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Audit</h2>
+        <div role="alert" className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-4 text-xs font-semibold text-rose-700 dark:text-rose-300">
           Failed to load audit records. Please ensure the backend is running.
         </div>
       </section>
@@ -47,20 +50,20 @@ export const AuditPage = () => {
   return (
     <section aria-label="Audit" className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/80 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <History size={20} className="text-blue-600" />
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Audit</h2>
+            <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+            <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Audit</h2>
           </div>
-          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+          <p className="text-xs sm:text-sm text-metal-600 dark:text-metal-400 mt-1 ml-3.5">
             Cryptographically sealed, hash-chained audit log of all system decisions, policy checks, and owner interventions.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
-          <button
-            className="btn-secondary text-xs py-1.5 px-3"
+          <Button
+            variant="secondary"
             onClick={() =>
               koshApi.exportAudit(activeSellerId!).then((text) => {
                 const url = URL.createObjectURL(new Blob([text], { type: 'application/x-ndjson' }))
@@ -74,9 +77,9 @@ export const AuditPage = () => {
           >
             <Download size={13} />
             Export JSONL
-          </button>
-          <button
-            className="btn-primary text-xs py-1.5 px-3.5"
+          </Button>
+          <Button
+            variant="primary"
             onClick={() =>
               koshApi.verifyAudit(activeSellerId!).then((r) =>
                 setVerification(r.valid ? `VALID, ${r.entries} entries` : `BROKEN: ${r.reason}`)
@@ -85,29 +88,29 @@ export const AuditPage = () => {
           >
             <ShieldCheck size={13} />
             Verify chain
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Security Events Overview */}
-      <div className="card p-5 space-y-3">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-          <Lock size={15} className="text-blue-600" />
-          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700">Security events</h3>
+      <Card noPadding className="p-5 space-y-3">
+        <div className="flex items-center gap-2 border-b border-metal-100 dark:border-metal-800 pb-2.5">
+          <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+          <h3 className="font-bold text-xs uppercase tracking-wider text-metal-700 dark:text-metal-300">Security events</h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
           {Object.entries(counters.data?.counts ?? {}).map(([key, value]) => (
             <div
               key={key}
-              className={`p-3 rounded-xl border ${
+              className={`p-3.5 rounded-xl border transition-all ${
                 value > 0 && key.includes('injection')
-                  ? 'bg-amber-50/80 border-amber-200 text-amber-900 font-bold'
+                  ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 font-bold'
                   : value > 0 && (key.includes('blocked') || key.includes('failed'))
-                  ? 'bg-rose-50/80 border-rose-200 text-rose-900 font-bold'
-                  : 'bg-slate-50 border-slate-200/80 text-slate-700 font-medium'
+                  ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 font-bold'
+                  : 'bg-metal-50 dark:bg-metal-800/60 border-metal-200/80 dark:border-metal-700 text-metal-700 dark:text-metal-300 font-medium'
               }`}
             >
-              <span className="block text-[11px] capitalize text-slate-500 mb-0.5">
+              <span className="block text-[11px] capitalize text-metal-500 mb-0.5">
                 {key.replace(/_/g, ' ')}
               </span>
               <span className="text-base font-bold">
@@ -116,20 +119,20 @@ export const AuditPage = () => {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Verification Status Banner */}
       {verification && (
         <div
           role="status"
-          className={`p-4 rounded-xl text-xs font-bold flex items-center gap-2.5 border ${
+          className={`p-4 rounded-2xl text-xs font-bold flex items-center gap-2.5 border shadow-xs ${
             verification.startsWith('VALID')
-              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-              : 'bg-rose-50 text-rose-900 border-rose-200'
+              ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-900 dark:text-primary-200 border-primary-200 dark:border-primary-800'
+              : 'bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border-rose-200 dark:border-rose-800'
           }`}
         >
           {verification.startsWith('VALID') ? (
-            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+            <CheckCircle2 size={16} className="text-primary-600 shrink-0" />
           ) : (
             <AlertTriangle size={16} className="text-rose-600 shrink-0" />
           )}
@@ -140,8 +143,11 @@ export const AuditPage = () => {
       {/* Cryptographic Audit Ledger */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-base text-slate-900 tracking-tight">Cryptographic Audit Ledger</h3>
-          <span className="text-xs text-slate-500">{query.data?.items.length ?? 0} entries</span>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+            <h3 className="font-bold text-base text-metal-900 dark:text-white tracking-tight">Cryptographic Audit Ledger</h3>
+          </div>
+          <span className="text-xs text-metal-500 dark:text-metal-400">{query.data?.items.length ?? 0} entries</span>
         </div>
 
         {query.data?.items.length ? (
@@ -149,25 +155,25 @@ export const AuditPage = () => {
             {query.data.items.map((row) => (
               <div
                 key={row.sequence}
-                className="card p-3.5 flex flex-wrap items-center justify-between gap-2 hover:border-slate-300 transition-colors text-xs"
+                className="card p-4 flex flex-wrap items-center justify-between gap-2 hover:border-primary-300 dark:hover:border-primary-700 transition-colors text-xs"
               >
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                <div className="flex items-center gap-2.5">
+                  <span className="font-mono text-[11px] px-2.5 py-0.5 rounded-lg bg-metal-100 dark:bg-metal-800 text-metal-700 dark:text-metal-300 font-bold border border-metal-200 dark:border-metal-700">
                     #{row.sequence}
                   </span>
-                  <span className="font-bold text-slate-900">{row.action}</span>
+                  <span className="font-bold text-metal-900 dark:text-white">{row.action}</span>
                 </div>
 
-                <div className="flex items-center gap-2 text-slate-500 text-[11px]">
+                <div className="flex items-center gap-2 text-metal-500 text-[11px]">
                   <span>{row.actor_type}</span>
                   <span>·</span>
-                  <span className="px-1.5 py-0.2 rounded font-bold bg-blue-100 text-blue-800 text-[10px]">
+                  <span className="px-2 py-0.5 rounded-full font-bold bg-primary-50 dark:bg-primary-950/50 text-primary-800 dark:text-primary-300 text-[10px] border border-primary-200 dark:border-primary-800">
                     {row.tier}
                   </span>
                   <span>·</span>
                   <span
                     title={row.policy_decision}
-                    className="font-semibold text-slate-800"
+                    className="font-semibold text-metal-800 dark:text-metal-200"
                   >
                     {formatEnumLabel(row.policy_decision)}
                   </span>
@@ -176,16 +182,15 @@ export const AuditPage = () => {
             ))}
           </div>
         ) : (
-          <div className="card p-10 text-center text-xs text-slate-500 space-y-2 border-dashed">
-            <Hash size={32} className="mx-auto text-slate-300" />
-            <p className="font-semibold text-slate-700">No audit entries yet.</p>
-            <p className="text-slate-400 max-w-sm mx-auto">
+          <Card className="p-10 text-center text-xs text-metal-500 space-y-2 border-dashed">
+            <Hash size={32} className="mx-auto text-metal-300 dark:text-metal-600 mb-1" />
+            <p className="font-semibold text-metal-700 dark:text-metal-300">No audit entries yet.</p>
+            <p className="text-metal-400 max-w-sm mx-auto">
               Actions taken across Kosh will automatically generate cryptographic audit entries here.
             </p>
-          </div>
+          </Card>
         )}
       </div>
     </section>
   )
 }
-

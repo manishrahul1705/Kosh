@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Filter,
   Search,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
@@ -19,6 +20,9 @@ import { formatEnumLabel } from '@/lib/koshLabels'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { SandboxBanner } from '@/components/ui/SandboxBanner'
+import { Card } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 
 export const LedgerPage = () => {
   const { activeSellerId } = useSeller()
@@ -40,7 +44,7 @@ export const LedgerPage = () => {
 
   if (query.isLoading) return <PageLoader />
   if (query.isError) return <ErrorAlert message="Unable to load the cash ledger. Please ensure the backend is connected." />
-  if (!query.data) return <p className="text-slate-500">Select a seller to view ledger.</p>
+  if (!query.data) return <p className="text-metal-500">Select a seller to view ledger.</p>
 
   const t = query.data.totals
 
@@ -59,46 +63,55 @@ export const LedgerPage = () => {
     <section aria-label="Ledger" className="space-y-6">
       <SandboxBanner />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200/80 pb-4">
+      {/* Header with MetalliSense emerald styling */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Ledger & Invoices</h2>
-          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+            <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Ledger & Invoices</h2>
+          </div>
+          <p className="text-xs sm:text-sm text-metal-600 dark:text-metal-400 mt-1 ml-3.5">
             Real cash ledger records, open receivables and verified trade payables.
           </p>
         </div>
         {t.bank_balance_as_of && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 text-xs text-slate-600 border border-slate-200/80">
-            <Clock size={12} className="text-slate-400" />
-            <span>Bank balance as of: <strong>{t.bank_balance_as_of}</strong></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-metal-900 text-xs text-metal-600 dark:text-metal-300 border border-metal-200/80 dark:border-metal-800 shadow-xs">
+            <Clock size={13} className="text-primary-500" />
+            <span>Bank balance as of: <strong className="text-metal-900 dark:text-white">{t.bank_balance_as_of}</strong></span>
           </div>
         )}
       </div>
 
-      {/* Metric Cards */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+      {/* Metric Cards - MetalliSense KPI card treatment */}
+      <div className="grid gap-3.5 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <p className="stat-label">Open receivables</p>
-            <ArrowDownLeft size={16} className="text-emerald-600" />
+            <div className="w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
+              <ArrowDownLeft size={15} className="text-primary-600 dark:text-primary-400" />
+            </div>
           </div>
-          <strong className="stat-value text-emerald-600 block">{formatPaiseINR(t.open_receivables_paise)}</strong>
+          <strong className="stat-value text-primary-600 dark:text-primary-400 block mt-1">{formatPaiseINR(t.open_receivables_paise)}</strong>
         </div>
 
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <p className="stat-label">Open payables (verified)</p>
-            <ArrowUpRight size={16} className="text-slate-600" />
+            <div className="w-7 h-7 rounded-lg bg-metal-100 dark:bg-metal-800 flex items-center justify-center">
+              <ArrowUpRight size={15} className="text-metal-600 dark:text-metal-400" />
+            </div>
           </div>
-          <strong className="stat-value text-slate-900 block">{formatPaiseINR(t.open_payables_paise)}</strong>
+          <strong className="stat-value text-metal-900 dark:text-white block mt-1">{formatPaiseINR(t.open_payables_paise)}</strong>
         </div>
 
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <p className="stat-label">Held-for-review payables</p>
-            <AlertCircle size={16} className="text-amber-600" />
+            <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center">
+              <AlertCircle size={15} className="text-amber-600 dark:text-amber-400" />
+            </div>
           </div>
-          <strong className="stat-value text-amber-700 block">
+          <strong className="stat-value text-amber-700 dark:text-amber-400 block mt-1">
             {formatPaiseINR(
               t.held_for_review_payables_paise ??
                 query.data.items
@@ -111,44 +124,50 @@ export const LedgerPage = () => {
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <p className="stat-label">Overdue</p>
-            <Clock size={16} className="text-rose-600" />
+            <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/50 flex items-center justify-center">
+              <Clock size={15} className="text-rose-600 dark:text-rose-400" />
+            </div>
           </div>
-          <strong className="stat-value text-rose-600 block">{formatPaiseINR(t.overdue_receivables_paise)}</strong>
+          <strong className="stat-value text-rose-600 dark:text-rose-400 block mt-1">{formatPaiseINR(t.overdue_receivables_paise)}</strong>
         </div>
 
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <p className="stat-label">Bank balance</p>
-            <Building size={16} className="text-blue-600" />
+            <div className="w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
+              <Building size={15} className="text-primary-600 dark:text-primary-400" />
+            </div>
           </div>
-          <strong className="stat-value text-blue-600 block">{formatPaiseINR(t.latest_bank_balance_paise)}</strong>
+          <strong className="stat-value text-primary-700 dark:text-primary-300 block mt-1">{formatPaiseINR(t.latest_bank_balance_paise)}</strong>
         </div>
 
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <p className="stat-label">Review Required</p>
-            <AlertCircle size={16} className={t.review_count > 0 ? 'text-amber-600' : 'text-slate-400'} />
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${t.review_count > 0 ? 'bg-amber-50 dark:bg-amber-950/50' : 'bg-metal-100 dark:bg-metal-800'}`}>
+              <AlertCircle size={15} className={t.review_count > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-metal-400'} />
+            </div>
           </div>
-          <strong className={`stat-value block ${t.review_count > 0 ? 'text-amber-700' : 'text-slate-900'}`}>
+          <strong className={`stat-value block mt-1 ${t.review_count > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-metal-900 dark:text-white'}`}>
             {t.review_count} {t.review_count === 1 ? 'invoice' : 'invoices'}
           </strong>
         </div>
       </div>
 
-      {/* Table & Filters */}
-      <div className="card overflow-hidden">
+      {/* Table & Filters Card */}
+      <Card noPadding className="overflow-hidden">
         {/* Filter Toolbar */}
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 border-b border-metal-100 dark:border-metal-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-metal-900">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            <Filter size={14} className="text-slate-400 shrink-0 hidden sm:inline" />
+            <Filter size={14} className="text-metal-400 shrink-0 hidden sm:inline mr-1" />
             {(['ALL', 'RECEIVABLE', 'PAYABLE', 'REVIEW'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setFilter(mode)}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                   filter === mode
-                    ? 'bg-blue-600 text-white shadow-2xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-xs'
+                    : 'bg-metal-100 dark:bg-metal-800 text-metal-600 dark:text-metal-300 hover:bg-metal-200 dark:hover:bg-metal-700'
                 }`}
               >
                 {mode === 'ALL'
@@ -163,21 +182,22 @@ export const LedgerPage = () => {
           </div>
 
           <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-2 text-slate-400" />
+            <Search size={14} className="absolute left-3 top-2.5 text-metal-400" />
             <input
               type="text"
               placeholder="Filter by party or invoice..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs w-full sm:w-60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+              className="pl-9 pr-3 py-1.5 rounded-xl border border-metal-200 dark:border-metal-700 bg-white dark:bg-metal-800 text-xs w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-metal-900 dark:text-white"
             />
           </div>
         </div>
 
         {query.data.items.length === 0 ? (
-          <div className="p-12 text-center text-xs text-slate-500 space-y-2">
-            <p className="font-semibold text-slate-700">No ledger entries recorded yet.</p>
-            <p className="text-slate-400 max-w-sm mx-auto">
+          <div className="p-12 text-center text-xs text-metal-500 space-y-2">
+            <FileSpreadsheet size={32} className="mx-auto text-metal-300 dark:text-metal-600 mb-1" />
+            <p className="font-semibold text-metal-700 dark:text-metal-300">No ledger entries recorded yet.</p>
+            <p className="text-metal-400 max-w-sm mx-auto">
               Connect your ERP or upload invoices on the Connect page to populate the ledger.
             </p>
           </div>
@@ -195,25 +215,25 @@ export const LedgerPage = () => {
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
                 {items.map((row) => (
                   <tr
                     key={row.id}
-                    className={row.status === 'REVIEW' ? 'bg-amber-50/50 hover:bg-amber-50/80' : 'hover:bg-slate-50/70'}
+                    className={row.status === 'REVIEW' ? 'bg-amber-50/40 dark:bg-amber-950/20 hover:bg-amber-50/70' : 'hover:bg-metal-50/80 dark:hover:bg-metal-800/50'}
                   >
-                    <td className="font-semibold text-slate-900">{row.party}</td>
-                    <td className="font-mono text-xs text-slate-700">{row.invoice_number}</td>
-                    <td className="text-slate-600 text-xs">{row.due_date}</td>
-                    <td className="font-bold text-slate-900">{formatPaiseINR(row.amount_paise)}</td>
+                    <td className="font-semibold text-metal-900 dark:text-white">{row.party}</td>
+                    <td className="font-mono text-xs text-metal-700 dark:text-metal-300">{row.invoice_number}</td>
+                    <td className="text-metal-600 dark:text-metal-400 text-xs">{row.due_date}</td>
+                    <td className="font-bold text-metal-900 dark:text-white">{formatPaiseINR(row.amount_paise)}</td>
                     <td>
                       <span
                         title={row.status}
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                           row.status === 'PAID'
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-300 border border-primary-200 dark:border-primary-800'
                             : row.status === 'REVIEW'
-                            ? 'bg-amber-100 text-amber-800 border border-amber-300 font-bold'
-                            : 'bg-slate-100 text-slate-800 border border-slate-200'
+                            ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-300 dark:border-amber-700 font-bold'
+                            : 'bg-metal-100 text-metal-800 dark:bg-metal-800 dark:text-metal-200 border border-metal-200 dark:border-metal-700'
                         }`}
                       >
                         {row.status === 'PAID' && <CheckCircle2 size={11} />}
@@ -222,7 +242,7 @@ export const LedgerPage = () => {
                       </span>
                       {row.status === 'REVIEW' && (
                         <button
-                          className="ml-2 inline-flex items-center gap-0.5 text-xs text-blue-600 font-semibold underline hover:text-blue-800"
+                          className="ml-2 inline-flex items-center gap-0.5 text-xs text-primary-600 dark:text-primary-400 font-semibold underline hover:text-primary-800 dark:hover:text-primary-300"
                           onClick={() =>
                             koshApi
                               .patchInvoice(activeSellerId!, row.id, {})
@@ -235,10 +255,10 @@ export const LedgerPage = () => {
                     </td>
                     <td>
                       <details>
-                        <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">
+                        <summary className="cursor-pointer text-xs font-medium text-metal-500 hover:text-primary-600 dark:text-metal-400 transition-colors">
                           View source
                         </summary>
-                        <pre className="max-w-xs whitespace-pre-wrap text-[10px] bg-slate-50 p-2 rounded-lg mt-1 border border-slate-200 font-mono text-slate-700">
+                        <pre className="max-w-xs whitespace-pre-wrap text-[10px] bg-metal-50 dark:bg-metal-800/80 p-2 rounded-lg mt-1 border border-metal-200 dark:border-metal-700 font-mono text-metal-700 dark:text-metal-300">
                           {row.source_location || 'No source quote'}
                         </pre>
                       </details>
@@ -247,13 +267,13 @@ export const LedgerPage = () => {
                       {row.direction === 'RECEIVABLE' && row.status !== 'PAID' ? (
                         <Link
                           to="/operations/collections"
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 underline hover:text-blue-800"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-400 underline hover:text-primary-800 dark:hover:text-primary-300"
                         >
                           Collections
                           <ExternalLink size={10} />
                         </Link>
                       ) : (
-                        <span className="text-slate-300">-</span>
+                        <span className="text-metal-300 dark:text-metal-600">-</span>
                       )}
                     </td>
                   </tr>
@@ -262,27 +282,29 @@ export const LedgerPage = () => {
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Obligations */}
       <div className="space-y-3">
-        <h3 className="font-bold text-sm text-slate-900 tracking-tight">Obligations</h3>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+          <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Obligations</h3>
+        </div>
         {obligations.data?.length ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {obligations.data.map((row, index) => (
-              <div key={index} className="card p-4 space-y-1">
-                <span className="text-xs font-semibold text-slate-700">{String(row.label)}</span>
-                <p className="text-base font-bold text-slate-900">{formatPaiseINR(Number(row.amount_paise))}</p>
-              </div>
+              <Card key={index} className="space-y-1">
+                <span className="text-xs font-semibold text-metal-600 dark:text-metal-400">{String(row.label)}</span>
+                <p className="text-base font-bold text-metal-900 dark:text-white">{formatPaiseINR(Number(row.amount_paise))}</p>
+              </Card>
             ))}
           </div>
         ) : (
-          <div className="card p-6 text-center text-xs text-slate-400">
+          <Card className="text-center text-xs text-metal-400 py-6">
             No obligations recorded.
-          </div>
+          </Card>
         )}
       </div>
     </section>
   )
 }
-

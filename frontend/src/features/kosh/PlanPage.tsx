@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Sparkles, ShieldCheck, CheckCircle2, AlertTriangle, ArrowRight, Layers, FileCheck } from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
@@ -8,6 +9,9 @@ import { koshApi, FinancingEvidencePayload } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
 import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { formatEnumLabel } from '@/lib/koshLabels'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 
 export const PlanPage = () => {
   const { activeSellerId } = useSeller()
@@ -129,7 +133,7 @@ export const PlanPage = () => {
       <section>
         <h2>Financing plan</h2>
         <ErrorAlert message="Financing options have not been evaluated." />
-        <button onClick={() => evaluate.mutate()}>Evaluate options</button>
+        <Button variant="primary" onClick={() => evaluate.mutate()}>Evaluate options</Button>
       </section>
     )
 
@@ -141,47 +145,54 @@ export const PlanPage = () => {
   const saving = plan.data ? plan.data.baseline_cost_paise - plan.data.total_cost_paise : 0
   const isOwner = evidenceQuery.data?.role === 'OWNER'
 
-
   return (
     <section aria-label="Financing plan" className="space-y-6">
       <SandboxBanner />
 
       {/* Header & Propose Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/80 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Financing options</h2>
-          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+            <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Financing options</h2>
+          </div>
+          <p className="text-xs sm:text-sm text-metal-600 dark:text-metal-400 mt-1 ml-3.5">
             Objective, catalogue-wide criteria matching sorted strictly by effective annual cost.
           </p>
         </div>
-        <button
-          className="btn-primary self-start sm:self-auto"
+        <Button
+          variant="primary"
+          className="self-start sm:self-auto"
           onClick={() => propose.mutate()}
         >
           Build plan
-        </button>
+        </Button>
       </div>
 
-      <div className="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200/80 text-xs text-blue-950 font-medium">
-        All options shown, including ones you don't qualify for. Sorted by effective annual cost; no provider pays for placement.
+      <div className="p-3.5 rounded-xl bg-primary-50/70 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 text-xs text-primary-950 dark:text-primary-200 font-medium flex items-center gap-2.5">
+        <Sparkles size={16} className="text-primary-600 shrink-0" />
+        <span>All options shown, including ones you don't qualify for. Sorted by effective annual cost; no provider pays for placement.</span>
       </div>
 
       {/* Safety vs cost */}
-      <div className="card p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+      <Card noPadding className="p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-metal-100 dark:border-metal-800 pb-3">
           <div>
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">Safety vs cost</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+              <h3 className="text-base font-bold text-metal-900 dark:text-white tracking-tight">Safety vs cost</h3>
+            </div>
+            <p className="text-xs text-metal-500 dark:text-metal-400 mt-0.5 ml-3.5">
               Trade-off curve across same-seed simulated paths under varying safety targets.
             </p>
           </div>
-          <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+          <label className="inline-flex items-center gap-2 text-xs font-semibold text-metal-700 dark:text-metal-300 bg-metal-50 dark:bg-metal-800 px-3 py-1.5 rounded-xl border border-metal-200 dark:border-metal-700">
             <span>Plan safety target</span>
             <select
               aria-label="Plan safety target"
               value={target}
               onChange={(e) => setTarget(e.target.value)}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-lg border border-metal-300 dark:border-metal-600 bg-white dark:bg-metal-900 px-2.5 py-1 text-xs font-bold text-metal-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               {['0.40', '0.30', '0.20', '0.10'].map((value) => (
                 <option key={value} value={value}>
@@ -193,9 +204,9 @@ export const PlanPage = () => {
         </div>
 
         {curve.isLoading ? (
-          <p className="text-xs text-slate-500 py-3">Computing same-seed plans...</p>
+          <p className="text-xs text-metal-500 py-3">Computing same-seed plans...</p>
         ) : curve.isError ? (
-          <p className="text-xs text-slate-500 py-3">Evaluate the latest forecast to see the safety curve.</p>
+          <p className="text-xs text-metal-500 py-3">Evaluate the latest forecast to see the safety curve.</p>
         ) : (
           <div className="table-container border-0 shadow-none">
             <table>
@@ -207,18 +218,18 @@ export const PlanPage = () => {
                   <th>Result</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
                 {curve.data?.items.map((item) => (
-                  <tr key={item.target_probability} className="hover:bg-slate-50/70">
-                    <td className="font-bold text-slate-900">{Number(item.target_probability) * 100}%</td>
-                    <td className="font-semibold text-slate-900">{formatPaiseINR(item.total_cost_paise)}</td>
-                    <td className="text-slate-700">{(item.alert_week_probability * 100).toFixed(1)}%</td>
+                  <tr key={item.target_probability} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
+                    <td className="font-bold text-metal-900 dark:text-white">{Number(item.target_probability) * 100}%</td>
+                    <td className="font-semibold text-metal-900 dark:text-white">{formatPaiseINR(item.total_cost_paise)}</td>
+                    <td className="text-metal-700 dark:text-metal-300">{(item.alert_week_probability * 100).toFixed(1)}%</td>
                     <td>
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                           item.status === 'VALID'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
+                            ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-300 border border-primary-200 dark:border-primary-800'
+                            : 'bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
                         }`}
                       >
                         {item.status}
@@ -230,13 +241,16 @@ export const PlanPage = () => {
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Financing Options Table */}
-      <div className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="font-bold text-sm text-slate-900 tracking-tight">Financing Options Catalogue</h3>
-          <span className="text-xs text-slate-500">{options.data?.items.length ?? 0} options available</span>
+      <Card noPadding className="overflow-hidden">
+        <div className="p-4 border-b border-metal-100 dark:border-metal-800 flex items-center justify-between bg-white dark:bg-metal-900">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+            <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Financing Options Catalogue</h3>
+          </div>
+          <span className="text-xs text-metal-500 dark:text-metal-400">{options.data?.items.length ?? 0} options available</span>
         </div>
         <div className="table-container border-0 shadow-none rounded-none">
           <table>
@@ -251,47 +265,47 @@ export const PlanPage = () => {
                 <th>Time to funds</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
               {options.data?.items.map((item, i) => (
-                <tr key={`${item.product_id}-${i}`} className="hover:bg-slate-50/70">
+                <tr key={`${item.product_id}-${i}`} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
                   <td className="py-3">
-                    <div className="font-bold text-slate-900">{item.display_name}</div>
+                    <div className="font-bold text-metal-900 dark:text-white">{item.display_name}</div>
                     <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                       {item.assumption && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-medium">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-metal-100 dark:bg-metal-800 text-metal-500 font-medium">
                           (assumption)
                         </span>
                       )}
                       {item.verify_before_relying && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-semibold">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-800">
                           (verify before relying)
                         </span>
                       )}
                     </div>
-                    <details className="mt-1.5 text-xs text-slate-600">
-                      <summary className="cursor-pointer font-semibold text-blue-600 hover:underline">
+                    <details className="mt-1.5 text-xs text-metal-600 dark:text-metal-400">
+                      <summary className="cursor-pointer font-semibold text-primary-600 dark:text-primary-400 hover:underline">
                         Evidence and Why not?
                       </summary>
-                      <div className="mt-1 space-y-1 pl-2 border-l-2 border-slate-200">
+                      <div className="mt-1 space-y-1 pl-2 border-l-2 border-metal-200 dark:border-metal-700">
                         {item.reasons.map((r, j) => (
-                          <p key={j} className="text-[11px] text-slate-700">
-                            <span className="font-bold text-slate-900">{r.reason_code}:</span> {r.reason}{' '}
+                          <p key={j} className="text-[11px] text-metal-700 dark:text-metal-300">
+                            <span className="font-bold text-metal-900 dark:text-white">{r.reason_code}:</span> {r.reason}{' '}
                             {r.product_clause?.quote && (
-                              <span className="italic text-slate-500">"{r.product_clause.quote}"</span>
+                              <span className="italic text-metal-500">"{r.product_clause.quote}"</span>
                             )}
                           </p>
                         ))}
                       </div>
                     </details>
                     {item.invoice_eligibility && (
-                      <details className="mt-1.5 text-xs text-slate-600">
-                        <summary className="cursor-pointer font-semibold text-blue-600 hover:underline">
+                      <details className="mt-1.5 text-xs text-metal-600 dark:text-metal-400">
+                        <summary className="cursor-pointer font-semibold text-primary-600 dark:text-primary-400 hover:underline">
                           Per-invoice eligibility ({item.invoice_eligibility.filter((x) => x.eligible).length} eligible / {item.invoice_eligibility.length} open)
                         </summary>
-                        <ul className="mt-1 list-disc pl-4 space-y-0.5 text-[11px] text-slate-700">
+                        <ul className="mt-1 list-disc pl-4 space-y-0.5 text-[11px] text-metal-700 dark:text-metal-300">
                           {item.invoice_eligibility.map((invoice) => (
                             <li key={invoice.scope}>
-                              <span className="font-medium text-slate-900">{invoice.scope}</span>{' '}
+                              <span className="font-medium text-metal-900 dark:text-white">{invoice.scope}</span>{' '}
                               {invoice.evidence.find((e) => e.invoice_number)?.invoice_number}:{' '}
                               <span className="font-semibold">{invoice.status}</span>{' '}
                               {invoice.reasons
@@ -308,10 +322,10 @@ export const PlanPage = () => {
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                         item.status === 'MATCHED'
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-300 border border-primary-200 dark:border-primary-800'
                           : item.status === 'NOT_MATCHED'
-                          ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                          : 'bg-amber-100 text-amber-800 border border-amber-200'
+                          ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                          : 'bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
                       }`}
                       title={
                         item.status === 'MATCHED'
@@ -322,44 +336,47 @@ export const PlanPage = () => {
                       {formatEnumLabel(item.status)}
                     </span>
                     {item.status === 'MATCHED' && (
-                      <small className="block text-[10px] text-slate-500 mt-0.5">Meets criteria; not lender approval</small>
+                      <small className="block text-[10px] text-metal-500 mt-0.5">Meets criteria; not lender approval</small>
                     )}
                   </td>
-                  <td className="font-semibold text-slate-900">
+                  <td className="font-semibold text-metal-900 dark:text-white">
                     {formatPaiseINR(item.amount_paise ?? item.max_amount_paise)}
                   </td>
                   <td>
-                    <span className="font-medium text-slate-900">{item.days}</span>
-                    <small className="block text-[10px] text-slate-400">90-day quote basis</small>
+                    <span className="font-medium text-metal-900 dark:text-white">{item.days}</span>
+                    <small className="block text-[10px] text-metal-400">90-day quote basis</small>
                   </td>
                   <td>
-                    <span className="font-semibold text-slate-900">
+                    <span className="font-semibold text-metal-900 dark:text-white">
                       {item.cost_paise == null ? 'Pending evaluation' : formatPaiseINR(item.cost_paise)}
                     </span>
-                    <small className="block text-[10px] text-slate-400">{item.cost_assumption}</small>
+                    <small className="block text-[10px] text-metal-400">{item.cost_assumption}</small>
                   </td>
-                  <td className="font-medium text-slate-900">
+                  <td className="font-medium text-metal-900 dark:text-white">
                     {item.effective_annual_rate == null ? 'Relationship risk' : `${(Number(item.effective_annual_rate) * 100).toFixed(1)}%`}
                   </td>
-                  <td className="text-slate-700">{item.arrival_business_days} business days</td>
+                  <td className="text-metal-700 dark:text-metal-300">{item.arrival_business_days} business days</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* Owner Financing Eligibility Evidence Workflow */}
       <section aria-label="Financing eligibility evidence" className="card p-5 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-metal-100 dark:border-metal-800 pb-3">
           <div>
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">Financing eligibility evidence</h3>
-            <p className="text-xs text-slate-600 mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+              <h3 className="text-base font-bold text-metal-900 dark:text-white tracking-tight">Financing eligibility evidence</h3>
+            </div>
+            <p className="text-xs text-metal-600 dark:text-metal-400 mt-0.5 ml-3.5">
               Record business facts to verify eligibility against scheme criteria. MATCHED indicates recorded facts meet scheme criteria; it does not constitute lender approval, loan sanction, or guaranteed funding.
             </p>
           </div>
           {evidenceQuery.data?.as_of && (
-            <span className="text-xs text-slate-600 self-start sm:self-auto bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+            <span className="text-xs text-metal-600 dark:text-metal-300 self-start sm:self-auto bg-metal-50 dark:bg-metal-800 px-3 py-1 rounded-xl border border-metal-200 dark:border-metal-700">
               As-of date: <strong>{evidenceQuery.data.as_of}</strong>
             </span>
           )}
@@ -367,15 +384,15 @@ export const PlanPage = () => {
 
         {/* Missing Criteria Breakdown */}
         <div className="space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Missing criteria across review options</h4>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-metal-700 dark:text-metal-300">Missing criteria across review options</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {evidenceQuery.data?.missing_criteria.map((prod) => (
-              <div key={prod.product_id} className="rounded-xl border border-slate-200/80 p-3.5 bg-slate-50/70 text-xs space-y-2">
+              <div key={prod.product_id} className="rounded-xl border border-metal-200/80 dark:border-metal-800 p-3.5 bg-metal-50/70 dark:bg-metal-800/40 text-xs space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900">{prod.display_name}</span>
+                  <span className="font-bold text-metal-900 dark:text-white">{prod.display_name}</span>
                   <span
                     className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      prod.product_support_status === 'IMPLEMENTED' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                      prod.product_support_status === 'IMPLEMENTED' ? 'bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-300 border border-primary-200' : 'bg-metal-100 text-metal-700 dark:bg-metal-700 dark:text-metal-200'
                     }`}
                   >
                     {prod.product_support_status === 'IMPLEMENTED' ? 'Implemented rules' : 'Under revision'}
@@ -385,20 +402,18 @@ export const PlanPage = () => {
                   {prod.criteria.map((c) => (
                     <li key={c.criterion} className="flex items-start justify-between gap-2">
                       <div>
-                        <span className="font-semibold text-slate-800">{c.label}</span>
-                        <span className="block text-[11px] text-slate-500">Evidence needed: {c.evidence_required}</span>
+                        <span className="font-semibold text-metal-800 dark:text-metal-200">{c.label}</span>
+                        <span className="block text-[11px] text-metal-500">Evidence needed: {c.evidence_required}</span>
                       </div>
                       <span
                         className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           c.status === 'CONFIRMED' || c.status === 'VERIFIED' || c.status === 'LINKED_DOCUMENT'
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-300 border border-primary-200'
                             : c.status === 'PROPOSAL'
-                            ? 'bg-blue-100 text-blue-700'
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
                             : c.status === 'UNSUPPORTED'
-                            ? 'bg-purple-100 text-purple-700'
-                            : c.status === 'DECLARATION_ONLY'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-amber-100 text-amber-700'
+                            ? 'bg-metal-100 text-metal-700'
+                            : 'bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200'
                         }`}
                       >
                         {c.status === 'DECLARATION_ONLY'
@@ -416,11 +431,11 @@ export const PlanPage = () => {
         </div>
 
         {/* Fictional Demonstration Fixture Selector */}
-        <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50/90 to-indigo-50/50 p-4 space-y-2.5">
+        <div className="rounded-2xl border border-primary-200 dark:border-primary-800 bg-gradient-to-r from-primary-50/70 to-metal-50/50 dark:from-primary-950/30 dark:to-metal-900/40 p-4 space-y-2.5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <span className="text-xs font-bold text-blue-950 uppercase tracking-wider">Fictional demonstration fixtures</span>
-              <p className="text-xs text-blue-800 mt-0.5">
+              <span className="text-xs font-bold text-primary-950 dark:text-primary-200 uppercase tracking-wider">Fictional demonstration fixtures</span>
+              <p className="text-xs text-primary-800 dark:text-primary-300 mt-0.5">
                 Test eligibility re-evaluations with labelled fictional test fixtures. Demonstrates outcomes without modifying real business profiles.
               </p>
             </div>
@@ -429,7 +444,7 @@ export const PlanPage = () => {
               value={selectedFixture}
               onChange={(e) => handleApplyFixture(e.target.value)}
               disabled={!isOwner || saveEvidenceMutation.isPending}
-              className="rounded-lg border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 shadow-xs focus:ring-2 focus:ring-blue-500"
+              className="rounded-xl border border-primary-300 dark:border-primary-700 bg-white dark:bg-metal-800 px-3 py-1.5 text-xs font-semibold text-metal-800 dark:text-white shadow-xs focus:ring-2 focus:ring-primary-500"
             >
               <option value="">-- Apply a demonstration fixture --</option>
               {evidenceQuery.data?.fixtures.map((f) => (
@@ -440,7 +455,7 @@ export const PlanPage = () => {
             </select>
           </div>
           {selectedFixture && (
-            <p className="text-xs text-blue-900 bg-white/80 p-2.5 rounded-lg border border-blue-200 font-medium">
+            <p className="text-xs text-primary-900 dark:text-primary-200 bg-white/80 dark:bg-metal-900/80 p-2.5 rounded-xl border border-primary-200 dark:border-primary-800 font-medium">
               {evidenceQuery.data?.fixtures.find((f) => f.id === selectedFixture)?.description}
             </p>
           )}
@@ -620,7 +635,7 @@ export const PlanPage = () => {
                 <option value="CONFIRMED">Confirmed supplier agreement (Signed agreement on record)</option>
               </select>
               {extensionStatus === 'PROPOSED' && (
-                <p className="text-[11px] text-blue-700 mt-1">
+                <p className="text-[11px] text-primary-700 dark:text-primary-300 mt-1">
                   Note: A proposed extension is an unconfirmed request sent to the supplier. A proposal alone does not change payable due dates or create cash receipts.
                 </p>
               )}
@@ -646,10 +661,10 @@ export const PlanPage = () => {
           </div>
 
           {/* Form Actions */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
-            <div className="text-xs text-slate-500">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-metal-100 dark:border-metal-800">
+            <div className="text-xs text-metal-500">
               {!isOwner ? (
-                <span className="text-amber-700 font-semibold">Only seller owner may record or revise financing eligibility evidence.</span>
+                <span className="text-amber-700 dark:text-amber-400 font-semibold">Only seller owner may record or revise financing eligibility evidence.</span>
               ) : (
                 <span>Evidence changes are recorded in the append-only audit chain. Affected financing plans will be marked STALE.</span>
               )}
@@ -657,19 +672,19 @@ export const PlanPage = () => {
             <button
               type="submit"
               disabled={!isOwner || saveEvidenceMutation.isPending}
-              className="btn-primary text-xs py-2 px-4 w-full sm:w-auto"
+              className="btn-primary text-xs py-2 px-5 w-full sm:w-auto"
             >
               {saveEvidenceMutation.isPending ? 'Saving...' : 'Save evidence'}
             </button>
           </div>
 
           {saveSuccess && (
-            <div className="rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800 border border-emerald-200 font-medium" role="status">
+            <div className="rounded-xl bg-primary-50 dark:bg-primary-950/40 p-3 text-xs text-primary-800 dark:text-primary-200 border border-primary-200 dark:border-primary-800 font-medium" role="status">
               {saveSuccess}
             </div>
           )}
           {saveEvidenceMutation.isError && (
-            <div className="rounded-xl bg-rose-50 p-3 text-xs text-rose-800 border border-rose-200 font-medium" role="alert">
+            <div className="rounded-xl bg-rose-50 dark:bg-rose-950/40 p-3 text-xs text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800 font-medium" role="alert">
               Failed to save evidence. Please try again.
             </div>
           )}
@@ -678,28 +693,31 @@ export const PlanPage = () => {
 
       {/* Proposed Gap-closing Plan */}
       {plan.data ? (
-        <div className="card p-5 space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <Card noPadding className="p-5 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-metal-100 dark:border-metal-800 pb-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">Proposed gap-closing plan</h3>
-              <p className="text-xs text-slate-600 mt-0.5">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+                <h3 className="text-base font-bold text-metal-900 dark:text-white tracking-tight">Proposed gap-closing plan</h3>
+              </div>
+              <p className="text-xs text-metal-600 dark:text-metal-400 mt-0.5 ml-3.5">
                 Validity check against the target probability ({Number(plan.data.target_probability) * 100}%) across {plan.data.planning_details?.target_scope === 'ALERT_WEEK' ? 'Alert Week' : 'All Horizon Weeks'} is strictly verified using the <strong>Binding financing plan</strong>.
               </p>
             </div>
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold self-start sm:self-auto ${
                 plan.data.status === 'VALID'
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                  : 'bg-rose-100 text-rose-800 border border-rose-200'
+                  ? 'bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-300 border border-primary-200 dark:border-primary-800'
+                  : 'bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
               }`}
             >
               {plan.data.status === 'VALID' ? 'PLAN VALID (BINDING)' : plan.data.status}
             </span>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 space-y-1">
+          <div className="p-3.5 rounded-xl bg-metal-50 dark:bg-metal-800/60 border border-metal-200 dark:border-metal-700 text-xs font-medium text-metal-800 dark:text-metal-200 space-y-1">
             <p className="font-semibold">{plan.data.why_this_plan}</p>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-metal-500">
               Matched means recorded facts meet catalogue criteria; matching is not lender approval, loan sanction or guaranteed funding. Sandbox execution is not real funding. The binding plan excludes both uncertain collections and supplier payment extensions; expected collections remain separate.
             </p>
           </div>
@@ -707,73 +725,73 @@ export const PlanPage = () => {
           {/* Dual plan metrics: Binding vs Expected */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Binding Financing Plan Card */}
-            <div className="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 p-4 space-y-2.5">
+            <div className="rounded-2xl border border-primary-200 dark:border-primary-800 bg-gradient-to-br from-primary-50/70 to-metal-50/40 dark:from-primary-950/30 dark:to-metal-900/40 p-4 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-sm text-blue-950">Binding financing plan</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold border border-blue-200">
+                <span className="font-bold text-sm text-primary-950 dark:text-primary-200">Binding financing plan</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/60 text-primary-800 dark:text-primary-200 font-bold border border-primary-200 dark:border-primary-700">
                   Cash-posting levers only
                 </span>
               </div>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-metal-600 dark:text-metal-400">
                 Only levers that post cash on execution (e.g. TReDS discounting, Bank OD). Target validity is verified strictly against this binding financing allocation.
               </p>
-              <div className="pt-2 flex items-baseline justify-between text-xs border-t border-blue-100">
-                <span className="text-slate-600">Binding plan cost:</span>
-                <span className="text-base font-bold text-slate-900">
+              <div className="pt-2 flex items-baseline justify-between text-xs border-t border-primary-100 dark:border-primary-900">
+                <span className="text-metal-600 dark:text-metal-400">Binding plan cost:</span>
+                <span className="text-base font-bold text-metal-900 dark:text-white">
                   {formatPaiseINR(plan.data.guaranteed_plan?.total_cost_paise ?? plan.data.planning_details?.guaranteed_total_cost_paise ?? plan.data.total_cost_paise)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
-                <span className="text-slate-600">Alert week probability:</span>
-                <span className="font-bold text-slate-800">
+                <span className="text-metal-600 dark:text-metal-400">Alert week probability:</span>
+                <span className="font-bold text-metal-800 dark:text-metal-200">
                   {plan.data.guaranteed_plan
                     ? `${(plan.data.guaranteed_plan.alert_week_probability * 100).toFixed(1)}%`
                     : 'Verified <= 20%'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
-                <span className="text-slate-600">Verification status:</span>
-                <span className={`font-bold ${plan.data.planning_details?.guaranteed_status === 'VALID' || plan.data.status === 'VALID' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                <span className="text-metal-600 dark:text-metal-400">Verification status:</span>
+                <span className={`font-bold ${plan.data.planning_details?.guaranteed_status === 'VALID' || plan.data.status === 'VALID' ? 'text-primary-700 dark:text-primary-400' : 'text-rose-700 dark:text-rose-400'}`}>
                   {plan.data.planning_details?.guaranteed_status ?? plan.data.status}
                 </span>
               </div>
             </div>
 
             {/* Expected with Collections Card */}
-            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/70 to-orange-50/40 p-4 space-y-2.5">
+            <div className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50/70 to-orange-50/40 dark:from-amber-950/30 dark:to-metal-900/40 p-4 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-sm text-amber-950">Expected with collections</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-200">
+                <span className="font-bold text-sm text-amber-950 dark:text-amber-200">Expected with collections</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-bold border border-amber-200 dark:border-amber-700">
                   Uncertain cash timing
                 </span>
               </div>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-metal-600 dark:text-metal-400">
                 Includes collections reminder pushes. Reminders cost zero monetary fees but cash receipt remains uncertain until buyer pays.
               </p>
-              <div className="pt-2 flex items-baseline justify-between text-xs border-t border-amber-100">
-                <span className="text-slate-600">Expected cost:</span>
-                <span className="text-base font-bold text-slate-900">
+              <div className="pt-2 flex items-baseline justify-between text-xs border-t border-amber-100 dark:border-amber-900">
+                <span className="text-metal-600 dark:text-metal-400">Expected cost:</span>
+                <span className="text-base font-bold text-metal-900 dark:text-white">
                   {formatPaiseINR(plan.data.expected_plan?.total_cost_paise ?? plan.data.planning_details?.expected_total_cost_paise ?? plan.data.total_cost_paise)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
-                <span className="text-slate-600">Alert week probability:</span>
-                <span className="font-bold text-slate-800">
+                <span className="text-metal-600 dark:text-metal-400">Alert week probability:</span>
+                <span className="font-bold text-metal-800 dark:text-metal-200">
                   {plan.data.expected_plan
                     ? `${(plan.data.expected_plan.alert_week_probability * 100).toFixed(1)}%`
                     : `${(plan.data.after_probabilities[plan.data.after_probabilities.length > 5 ? 5 : 0] * 100).toFixed(1)}%`}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
-                <span className="text-slate-600">Levers status:</span>
-                <span className="font-bold text-amber-800">
+                <span className="text-metal-600 dark:text-metal-400">Levers status:</span>
+                <span className="font-bold text-amber-800 dark:text-amber-300">
                   {plan.data.expected_plan?.status ?? 'INCLUDED WITH COLLECTIONS'}
                 </span>
               </div>
             </div>
           </div>
 
-          <p className="text-xs sm:text-sm font-semibold text-slate-800 p-3 rounded-lg bg-slate-50 border border-slate-200">
+          <p className="text-xs sm:text-sm font-semibold text-metal-800 dark:text-metal-200 p-3 rounded-xl bg-metal-50 dark:bg-metal-800/60 border border-metal-200 dark:border-metal-700">
             {plan.data.status === 'VALID'
               ? 'Same-seed forecast meets the chosen safety target and every horizon week is below the alert threshold'
               : plan.data.status === 'INSUFFICIENT'
@@ -782,55 +800,54 @@ export const PlanPage = () => {
           </p>
 
           <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Executed Plan Levers</h4>
-            <ul className="list-disc pl-5 text-xs text-slate-700 space-y-1.5">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-metal-500">Executed Plan Levers</h4>
+            <ul className="list-disc pl-5 text-xs text-metal-700 dark:text-metal-300 space-y-1.5">
               {plan.data.lines.map((line) => (
                 <li key={line.id} id={`plan-line-${line.id}`} className="leading-relaxed">
-                  <span className="font-bold text-slate-900">{line.product_id}:</span> {formatPaiseINR(line.amount_paise)}, week {line.arrival_week},{' '}
+                  <span className="font-bold text-metal-900 dark:text-white">{line.product_id}:</span> {formatPaiseINR(line.amount_paise)}, week {line.arrival_week},{' '}
                   {line.days > 0 ? `${line.days} days (${line.funding_date} to ${line.repayment_date})` : 'timing only; no financing tenor'},{' '}
-                  {line.repayment_assumption}, cost {formatPaiseINR(line.cost_paise)}, <span className="font-semibold text-blue-700">{line.required_tier}</span>
+                  {line.repayment_assumption}, cost {formatPaiseINR(line.cost_paise)}, <span className="font-semibold text-primary-700 dark:text-primary-400">{line.required_tier}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-100 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <p className="text-sm font-bold text-slate-900">Total {formatPaiseINR(plan.data.total_cost_paise)}</p>
+          <div className="p-3.5 rounded-xl bg-metal-100 dark:bg-metal-800/80 border border-metal-200/90 dark:border-metal-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <p className="text-sm font-bold text-metal-900 dark:text-white">Total {formatPaiseINR(plan.data.total_cost_paise)}</p>
             {plan.data.planning_details?.baseline_status === 'VALID' ? (
-              <p className="text-xs text-slate-700 font-medium">
-                NBFC baseline {formatPaiseINR(plan.data.baseline_cost_paise)}; saving <strong className="text-emerald-700">{formatPaiseINR(saving)}</strong> (
+              <p className="text-xs text-metal-700 dark:text-metal-300 font-medium">
+                NBFC baseline {formatPaiseINR(plan.data.baseline_cost_paise)}; saving <strong className="text-primary-700 dark:text-primary-400">{formatPaiseINR(saving)}</strong> (
                 {plan.data.baseline_cost_paise ? ((saving / plan.data.baseline_cost_paise) * 100).toFixed(0) : 0}%)
               </p>
             ) : (
-              <p className="text-xs text-slate-600">NBFC baseline insufficient or not verified; savings unavailable.</p>
+              <p className="text-xs text-metal-600 dark:text-metal-400">NBFC baseline insufficient or not verified; savings unavailable.</p>
             )}
           </div>
 
           <div className="h-56 pt-2 space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-500 gap-1">
-              <span className="font-semibold text-slate-700">Per-week probability below buffer (Target: {plan.data.planning_details?.target_scope ?? 'ALL_WEEKS'} &le; {Number(plan.data.target_probability) * 100}%)</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-metal-500 gap-1">
+              <span className="font-semibold text-metal-700 dark:text-metal-300">Per-week probability below buffer (Target: {plan.data.planning_details?.target_scope ?? 'ALL_WEEKS'} &le; {Number(plan.data.target_probability) * 100}%)</span>
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5 font-medium"><span className="w-3 h-0.5 bg-rose-600 inline-block" /> Pre-intervention</span>
-                <span className="flex items-center gap-1.5 font-medium"><span className="w-3 h-0.5 bg-emerald-700 inline-block" /> Post-plan</span>
+                <span className="flex items-center gap-1.5 font-medium"><span className="w-3 h-0.5 bg-primary-600 inline-block" /> Post-plan</span>
               </div>
             </div>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={graph}>
-                <XAxis dataKey="week" stroke="#64748b" fontSize={11} />
-                <YAxis unit="%" domain={[0, 100]} stroke="#64748b" fontSize={11} />
+                <XAxis dataKey="week" stroke="#6b7c93" fontSize={11} />
+                <YAxis unit="%" domain={[0, 100]} stroke="#6b7c93" fontSize={11} />
                 <Tooltip formatter={(value) => [`${value}%`]} />
                 <Line name="Pre-intervention" dataKey="before" stroke="#dc2626" strokeWidth={2.5} dot={{ r: 3 }} />
-                <Line name="Post-plan" dataKey="after" stroke="#15803d" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line name="Post-plan" dataKey="after" stroke="#059669" strokeWidth={2.5} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </Card>
       ) : (
-        <div className="card p-8 text-center text-xs text-slate-400">
+        <Card className="text-center text-xs text-metal-400 py-8">
           No proposed plan yet.
-        </div>
+        </Card>
       )}
     </section>
   )
 }
-

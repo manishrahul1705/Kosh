@@ -12,6 +12,9 @@ import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
 import { SandboxBanner } from '@/components/ui/SandboxBanner'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 
 export const IntelligencePage = () => {
   const { activeSellerId } = useSeller()
@@ -55,32 +58,35 @@ export const IntelligencePage = () => {
       <SandboxBanner />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/80 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <Users size={20} className="text-blue-600" />
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+            <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+            <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">
               Customer intelligence and cash what-if
             </h2>
           </div>
-          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+          <p className="text-xs sm:text-sm text-metal-600 dark:text-metal-400 mt-1 ml-3.5">
             Observed delays and concentration come from owned invoice evidence. Additional history is optional, labelled and owner-confirmed.
           </p>
         </div>
       </div>
 
       {message && (
-        <div role="status" className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800 flex items-center gap-2">
-          <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+        <div role="status" className="p-3.5 rounded-xl bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 text-xs font-semibold text-primary-800 dark:text-primary-200 flex items-center gap-2">
+          <CheckCircle2 size={15} className="text-primary-600 shrink-0" />
           <span>{message}</span>
         </div>
       )}
 
       {/* Customers Table */}
-      <div className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="font-bold text-sm text-slate-900 tracking-tight">Observed Customer Behavior</h3>
-          <span className="text-xs text-slate-500">{query.data?.items.length ?? 0} counterparties</span>
+      <Card noPadding className="overflow-hidden">
+        <div className="p-4 border-b border-metal-100 dark:border-metal-800 flex items-center justify-between bg-white dark:bg-metal-900">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+            <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Observed Customer Behavior</h3>
+          </div>
+          <span className="text-xs text-metal-500 dark:text-metal-400">{query.data?.items.length ?? 0} counterparties</span>
         </div>
         <div className="table-container border-0 shadow-none rounded-none">
           <table>
@@ -93,15 +99,15 @@ export const IntelligencePage = () => {
                 <th>Signal</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
               {query.data?.items.map((item) => (
-                <tr key={item.counterparty_id} className="hover:bg-slate-50/70">
-                  <td className="font-bold text-slate-900">{item.name}</td>
-                  <td className="font-semibold text-slate-900">{formatPaiseINR(item.open_receivables_paise)}</td>
-                  <td className="text-slate-700">{item.median_delay_days ?? 'unknown'} days</td>
-                  <td className="text-slate-700 font-medium">{item.concentration_share ?? 'unknown'}</td>
+                <tr key={item.counterparty_id} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
+                  <td className="font-bold text-metal-900 dark:text-white">{item.name}</td>
+                  <td className="font-semibold text-metal-900 dark:text-white">{formatPaiseINR(item.open_receivables_paise)}</td>
+                  <td className="text-metal-700 dark:text-metal-300">{item.median_delay_days ?? 'unknown'} days</td>
+                  <td className="text-metal-700 dark:text-metal-300 font-medium">{item.concentration_share ?? 'unknown'}</td>
                   <td>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                       {item.credit_signal}
                     </span>
                   </td>
@@ -110,13 +116,13 @@ export const IntelligencePage = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* What-if scenario form */}
-      <div className="card p-5 space-y-4">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-          <Sliders size={16} className="text-blue-600" />
-          <h3 className="font-bold text-sm text-slate-900 tracking-tight">Scenario Simulator</h3>
+      <Card noPadding className="p-5 space-y-4">
+        <div className="flex items-center gap-2 border-b border-metal-100 dark:border-metal-800 pb-2.5">
+          <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+          <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Scenario Simulator</h3>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -178,7 +184,7 @@ export const IntelligencePage = () => {
 
         {query.data?.role !== 'VIEWER' && (
           <button
-            className="btn-primary text-xs py-2 px-4"
+            className="btn-primary text-xs py-2 px-4 inline-flex items-center gap-1.5"
             onClick={() =>
               void run(async () =>
                 setScenario(
@@ -196,16 +202,16 @@ export const IntelligencePage = () => {
             Run same-seed scenario
           </button>
         )}
-      </div>
+      </Card>
 
       {/* Scenario Output Table */}
       {scenario && (
-        <div className="card overflow-hidden border-blue-200">
-          <div className="p-4 border-b border-blue-100 bg-blue-50/50 flex items-center justify-between">
-            <h3 className="font-bold text-sm text-blue-950 tracking-tight">Simulated Cash Path</h3>
+        <Card noPadding className="overflow-hidden border-primary-200 dark:border-primary-800">
+          <div className="p-4 border-b border-primary-100 dark:border-primary-900 bg-primary-50/50 dark:bg-primary-950/30 flex items-center justify-between">
+            <h3 className="font-bold text-sm text-primary-950 dark:text-primary-200 tracking-tight">Simulated Cash Path</h3>
             <button
               onClick={() => setScenario(null)}
-              className="text-xs text-slate-500 hover:text-slate-800"
+              className="text-xs text-metal-500 hover:text-metal-800 dark:hover:text-metal-200"
             >
               Clear scenario
             </button>
@@ -219,18 +225,18 @@ export const IntelligencePage = () => {
                   <th>Below buffer</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
                 {scenario.weeks.map((w) => (
-                  <tr key={w.week_index} className="hover:bg-slate-50/70">
-                    <td className="font-bold text-slate-900">Week {w.week_index}</td>
-                    <td className="font-semibold text-blue-700">{formatPaiseINR(w.p50_closing_balance_paise)}</td>
-                    <td className="font-medium text-slate-800">{w.prob_below_buffer}</td>
+                  <tr key={w.week_index} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
+                    <td className="font-bold text-metal-900 dark:text-white">Week {w.week_index}</td>
+                    <td className="font-semibold text-primary-700 dark:text-primary-300">{formatPaiseINR(w.p50_closing_balance_paise)}</td>
+                    <td className="font-medium text-metal-800 dark:text-metal-200">{w.prob_below_buffer}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Additional Payment Evidence Form */}
@@ -249,10 +255,10 @@ export const IntelligencePage = () => {
           }}
           className="card p-5 space-y-4"
         >
-          <div className="border-b border-slate-100 pb-2.5">
+          <div className="border-b border-metal-100 dark:border-metal-800 pb-2.5">
             <div className="flex items-center gap-2">
-              <FileCheck2 size={16} className="text-blue-600" />
-              <h3 className="font-bold text-sm text-slate-900 tracking-tight">Additional payment evidence</h3>
+              <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+              <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Additional payment evidence</h3>
             </div>
           </div>
 
@@ -301,17 +307,20 @@ export const IntelligencePage = () => {
 
       {/* Historical Evidence Records */}
       {query.data?.history && query.data.history.length > 0 && (
-        <div className="card p-5 space-y-3">
-          <h3 className="font-bold text-sm text-slate-900 tracking-tight">Proposed Customer Payment Evidence</h3>
+        <Card noPadding className="p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+            <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Proposed Customer Payment Evidence</h3>
+          </div>
           <div className="space-y-2">
             {query.data.history.map((row) => (
               <div
                 key={row.id}
-                className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between text-xs gap-2"
+                className="p-3.5 rounded-xl bg-metal-50 dark:bg-metal-800/60 border border-metal-200 dark:border-metal-700 flex flex-wrap items-center justify-between text-xs gap-2"
               >
                 <div>
-                  <strong className="text-slate-900">{row.evidence_ref}:</strong>{' '}
-                  <span className="font-semibold text-blue-700">{row.status}</span>
+                  <strong className="text-metal-900 dark:text-white">{row.evidence_ref}:</strong>{' '}
+                  <span className="font-semibold text-primary-700 dark:text-primary-300">{row.status}</span>
                 </div>
                 {query.data?.role === 'OWNER' && row.status === 'PROPOSED' && (
                   <button
@@ -324,9 +333,8 @@ export const IntelligencePage = () => {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
     </section>
   )
 }
-

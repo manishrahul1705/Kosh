@@ -11,12 +11,16 @@ import {
   ShieldAlert,
   Sparkles,
   CheckCircle2,
+  FileText,
 } from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi, CollectionItem } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
 import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { formatEnumLabel } from '@/lib/koshLabels'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 
 export const CollectionsPage = () => {
   const { activeSellerId } = useSeller()
@@ -100,70 +104,70 @@ export const CollectionsPage = () => {
       <SandboxBanner />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/80 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <Scale size={20} className="text-blue-600" />
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Collections & Statutory Interest</h2>
+            <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+            <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Collections & Statutory Interest</h2>
           </div>
-          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+          <p className="text-xs sm:text-sm text-metal-600 dark:text-metal-400 mt-1 ml-3.5">
             MSMED Act Section 16 monthly-rest compound interest at 3× configured RBI bank rate.
             Section 15 limits agreed credit to 45 days (15 days if none agreed).
           </p>
         </div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 text-xs font-semibold text-slate-700 border border-slate-200 self-start sm:self-auto">
-          <Calendar size={13} className="text-slate-500" />
-          <span>Calculation as-of: <strong>{asOfDate}</strong></span>
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-metal-900 text-xs font-semibold text-metal-700 dark:text-metal-300 border border-metal-200/80 dark:border-metal-800 shadow-xs self-start sm:self-auto">
+          <Calendar size={13} className="text-primary-500" />
+          <span>Calculation as-of: <strong className="text-metal-900 dark:text-white">{asOfDate}</strong></span>
         </div>
       </div>
 
       {message && (
-        <div role="status" className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800 flex items-center gap-2">
-          <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+        <div role="status" className="p-3.5 rounded-xl bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 text-xs font-semibold text-primary-800 dark:text-primary-200 flex items-center gap-2">
+          <CheckCircle2 size={15} className="text-primary-600 shrink-0" />
           <span>{message}</span>
         </div>
       )}
 
       {/* Separately labelled fictional demonstration fixture */}
       {fixture && (
-        <div className="rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50/90 to-indigo-50/50 p-5 space-y-3 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 pb-2.5">
+        <div className="rounded-2xl border border-primary-200 dark:border-primary-800 bg-gradient-to-br from-primary-50/70 to-metal-50/40 dark:from-primary-950/30 dark:to-metal-900/40 p-5 space-y-3 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-primary-100 dark:border-primary-900 pb-2.5">
             <div className="flex items-center gap-2">
-              <Sparkles size={16} className="text-purple-700" />
-              <h3 className="font-bold text-purple-950 text-sm tracking-tight">{fixture.label}</h3>
+              <Sparkles size={16} className="text-primary-600" />
+              <h3 className="font-bold text-primary-950 dark:text-primary-200 text-sm tracking-tight">{fixture.label}</h3>
             </div>
-            <span className="self-start sm:self-auto rounded-full bg-purple-200/80 text-purple-900 px-2.5 py-0.5 text-xs font-bold border border-purple-300">
+            <span className="self-start sm:self-auto rounded-full bg-primary-200/80 dark:bg-primary-900/60 text-primary-900 dark:text-primary-200 px-3 py-0.5 text-xs font-bold border border-primary-300 dark:border-primary-700">
               Demonstration Only (Fictional)
             </span>
           </div>
 
-          <p className="text-xs text-purple-800 leading-relaxed">{fixture.note}</p>
+          <p className="text-xs text-primary-800 dark:text-primary-300 leading-relaxed">{fixture.note}</p>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs pt-1">
-            <div className="card p-3 border-purple-100/80">
-              <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider block">Invoice / Buyer</span>
-              <strong className="text-slate-900 block mt-0.5 text-xs sm:text-sm">{fixture.invoice_number}</strong>
-              <div className="text-slate-600 text-xs truncate">{fixture.party}</div>
+            <div className="card p-3 border-primary-100 dark:border-primary-900/50">
+              <span className="text-metal-500 text-[10px] uppercase font-bold tracking-wider block">Invoice / Buyer</span>
+              <strong className="text-metal-900 dark:text-white block mt-0.5 text-xs sm:text-sm">{fixture.invoice_number}</strong>
+              <div className="text-metal-600 dark:text-metal-400 text-xs truncate">{fixture.party}</div>
             </div>
 
-            <div className="card p-3 border-purple-100/80">
-              <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider block">Principal</span>
-              <strong className="text-slate-900 block mt-0.5 text-xs sm:text-sm">{formatPaiseINR(fixture.principal_paise)}</strong>
+            <div className="card p-3 border-primary-100 dark:border-primary-900/50">
+              <span className="text-metal-500 text-[10px] uppercase font-bold tracking-wider block">Principal</span>
+              <strong className="text-metal-900 dark:text-white block mt-0.5 text-xs sm:text-sm">{formatPaiseINR(fixture.principal_paise)}</strong>
             </div>
 
-            <div className="card p-3 border-purple-100/80">
-              <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider block">Overdue Interest</span>
-              <strong className="text-purple-700 block mt-0.5 text-xs sm:text-sm">{formatPaiseINR(fixture.interest.interest_paise)}</strong>
-              <div className="text-[10px] text-slate-500">17.25% p.a., 2 rests</div>
+            <div className="card p-3 border-primary-100 dark:border-primary-900/50">
+              <span className="text-metal-500 text-[10px] uppercase font-bold tracking-wider block">Overdue Interest</span>
+              <strong className="text-primary-700 dark:text-primary-300 block mt-0.5 text-xs sm:text-sm">{formatPaiseINR(fixture.interest.interest_paise)}</strong>
+              <div className="text-[10px] text-metal-500">17.25% p.a., 2 rests</div>
             </div>
 
-            <div className="card p-3 border-purple-100/80">
-              <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider block">Total Claim</span>
-              <strong className="text-purple-900 block mt-0.5 text-xs sm:text-sm">{formatPaiseINR(fixture.total_paise)}</strong>
+            <div className="card p-3 border-primary-100 dark:border-primary-900/50">
+              <span className="text-metal-500 text-[10px] uppercase font-bold tracking-wider block">Total Claim</span>
+              <strong className="text-primary-900 dark:text-primary-200 block mt-0.5 text-xs sm:text-sm">{formatPaiseINR(fixture.total_paise)}</strong>
             </div>
           </div>
 
-          <p className="text-[11px] text-purple-700 font-medium">
+          <p className="text-[11px] text-primary-700 dark:text-primary-300 font-medium">
             Terms: Accepted {fixture.acceptance_date} · No agreed credit (15 days under Section 15, due {fixture.due_date}) · MSE Applicable · {fixture.overdue_days} days overdue as of {fixture.as_of}.
           </p>
         </div>
@@ -173,16 +177,16 @@ export const CollectionsPage = () => {
       {query.data?.role === 'OWNER' && (
         <form
           onSubmit={handleSaveTerms}
-          className="card p-5 space-y-4 border-blue-200"
+          className="card p-5 space-y-4 border-primary-200 dark:border-primary-800"
         >
-          <div className="border-b border-slate-100 pb-3">
+          <div className="border-b border-metal-100 dark:border-metal-800 pb-3">
             <div className="flex items-center gap-2">
-              <FileCheck2 size={16} className="text-blue-600" />
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
+              <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+              <h3 className="text-base font-bold text-metal-900 dark:text-white tracking-tight">
                 Document Invoice Evidence & Payment Terms
               </h3>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-metal-500 dark:text-metal-400 mt-0.5 ml-3.5">
               Owner only. Unknown facts must stay unknown. Recording evidence writes to the audit chain and does not move money or bypass approvals.
             </p>
           </div>
@@ -225,7 +229,7 @@ export const CollectionsPage = () => {
                 max={asOfDate}
                 onChange={(e) => setAcceptance(e.target.value)}
               />
-              <span className="text-[11px] text-slate-400 mt-1 block">Leave blank if unknown</span>
+              <span className="text-[11px] text-metal-400 mt-1 block">Leave blank if unknown</span>
             </div>
 
             <div>
@@ -261,7 +265,7 @@ export const CollectionsPage = () => {
                   value={days}
                   onChange={(e) => setDays(e.target.value)}
                 />
-                <span className="text-[11px] text-slate-400 mt-1 block">Agreed credit cannot exceed 45 days under Section 15</span>
+                <span className="text-[11px] text-metal-400 mt-1 block">Agreed credit cannot exceed 45 days under Section 15</span>
               </div>
             ) : (
               <div>
@@ -272,7 +276,7 @@ export const CollectionsPage = () => {
                   disabled
                   readOnly
                   type="text"
-                  className="input text-xs bg-slate-50 text-slate-500 cursor-not-allowed"
+                  className="input text-xs bg-metal-50 dark:bg-metal-800 text-metal-500 cursor-not-allowed"
                   value={agreement === 'NONE' ? '15 days (Section 15 default)' : 'Unknown / Review Required'}
                 />
               </div>
@@ -330,7 +334,7 @@ export const CollectionsPage = () => {
                   setMse('UNKNOWN')
                   setEvidence('')
                 }}
-                className="text-xs text-slate-500 hover:text-slate-800"
+                className="text-xs text-metal-500 hover:text-metal-800 dark:hover:text-metal-200"
               >
                 Clear selection
               </button>
@@ -340,14 +344,17 @@ export const CollectionsPage = () => {
       )}
 
       {/* Receivables & Statutory Interest table */}
-      <div className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="font-bold text-sm text-slate-900 tracking-tight">Receivables & Statutory Calculation</h3>
-          <span className="text-xs text-slate-500">{invoiceList.length} invoices</span>
+      <Card noPadding className="overflow-hidden">
+        <div className="p-4 border-b border-metal-100 dark:border-metal-800 flex items-center justify-between bg-white dark:bg-metal-900">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+            <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Receivables & Statutory Calculation</h3>
+          </div>
+          <span className="text-xs text-metal-500 dark:text-metal-400">{invoiceList.length} invoices</span>
         </div>
 
         {invoiceList.length === 0 ? (
-          <p className="p-8 text-center text-xs text-slate-400">No open receivables found.</p>
+          <p className="p-8 text-center text-xs text-metal-400">No open receivables found.</p>
         ) : (
           <div className="table-container border-0 shadow-none rounded-none">
             <table>
@@ -361,7 +368,7 @@ export const CollectionsPage = () => {
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
                 {invoiceList.map((row) => {
                   const interestPaise = row.interest?.interest_paise
                   const isReview = row.interest?.status === 'REVIEW_REQUIRED'
@@ -371,61 +378,61 @@ export const CollectionsPage = () => {
                   const totalClaim = row.total_paise ?? (row.amount_paise + (interestPaise || 0))
 
                   return (
-                    <tr key={row.invoice_id} className="hover:bg-slate-50/70">
+                    <tr key={row.invoice_id} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
                       <td className="py-3">
-                        <strong className="text-slate-900 block">{row.invoice_number}</strong>
-                        <div className="text-slate-600 text-xs">{row.party}</div>
-                        <div className="text-[10px] text-slate-400">Due: {row.due_date || 'N/A'}</div>
+                        <strong className="text-metal-900 dark:text-white block">{row.invoice_number}</strong>
+                        <div className="text-metal-600 dark:text-metal-400 text-xs">{row.party}</div>
+                        <div className="text-[10px] text-metal-400">Due: {row.due_date || 'N/A'}</div>
                       </td>
-                      <td className="font-semibold text-slate-900">
+                      <td className="font-semibold text-metal-900 dark:text-white">
                         {formatPaiseINR(row.amount_paise)}
                       </td>
                       <td>
                         {isReview && (
                           <div>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200">
                               <AlertCircle size={10} />
                               REVIEW REQUIRED
                             </span>
-                            <div className="text-[10px] text-slate-500 mt-0.5">No statutory debt computed</div>
+                            <div className="text-[10px] text-metal-500 mt-0.5">No statutory debt computed</div>
                           </div>
                         )}
                         {isNotApplicable && (
                           <div>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-metal-100 text-metal-600 dark:bg-metal-800 dark:text-metal-300 border border-metal-200">
                               NOT APPLICABLE
                             </span>
-                            <div className="text-[10px] text-slate-500 mt-0.5">Statutory interest does not apply</div>
+                            <div className="text-[10px] text-metal-500 mt-0.5">Statutory interest does not apply</div>
                           </div>
                         )}
                         {isComputed && !isOverdue && (
                           <div>
-                            <strong className="text-blue-700">{formatPaiseINR(0)}</strong>
-                            <div className="text-[10px] text-blue-600 font-medium">Not yet overdue</div>
+                            <strong className="text-primary-700 dark:text-primary-300">{formatPaiseINR(0)}</strong>
+                            <div className="text-[10px] text-primary-600 dark:text-primary-400 font-medium">Not yet overdue</div>
                           </div>
                         )}
                         {isComputed && isOverdue && (
                           <div>
-                            <strong className="text-rose-700">{formatPaiseINR(interestPaise)}</strong>
-                            <div className="text-[10px] text-slate-500">
+                            <strong className="text-rose-700 dark:text-rose-400">{formatPaiseINR(interestPaise)}</strong>
+                            <div className="text-[10px] text-metal-500">
                               {Number(row.interest?.annual_rate ?? 0) * 100}% p.a. · {row.interest?.monthly_rests} rests
                             </div>
                           </div>
                         )}
                       </td>
-                      <td className="font-bold text-slate-900">
+                      <td className="font-bold text-metal-900 dark:text-white">
                         {formatPaiseINR(totalClaim)}
                       </td>
-                      <td className="text-[11px] text-slate-600 max-w-xs">
+                      <td className="text-[11px] text-metal-600 dark:text-metal-400 max-w-xs">
                         {row.terms ? (
                           <div className="space-y-0.5">
-                            <div>Accepted: <span className="font-medium">{row.terms.acceptance_date || 'Unknown'}</span></div>
-                            <div>Terms: <span className="font-medium">{row.terms.agreement_status}{row.terms.agreed_days != null ? ` (${row.terms.agreed_days}d)` : ''}</span></div>
-                            <div>MSE: <span className="font-medium">{row.terms.supplier_mse === true ? 'Yes' : row.terms.supplier_mse === false ? 'No' : 'Unknown'}</span></div>
-                            {row.evidence_ref && <div className="text-slate-400 italic">Ref: {row.evidence_ref}</div>}
+                            <div>Accepted: <span className="font-medium text-metal-900 dark:text-metal-200">{row.terms.acceptance_date || 'Unknown'}</span></div>
+                            <div>Terms: <span className="font-medium text-metal-900 dark:text-metal-200">{row.terms.agreement_status}{row.terms.agreed_days != null ? ` (${row.terms.agreed_days}d)` : ''}</span></div>
+                            <div>MSE: <span className="font-medium text-metal-900 dark:text-metal-200">{row.terms.supplier_mse === true ? 'Yes' : row.terms.supplier_mse === false ? 'No' : 'Unknown'}</span></div>
+                            {row.evidence_ref && <div className="text-metal-400 italic">Ref: {row.evidence_ref}</div>}
                           </div>
                         ) : (
-                          <span className="text-slate-400 italic">No evidence recorded</span>
+                          <span className="text-metal-400 italic">No evidence recorded</span>
                         )}
                       </td>
                       <td>
@@ -466,13 +473,13 @@ export const CollectionsPage = () => {
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Reminder outreach section */}
-      <div className="card p-5 space-y-4">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-          <Send size={16} className="text-blue-600" />
-          <h3 className="font-bold text-sm text-slate-900 tracking-tight">Outreach Configuration</h3>
+      <Card noPadding className="p-5 space-y-4">
+        <div className="flex items-center gap-2 border-b border-metal-100 dark:border-metal-800 pb-3">
+          <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+          <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Outreach Configuration</h3>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -502,27 +509,26 @@ export const CollectionsPage = () => {
         </div>
 
         {draft && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 space-y-2.5 text-xs">
-            <h4 className="font-bold text-amber-900">T1 Internal Reminder Draft</h4>
-            <p className="text-slate-800 whitespace-pre-wrap font-mono text-[11px] bg-white/70 p-3 rounded-lg border border-amber-200">
+          <div className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/30 p-4 space-y-2.5 text-xs">
+            <h4 className="font-bold text-amber-900 dark:text-amber-200">T1 Internal Reminder Draft</h4>
+            <p className="text-metal-800 dark:text-metal-200 whitespace-pre-wrap font-mono text-[11px] bg-white/80 dark:bg-metal-900/80 p-3 rounded-xl border border-amber-200 dark:border-amber-800">
               {draft.body}
             </p>
             <div className="flex flex-wrap gap-3 pt-1 items-center">
               <button
                 onClick={() => void run(() => koshApi.reminderIntent(activeSellerId!, draft.id))}
-                className="btn-primary text-xs py-1.5 px-3.5 bg-amber-700 hover:bg-amber-800"
+                className="btn-primary text-xs py-1.5 px-3.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600"
               >
                 Propose T2 send
               </button>
-              <Link to="/approvals" className="text-amber-900 font-semibold underline hover:text-amber-950 flex items-center gap-1">
+              <Link to="/approvals" className="text-amber-900 dark:text-amber-300 font-semibold underline hover:text-amber-950 flex items-center gap-1">
                 Review in Approvals
                 <ExternalLink size={11} />
               </Link>
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </section>
   )
 }
-

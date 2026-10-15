@@ -16,7 +16,7 @@ const TITLES: Record<string, string> = {
   '/audit': 'Audit & Security',
   '/connect': 'Connect & Ingest',
   '/modules': 'Kosh Modules',
-  '/operations': 'Operations',
+  '/operations': 'Operations Hub',
   '/operations/collections': 'Collections & Statutory Interest',
   '/operations/customer-intelligence': 'Customer Intelligence',
   '/operations/revenue': 'Revenue Signal',
@@ -42,26 +42,35 @@ export const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
     navigate('/login', { replace: true })
   }
 
+  const userEmail = getSession()?.email ?? ''
+  const initial = userEmail ? userEmail.charAt(0).toUpperCase() : 'U'
+
   return (
-    <header className="fixed left-0 md:left-[var(--sidebar-width)] top-0 right-0 h-14 bg-white/95 border-b border-slate-200/90 backdrop-blur-xs flex items-center justify-between px-3 sm:px-6 z-30 transition-all duration-200 shadow-2xs">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="fixed left-0 md:left-[var(--sidebar-width)] top-0 right-0 h-16 bg-white/90 border-b border-metal-200 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 z-30 transition-all duration-200 shadow-xs">
+      <div className="flex items-center gap-3.5 min-w-0">
         <button
           onClick={onMenuToggle}
-          className="md:hidden p-2 -ml-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
+          className="md:hidden p-2 -ml-1 rounded-lg text-metal-600 hover:text-metal-900 hover:bg-metal-100 focus:outline-none"
           aria-label="Open mobile navigation"
         >
-          <Menu size={18} />
+          <Menu size={20} />
         </button>
-        <h1 className="text-sm sm:text-base font-bold text-slate-900 truncate tracking-tight">{title}</h1>
+
+        {/* MetalliSense Green Section Marker */}
+        <div className="w-1.5 h-7 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full shadow-xs shrink-0 hidden sm:block" />
+
+        <h1 className="text-sm sm:text-base font-bold text-metal-900 truncate tracking-tight">
+          {title}
+        </h1>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
         {sellers.length > 1 && (
-          <div className="flex items-center gap-1.5 bg-slate-100 rounded-lg px-2 py-1 border border-slate-200/80">
-            <Building size={14} className="text-slate-500 shrink-0 hidden sm:inline" />
+          <div className="flex items-center gap-1.5 bg-metal-50 rounded-lg px-2.5 py-1.5 border border-metal-200">
+            <Building size={14} className="text-metal-500 shrink-0 hidden sm:inline" />
             <select
               aria-label="Active seller"
-              className="text-xs sm:text-sm font-medium text-slate-800 bg-transparent border-none focus:outline-none cursor-pointer max-w-32 sm:max-w-xs truncate"
+              className="text-xs sm:text-sm font-medium text-metal-800 bg-transparent border-none focus:outline-none cursor-pointer max-w-32 sm:max-w-xs truncate"
               value={activeSellerId ?? ''}
               onChange={(e) => setActiveSellerId(Number(e.target.value))}
             >
@@ -74,14 +83,18 @@ export const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
           </div>
         )}
 
-        <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/60">
-          <User size={13} className="text-slate-400" />
-          <span className="truncate max-w-[150px]">{getSession()?.email}</span>
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-metal-50 border border-metal-200">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-xs shadow-2xs">
+            {initial}
+          </div>
+          <span className="hidden sm:inline text-xs font-medium text-metal-700 truncate max-w-[140px]">
+            {userEmail}
+          </span>
         </div>
 
         <button
           onClick={logout}
-          className="p-1.5 sm:p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+          className="p-2 rounded-lg text-metal-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
           title="Sign out"
           aria-label="Sign out"
         >
@@ -91,4 +104,4 @@ export const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
     </header>
   )
 }
-
+export default TopNav

@@ -253,14 +253,14 @@ export const OperationResources = () => {
             onClick={() => void run(() => koshApi.demoOperations(activeSellerId!))}
             className="btn-primary self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold shadow-sm whitespace-nowrap disabled:opacity-50"
           >
-            <Bot className="w-4 h-4 text-brand-gold" />
+            <Bot className="w-4 h-4 text-primary-200" />
             Run internal business-day review
           </button>
         </div>
 
         {message && (
-          <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <div className="p-3 rounded-lg bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 text-primary-900 dark:text-primary-200 text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
             <p role="status">{message}</p>
           </div>
         )}
@@ -269,10 +269,8 @@ export const OperationResources = () => {
       {/* Resource Intake Form */}
       {query.data?.role !== 'VIEWER' && (
         <div className="card space-y-5">
-          <div className="flex items-center gap-2 pb-3 border-b border-border">
-            <div className="p-1.5 rounded-md bg-brand-navy/10 text-brand-navy dark:bg-brand-gold/10 dark:text-brand-gold">
-              <Boxes className="w-4 h-4" />
-            </div>
+          <div className="flex items-center gap-2 pb-3 border-b border-metal-100 dark:border-metal-800">
+            <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
             <div>
               <h3 className="text-base font-semibold text-foreground">Propose Operational Resource</h3>
               <p className="text-xs text-muted-foreground">
@@ -299,7 +297,7 @@ export const OperationResources = () => {
                     setKind(e.target.value)
                     setValues({})
                   }}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                 >
                   {Object.keys(fields).map((k) => (
                     <option key={k} value={k}>
@@ -335,7 +333,7 @@ export const OperationResources = () => {
                               : e.target.value
                           )
                         }
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                       >
                         {f.type !== 'multiple' && <option value="">Select option</option>}
                         {options.map((o) => (
@@ -347,7 +345,7 @@ export const OperationResources = () => {
                         required={!f.optional}
                         value={v}
                         onChange={(e) => change(e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                       >
                         <option value="">Select owned resource</option>
                         {choices?.map((o) => (
@@ -362,7 +360,7 @@ export const OperationResources = () => {
                         rows={3}
                         value={v}
                         onChange={(e) => change(e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                       />
                     ) : (
                       <input
@@ -371,7 +369,7 @@ export const OperationResources = () => {
                         step={f.type === 'decimal' ? 'any' : '1'}
                         value={v}
                         onChange={(e) => change(e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                       />
                     )}
                   </div>
@@ -387,7 +385,7 @@ export const OperationResources = () => {
                   placeholder="e.g. Stock count sheet Oct 2026, Signed quote #991"
                   value={evidence}
                   onChange={(e) => setEvidence(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                 />
               </div>
             </div>
@@ -408,7 +406,7 @@ export const OperationResources = () => {
           <div className="card space-y-3 p-4 border-border flex flex-col justify-between">
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <Upload className="w-4 h-4 text-brand-gold" />
+                <Upload className="w-4 h-4 text-primary-600" />
                 <h3 className="text-sm font-semibold text-foreground">
                   Material CSV import (proposals only)
                 </h3>
@@ -457,7 +455,7 @@ export const OperationResources = () => {
           >
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-brand-gold" />
+                <Users className="w-4 h-4 text-primary-600" />
                 <h3 className="text-sm font-semibold text-foreground">
                   Customer / supplier registration
                 </h3>
@@ -475,7 +473,7 @@ export const OperationResources = () => {
                   placeholder="e.g. Bharat Heavy Forge Ltd"
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-background focus:ring-1 focus:ring-brand-gold"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-background focus:ring-1 focus:ring-primary-500"
                 />
               </div>
 
@@ -486,7 +484,7 @@ export const OperationResources = () => {
                 <select
                   value={contactKind}
                   onChange={(e) => setContactKind(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-background focus:ring-1 focus:ring-brand-gold"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-background focus:ring-1 focus:ring-primary-500"
                 >
                   <option>CUSTOMER</option>
                   <option>SUPPLIER</option>
@@ -522,7 +520,7 @@ export const OperationResources = () => {
           >
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-brand-gold" />
+                <MessageSquare className="w-4 h-4 text-primary-600" />
                 <h3 className="text-sm font-semibold text-foreground">
                   Incoming conversation evidence
                 </h3>
@@ -539,7 +537,7 @@ export const OperationResources = () => {
                 placeholder="Paste verbatim customer / vendor message text..."
                 value={conversation}
                 onChange={(e) => setConversation(e.target.value)}
-                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-background focus:ring-1 focus:ring-brand-gold"
+                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-background focus:ring-1 focus:ring-primary-500"
               />
               <button
                 type="submit"
@@ -614,7 +612,7 @@ export const OperationResources = () => {
               onChange={(e) => setSearch(e.target.value)}
               aria-label="Search knowledge"
               placeholder="Search inert knowledge rules (e.g. payment terms, SOPs)..."
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
             />
           </div>
           <button type="submit" className="btn-primary px-4 py-2 text-sm font-semibold whitespace-nowrap">
@@ -700,7 +698,7 @@ export const OperationResources = () => {
             <select
               value={channel}
               onChange={(e) => setChannel(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
             >
               <option>EMAIL</option>
               <option>WHATSAPP</option>
@@ -714,7 +712,7 @@ export const OperationResources = () => {
             <select
               value={notificationParty}
               onChange={(e) => setNotificationParty(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
             >
               <option value="">Select counterparty</option>
               {query.data?.counterparties.map((p) => (
@@ -740,7 +738,7 @@ export const OperationResources = () => {
           {query.data?.items.map((r) => (
             <article
               key={r.id}
-              className="card space-y-3 p-4 border-border bg-card hover:border-brand-gold/30 transition-colors"
+              className="card space-y-3 p-4 border-border bg-card hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
             >
               <div className="flex items-center justify-between pb-2 border-b border-border/60">
                 <h3 className="text-sm font-bold text-foreground">
@@ -828,7 +826,7 @@ export const OperationResources = () => {
       {/* Messaging / Device Pairing Card */}
       <div className="card space-y-3 p-4 bg-muted/20 border-border">
         <div className="flex items-center gap-2">
-          <Smartphone className="w-4 h-4 text-brand-gold" />
+          <Smartphone className="w-4 h-4 text-primary-600" />
           <h3 className="text-sm font-semibold text-foreground">Messaging / device pairing</h3>
         </div>
         <div className="text-xs space-y-1.5">

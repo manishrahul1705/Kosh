@@ -9,11 +9,14 @@ import {
   Play,
   Trash2,
   FileCheck,
+  Layers,
+  Lock,
 } from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { SandboxBanner } from '@/components/ui/SandboxBanner'
+import { Card } from '@/components/ui/Card'
 import { formatEnumLabel } from '@/lib/koshLabels'
 
 export const ConnectPage = () => {
@@ -59,18 +62,28 @@ export const ConnectPage = () => {
 
   const processedCount = docs.data?.filter((d) => d.status === 'PROCESSED').length ?? 0
   const reviewCount = docs.data?.filter((d) => d.status === 'REVIEW').length ?? 0
+  const activeConsentsCount = consents.data?.filter((c) => c.status === 'ACTIVE').length ?? 0
 
   return (
     <section aria-label="Connect" className="space-y-6">
       <SandboxBanner />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200/80 pb-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Connect & Ingest Documents</h2>
-          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-            Secure private document storage and parsing for cash forecasting and financing verification.
-          </p>
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-8 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full shadow-xs shrink-0" />
+          <div>
+            <h2 className="text-xl font-bold text-metal-900 tracking-tight">Connect & Ingest Documents</h2>
+            <p className="text-xs sm:text-sm text-metal-500 mt-0.5">
+              Secure private document intake for cash forecasting, ledger reconciliation, and financing verification.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+            <Lock size={12} className="text-emerald-600" />
+            End-to-End Audited
+          </span>
         </div>
       </div>
 
@@ -81,22 +94,49 @@ export const ConnectPage = () => {
       )}
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="stat-card">
-          <p className="stat-label">Active Consents</p>
-          <p className="stat-value text-blue-600">{consents.data?.filter((c) => c.status === 'ACTIVE').length ?? 0}</p>
+          <div className="flex items-center justify-between mb-2">
+            <span className="stat-label">Active Consents</span>
+            <div className="bg-emerald-50 text-emerald-600 p-2 rounded-lg">
+              <ShieldCheck size={18} />
+            </div>
+          </div>
+          <p className="stat-value text-emerald-700">{activeConsentsCount}</p>
+          <p className="text-[11px] text-metal-400 mt-1">Legally binding scope</p>
         </div>
+
         <div className="stat-card">
-          <p className="stat-label">Total Ingested</p>
-          <p className="stat-value text-slate-900">{docs.data?.length ?? 0}</p>
+          <div className="flex items-center justify-between mb-2">
+            <span className="stat-label">Total Ingested</span>
+            <div className="bg-metal-100 text-metal-700 p-2 rounded-lg">
+              <Layers size={18} />
+            </div>
+          </div>
+          <p className="stat-value text-metal-900">{docs.data?.length ?? 0}</p>
+          <p className="text-[11px] text-metal-400 mt-1">Uploaded business files</p>
         </div>
+
         <div className="stat-card">
-          <p className="stat-label">Processed Clean</p>
+          <div className="flex items-center justify-between mb-2">
+            <span className="stat-label">Processed Clean</span>
+            <div className="bg-emerald-50 text-emerald-600 p-2 rounded-lg">
+              <CheckCircle2 size={18} />
+            </div>
+          </div>
           <p className="stat-value text-emerald-600">{processedCount}</p>
+          <p className="text-[11px] text-metal-400 mt-1">Parsed without anomaly</p>
         </div>
+
         <div className="stat-card">
-          <p className="stat-label">Quarantined / Review</p>
-          <p className={`stat-value ${reviewCount > 0 ? 'text-amber-600' : 'text-slate-900'}`}>{reviewCount}</p>
+          <div className="flex items-center justify-between mb-2">
+            <span className="stat-label">Quarantined / Review</span>
+            <div className={reviewCount > 0 ? "bg-amber-50 text-amber-600 p-2 rounded-lg" : "bg-metal-100 text-metal-500 p-2 rounded-lg"}>
+              <AlertTriangle size={18} />
+            </div>
+          </div>
+          <p className={`stat-value ${reviewCount > 0 ? 'text-amber-600' : 'text-metal-900'}`}>{reviewCount}</p>
+          <p className="text-[11px] text-metal-400 mt-1">Held for inspection</p>
         </div>
       </div>
 
@@ -104,25 +144,20 @@ export const ConnectPage = () => {
         {/* Left Column: Consent & Upload */}
         <div className="lg:col-span-1 space-y-6">
           {/* Consent Management */}
-          <div className="card p-5 space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <ShieldCheck size={18} className="text-blue-600" />
-              <h3 className="font-bold text-sm text-slate-900 tracking-tight">Consent Management</h3>
-            </div>
-
+          <Card title="Consent Management" subtitle="Audited permissions required for data intake">
             <div className="space-y-3">
               {consents.data?.map((c) => (
-                <div key={c.id} className="p-3 rounded-lg bg-slate-50 border border-slate-200/70 text-xs space-y-2">
+                <div key={c.id} className="p-3.5 rounded-lg bg-metal-50/70 border border-metal-200 text-xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-800" title={c.status}>
-                      <span className="inline-flex items-center gap-1">
-                        <CheckCircle2 size={12} className="text-emerald-600" />
+                    <span className="font-semibold text-metal-800" title={c.status}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <CheckCircle2 size={13} className="text-emerald-600" />
                         {formatEnumLabel(c.status)}
                       </span>
                     </span>
                     {c.status === 'ACTIVE' && (
                       <button
-                        className="inline-flex items-center gap-1 text-[11px] text-rose-600 font-semibold hover:text-rose-800"
+                        className="inline-flex items-center gap-1 text-[11px] text-rose-600 font-semibold hover:text-rose-800 cursor-pointer"
                         onClick={() => koshApi.revokeConsent(activeSellerId!, c.id).then(refresh)}
                       >
                         <Trash2 size={11} />
@@ -130,32 +165,27 @@ export const ConnectPage = () => {
                       </button>
                     )}
                   </div>
-                  <p className="text-slate-600 text-[11px]">
-                    <strong>Scope:</strong> {c.data_types.join(', ')}
+                  <p className="text-metal-600 text-[11px] leading-relaxed">
+                    <strong className="text-metal-700">Scope:</strong> {c.data_types.join(', ')}
                   </p>
-                  <p className="text-slate-400 text-[10px]">Valid until {c.expires_at.slice(0, 10)}</p>
+                  <p className="text-metal-400 text-[10px]">Valid until {c.expires_at.slice(0, 10)}</p>
                 </div>
               ))}
 
               {!consents.data?.length && (
-                <div className="text-center p-4 rounded-lg bg-slate-50 border border-dashed border-slate-200 text-xs text-slate-500">
-                  <p className="mb-2">No active data intake consent recorded.</p>
-                  <button className="btn-primary text-xs py-1.5 px-3" onClick={create}>
+                <div className="text-center p-5 rounded-lg bg-metal-50 border border-dashed border-metal-300 text-xs text-metal-500">
+                  <p className="mb-3 font-medium">No active data intake consent recorded.</p>
+                  <button className="btn-primary text-xs py-2 px-4 shadow-sm" onClick={create}>
                     Create intake consent
                   </button>
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Upload Card */}
-          <div className="card p-5 space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <UploadCloud size={18} className="text-blue-600" />
-              <h3 className="font-bold text-sm text-slate-900 tracking-tight">Upload Private Document</h3>
-            </div>
-
-            <div className="space-y-3">
+          <Card title="Upload Private Document" subtitle="Add ledger or statement documents">
+            <div className="space-y-4">
               <div>
                 <label className="label">Document Category</label>
                 <select
@@ -176,100 +206,102 @@ export const ConnectPage = () => {
                   aria-label="Private document"
                   type="file"
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  className="w-full text-xs text-slate-600 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                  className="w-full text-xs text-metal-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer border border-metal-200 rounded-lg p-1.5 bg-white"
                 />
               </div>
 
               <button
-                className="btn-primary w-full text-xs py-2"
+                className="btn-primary w-full text-xs py-2.5 shadow-sm"
                 disabled={!file || upload.isPending}
                 onClick={() => upload.mutate()}
               >
-                <UploadCloud size={14} />
-                {upload.isPending ? 'Uploading...' : 'Upload'}
+                <UploadCloud size={15} />
+                {upload.isPending ? 'Uploading...' : 'Upload Document'}
               </button>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Right Column: Ingested Documents List */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileCheck size={18} className="text-slate-700" />
-              <h3 className="font-bold text-sm text-slate-900 tracking-tight">Ingested Documents</h3>
-            </div>
-            <span className="text-xs text-slate-500">{docs.data?.length ?? 0} files</span>
-          </div>
-
-          {docs.data?.length ? (
-            <div className="space-y-3">
-              {docs.data.map((d) => (
-                <div
-                  key={d.id}
-                  className="card p-4 space-y-2 hover:border-slate-300 transition-colors"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 shrink-0">
-                        <FileText size={16} />
+          <Card
+            title="Ingested Documents"
+            subtitle={`${docs.data?.length ?? 0} files recorded in tamper-evident store`}
+            actions={
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-metal-100 text-metal-700 border border-metal-200">
+                {docs.data?.length ?? 0} files
+              </span>
+            }
+          >
+            {docs.data?.length ? (
+              <div className="space-y-3">
+                {docs.data.map((d) => (
+                  <div
+                    key={d.id}
+                    className="p-4 rounded-xl border border-metal-200 bg-white shadow-2xs hover:border-emerald-300 hover:shadow-xs transition-all space-y-2.5"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700 shrink-0">
+                          <FileText size={17} />
+                        </div>
+                        <strong className="text-xs sm:text-sm font-bold text-metal-900 truncate">
+                          {d.original_filename}
+                        </strong>
                       </div>
-                      <strong className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
-                        {d.original_filename}
-                      </strong>
+
+                      <span
+                        title={d.status}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
+                          d.status === 'REVIEW'
+                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                            : d.status === 'PROCESSED'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : 'bg-metal-100 text-metal-800 border border-metal-200'
+                        }`}
+                      >
+                        {d.status === 'REVIEW' && <AlertTriangle size={12} />}
+                        {d.status === 'PROCESSED' && <CheckCircle2 size={12} />}
+                        {formatEnumLabel(d.status)}
+                      </span>
                     </div>
 
-                    <span
-                      title={d.status}
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                        d.status === 'REVIEW'
-                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                          : d.status === 'PROCESSED'
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                          : 'bg-slate-100 text-slate-800 border border-slate-200'
-                      }`}
-                    >
-                      {d.status === 'REVIEW' && <AlertTriangle size={11} />}
-                      {d.status === 'PROCESSED' && <CheckCircle2 size={11} />}
-                      {formatEnumLabel(d.status)}
-                    </span>
-                  </div>
+                    {d.status_reason?.includes('INSTRUCTION_TEXT_DETECTED') && (
+                      <div
+                        role="alert"
+                        className="flex items-center gap-2 text-xs font-semibold text-rose-800 bg-rose-50 p-3 rounded-lg border border-rose-200"
+                      >
+                        <AlertTriangle size={15} className="shrink-0 text-rose-600" />
+                        <span>⚠ Instruction-like payment text detected. Quarantined in REVIEW.</span>
+                      </div>
+                    )}
 
-                  {d.status_reason?.includes('INSTRUCTION_TEXT_DETECTED') && (
-                    <div
-                      role="alert"
-                      className="flex items-center gap-2 text-xs font-semibold text-rose-800 bg-rose-50 p-2.5 rounded-lg border border-rose-200"
-                    >
-                      <AlertTriangle size={14} className="shrink-0 text-rose-600" />
-                      <span>⚠ Instruction-like payment text detected. Quarantined in REVIEW.</span>
+                    <div className="flex items-center justify-between pt-2 border-t border-metal-100 text-xs">
+                      <span className="text-metal-400 text-[11px] font-mono">ID #{d.id}</span>
+                      <button
+                        className="inline-flex items-center gap-1.5 text-xs text-emerald-700 font-bold hover:text-emerald-900 transition-colors cursor-pointer"
+                        onClick={() => koshApi.processDocument(activeSellerId!, d.id).then(refresh)}
+                      >
+                        <Play size={12} />
+                        Process document
+                      </button>
                     </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
-                    <span className="text-slate-400 text-[11px]">ID #{d.id}</span>
-                    <button
-                      className="inline-flex items-center gap-1 text-xs text-blue-600 font-semibold hover:text-blue-800"
-                      onClick={() => koshApi.processDocument(activeSellerId!, d.id).then(refresh)}
-                    >
-                      <Play size={11} />
-                      Process document
-                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="card p-10 text-center text-xs text-slate-500 space-y-2 border-dashed">
-              <FileText size={32} className="mx-auto text-slate-300" />
-              <p className="font-semibold text-slate-700">No documents uploaded yet.</p>
-              <p className="text-slate-400 max-w-sm mx-auto">
-                Upload sales register CSV, purchase register CSV, bank statement JSON, or invoice PDFs to populate the ledger.
-              </p>
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="p-12 text-center text-xs text-metal-500 space-y-3 border border-dashed border-metal-300 rounded-xl bg-metal-50/50">
+                <FileText size={36} className="mx-auto text-metal-300" />
+                <p className="font-bold text-sm text-metal-700">No documents uploaded yet.</p>
+                <p className="text-metal-500 max-w-sm mx-auto leading-relaxed">
+                  Upload sales register CSV, purchase register CSV, bank statement JSON, or invoice PDFs to populate the financial ledger.
+                </p>
+              </div>
+            )}
+          </Card>
         </div>
       </div>
     </section>
   )
 }
-
+export default ConnectPage

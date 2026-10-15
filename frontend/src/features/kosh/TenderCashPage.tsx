@@ -202,10 +202,8 @@ export const TenderCashPage = () => {
         >
           {/* Step 1: Tender Selection & Counterparty Verification */}
           <div className="card space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-border">
-              <div className="p-1.5 rounded-md bg-brand-navy/10 text-brand-navy dark:bg-brand-gold/10 dark:text-brand-gold">
-                <FileCheck className="w-4 h-4" />
-              </div>
+            <div className="flex items-center gap-2 pb-3 border-b border-metal-100 dark:border-metal-800">
+              <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
               <h3 className="text-sm font-semibold text-foreground">
                 Tender Target & Counterparty Context
               </h3>
@@ -220,7 +218,7 @@ export const TenderCashPage = () => {
                   required
                   value={selected}
                   onChange={(e) => setSelected(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                 >
                   <option value="">Select a matched GeM tender</option>
                   {query.data?.items.map((t) => (
@@ -242,7 +240,7 @@ export const TenderCashPage = () => {
                   <select
                     value={cpse}
                     onChange={(e) => setCpse(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                   >
                     <option value="">Unknown / Pending review</option>
                     <option value="true">Yes, evidence supplied (CPSE / Central Dept)</option>
@@ -262,7 +260,7 @@ export const TenderCashPage = () => {
                     placeholder="e.g. GeM-BID-2026-DOC-01, Clause 14"
                     value={evidence}
                     onChange={(e) => setEvidence(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                   />
                   <span className="text-[11px] text-muted-foreground mt-1 block">
                     Audit trail reference verifying milestone schedules and values
@@ -315,7 +313,7 @@ export const TenderCashPage = () => {
                       onChange={(e) =>
                         setValues({ ...values, [pair.cost.key]: e.target.value })
                       }
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                     />
                     {values[pair.cost.key] && !isNaN(Number(values[pair.cost.key])) && (
                       <span className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 mt-0.5 block">
@@ -334,7 +332,7 @@ export const TenderCashPage = () => {
                       onChange={(e) =>
                         setValues({ ...values, [pair.date.key]: e.target.value })
                       }
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-colors"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                     />
                     <span className="text-[11px] text-muted-foreground mt-0.5 block">
                       {pair.date.description}
@@ -355,7 +353,7 @@ export const TenderCashPage = () => {
               disabled={loading || !selected || !evidence}
               className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold shadow-sm disabled:opacity-50"
             >
-              <Sparkles className="w-4 h-4 text-brand-gold" />
+              <Sparkles className="w-4 h-4 text-primary-600" />
               {loading ? 'Simulating cash impact...' : 'Run same-seed tender scenario'}
             </button>
           </div>
@@ -365,26 +363,26 @@ export const TenderCashPage = () => {
         <div className="space-y-6">
           <div className="card space-y-3 bg-muted/20 border-border">
             <div className="flex items-center gap-2 text-foreground font-semibold text-xs tracking-wider uppercase">
-              <Info className="w-4 h-4 text-brand-gold" />
+              <Info className="w-4 h-4 text-primary-600" />
               How Tender Cash Feasibility Works
             </div>
             <ul className="text-xs text-muted-foreground space-y-2.5 leading-relaxed">
               <li className="flex items-start gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-brand-gold mt-1.5 shrink-0" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary-500 mt-1.5 shrink-0" />
                 <span>
                   <strong>Strict Pre-Award Isolation:</strong> Running this simulation calculates cash
                   drag without placing real orders, reserving balances or notifying buyers.
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-brand-gold mt-1.5 shrink-0" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary-500 mt-1.5 shrink-0" />
                 <span>
                   <strong>Working Capital Deficit:</strong> Shortfalls represent the maximum cumulative
                   cash outflow before milestone receipts arrive.
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-brand-gold mt-1.5 shrink-0" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary-500 mt-1.5 shrink-0" />
                 <span>
                   <strong>Conservative Uncertainty:</strong> Unverified milestones or unevidenced dates
                   are treated as review-required and not assumed to fund your safety buffer.
@@ -460,14 +458,14 @@ export const TenderCashPage = () => {
           {result.financing_suggestions && result.financing_suggestions.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground tracking-wide flex items-center gap-2">
-                <Layers className="w-4 h-4 text-brand-gold" />
+                <Layers className="w-4 h-4 text-primary-600" />
                 Financing Suggestions & Eligibility
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {result.financing_suggestions.map((s) => (
                   <div
                     key={s.product}
-                    className="card p-4 space-y-2 border-border bg-card hover:border-brand-gold/40 transition-colors"
+                    className="card p-4 space-y-2 border-border bg-card hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-sm text-foreground">{s.product}</span>

@@ -14,6 +14,9 @@ import {
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
 import { SandboxBanner } from '@/components/ui/SandboxBanner'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 
 export const ReportsPage = () => {
   const { activeSellerId } = useSeller()
@@ -49,30 +52,31 @@ export const ReportsPage = () => {
       <SandboxBanner />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/80 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <FileText size={20} className="text-blue-600" />
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Cash-position application pack</h2>
+            <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+            <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Cash-position application pack</h2>
           </div>
-          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+          <p className="text-xs sm:text-sm text-metal-600 dark:text-metal-400 mt-1 ml-3.5">
             One-page computed forecast, alert, plan, options evidence and audit snapshot. Generation is T1; sharing is T3 with exact consent and OTP.
           </p>
         </div>
 
         {query.data?.role !== 'VIEWER' && (
-          <button
-            className="btn-primary self-start sm:self-auto text-xs py-2 px-4"
+          <Button
+            variant="primary"
+            className="self-start sm:self-auto"
             onClick={() => void run(() => koshApi.generateReport(activeSellerId!))}
           >
             <Sparkles size={13} />
             Generate internal PDF
-          </button>
+          </Button>
         )}
       </div>
 
       {message && (
-        <div role="status" className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-900 overflow-x-auto font-mono">
+        <div role="status" className="p-3.5 rounded-xl bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 text-xs font-semibold text-primary-900 dark:text-primary-200 overflow-x-auto font-mono">
           {message}
         </div>
       )}
@@ -91,14 +95,14 @@ export const ReportsPage = () => {
               })
             )
           }}
-          className="card p-5 space-y-4 border-blue-200 bg-gradient-to-r from-blue-50/50 to-indigo-50/30"
+          className="card p-5 space-y-4 border-primary-200 dark:border-primary-800 bg-gradient-to-r from-primary-50/50 to-metal-50/30 dark:from-primary-950/20 dark:to-metal-900/30"
         >
-          <div className="border-b border-blue-100 pb-2.5">
+          <div className="border-b border-primary-100 dark:border-primary-900 pb-2.5">
             <div className="flex items-center gap-2">
-              <Shield size={16} className="text-blue-700" />
-              <h3 className="font-bold text-sm text-blue-950 tracking-tight">Share Application Pack</h3>
+              <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+              <h3 className="font-bold text-sm text-primary-950 dark:text-primary-200 tracking-tight">Share Application Pack</h3>
             </div>
-            <p className="text-xs text-blue-800 mt-0.5">
+            <p className="text-xs text-primary-800 dark:text-primary-300 mt-0.5 ml-3.5">
               Consent scope: cash PDF, forecast, plan, options and audit hash for the selected recipient only.
             </p>
           </div>
@@ -135,7 +139,7 @@ export const ReportsPage = () => {
           <button
             type="submit"
             disabled={!recipient}
-            className="btn-primary text-xs py-1.5 px-4"
+            className="btn-primary text-xs py-1.5 px-4 inline-flex items-center gap-1.5"
           >
             <KeyRound size={13} />
             Grant scoped sharing consent
@@ -145,30 +149,33 @@ export const ReportsPage = () => {
 
       {/* Reports List */}
       <div className="space-y-4">
-        <h3 className="font-bold text-sm text-slate-900 tracking-tight">Generated Reports</h3>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+          <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Generated Reports</h3>
+        </div>
         {!query.data?.items.length && (
-          <div className="card p-8 text-center text-xs text-slate-400">
+          <Card className="p-8 text-center text-xs text-metal-400">
             No application pack reports generated yet.
-          </div>
+          </Card>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {query.data?.items.map((r) => (
             <article key={r.id} className="card p-5 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <h4 className="font-bold text-sm text-slate-900">
-                  Report #{r.id} · <span className="font-semibold text-emerald-700">{r.status}</span>
+              <div className="flex items-center justify-between border-b border-metal-100 dark:border-metal-800 pb-2.5">
+                <h4 className="font-bold text-sm text-metal-900 dark:text-white">
+                  Report #{r.id} · <span className="font-semibold text-primary-700 dark:text-primary-300">{r.status}</span>
                 </h4>
-                <span className="text-[10px] font-mono text-slate-400">{r.evidence_ref}</span>
+                <span className="text-[10px] font-mono text-metal-400">{r.evidence_ref}</span>
               </div>
 
               <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase text-slate-400">SHA-256 Digest</span>
-                <code className="block p-2 rounded-lg bg-slate-50 border border-slate-200 text-[10px] font-mono text-slate-600 truncate">
+                <span className="text-[10px] font-bold uppercase text-metal-400">SHA-256 Digest</span>
+                <code className="block p-2 rounded-xl bg-metal-50 dark:bg-metal-800/80 border border-metal-200 dark:border-metal-700 text-[10px] font-mono text-metal-600 dark:text-metal-300 truncate">
                   {r.pdf_sha256}
                 </code>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-metal-100 dark:border-metal-800">
                 <button
                   className="btn-secondary text-xs py-1.5 px-3"
                   onClick={() =>
@@ -205,18 +212,21 @@ export const ReportsPage = () => {
       </div>
 
       {/* Sharing Consents */}
-      <div className="card p-5 space-y-3">
-        <h3 className="font-bold text-sm text-slate-900 tracking-tight">Sharing consent scope and revocation</h3>
+      <Card noPadding className="p-5 space-y-3">
+        <div className="flex items-center gap-2 border-b border-metal-100 dark:border-metal-800 pb-2.5">
+          <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+          <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Sharing consent scope and revocation</h3>
+        </div>
         <div className="space-y-2">
           {consents.data?.items.map((c) => (
             <div
               key={c.id}
-              className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between text-xs gap-2"
+              className="p-3.5 rounded-xl bg-metal-50 dark:bg-metal-800/60 border border-metal-200 dark:border-metal-700 flex flex-wrap items-center justify-between text-xs gap-2"
             >
               <div>
-                <strong>{c.recipient_id}</strong> · {c.purpose} ·{' '}
-                <span className="text-slate-500">{c.fields.join(', ')}</span> ·{' '}
-                <span className="font-bold text-emerald-700">{c.status}</span> until {c.expires_at}
+                <strong className="text-metal-900 dark:text-white">{c.recipient_id}</strong> · {c.purpose} ·{' '}
+                <span className="text-metal-500">{c.fields.join(', ')}</span> ·{' '}
+                <span className="font-bold text-primary-700 dark:text-primary-300">{c.status}</span> until {c.expires_at}
               </div>
               {['OWNER', 'APPROVER'].includes(query.data?.role ?? '') && c.status === 'ACTIVE' && (
                 <button
@@ -230,21 +240,20 @@ export const ReportsPage = () => {
             </div>
           ))}
           {!consents.data?.items.length && (
-            <p className="text-xs text-slate-400">No active sharing consents.</p>
+            <p className="text-xs text-metal-400">No active sharing consents.</p>
           )}
         </div>
 
         <div className="pt-2">
           <Link
             to="/approvals"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline"
           >
             Review sharing intents in Approvals
             <ExternalLink size={11} />
           </Link>
         </div>
-      </div>
+      </Card>
     </section>
   )
 }
-

@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CheckCircle2, User, FileText, Shield } from 'lucide-react'
 import { sellersApi } from '@/lib/api/sellers'
 import { portalApi } from '@/lib/api/portal'
 import { toApiError } from '@/lib/api/client'
 import { useSeller } from '@/app/SellerContext'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDateOnly } from '@/lib/utils'
@@ -63,48 +65,73 @@ export const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-5 max-w-4xl">
-      <div className="bg-white border border-gray-200 rounded-lg p-5">
-        <h2 className="text-lg font-semibold">{seller.data.name}</h2>
-        <p className="text-xs text-gray-500">Profile revision {rev?.revision_number ?? '—'}</p>
-      </div>
+    <div className="space-y-6 max-w-4xl">
+      {/* Header */}
+      <Card noPadding className="p-5 flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
+            <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">{seller.data.name}</h2>
+          </div>
+          <p className="text-xs text-metal-500 mt-1 ml-3.5">Profile revision {rev?.revision_number ?? '—'}</p>
+        </div>
+        <Badge variant="success">Active Seller</Badge>
+      </Card>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-3">
-        <h3 className="text-sm font-semibold uppercase text-gray-900">Matching profile</h3>
-        <p className="text-sm text-gray-600">Each save creates a new profile revision and requests updated matches. If a recent refresh is still cooling down, refresh again shortly from My Tenders.</p>
-        {message && <p role="status" className="text-sm bg-blue-50 text-blue-800 rounded p-2">{message}</p>}
-        {EDITABLE.map((f) => (
-          <form key={f.key} className="grid grid-cols-1 md:grid-cols-[220px_1fr_auto] gap-2 items-center"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  const value = (values[activeSellerId]?.[f.key] ?? current(f.key)).trim()
-                  if (value) save.mutate({ sellerId: activeSellerId, key: f.key, value_type: f.type, value })
-                }}>
-            <label htmlFor={f.key} className="text-sm text-gray-700">{f.label}</label>
-            <input id={f.key} className="border border-gray-300 rounded-md px-3 py-1.5 text-sm" placeholder={f.hint}
-                   type={f.type === 'NUMBER' ? 'number' : 'text'} min={f.type === 'NUMBER' ? 0 : undefined}
-                   value={values[activeSellerId]?.[f.key] ?? current(f.key)}
-                   onChange={(e) => setValues((v) => ({ ...v, [activeSellerId]: { ...v[activeSellerId], [f.key]: e.target.value } }))} />
-            <Button type="submit" size="sm" variant="secondary" loading={save.isPending}>Save</Button>
-          </form>
-        ))}
-      </div>
+      <Card noPadding className="p-5 space-y-4">
+        <div className="flex items-center gap-2 border-b border-metal-100 dark:border-metal-800 pb-3">
+          <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-metal-900 dark:text-white">Matching profile</h3>
+            <p className="text-xs text-metal-500 mt-0.5">
+              Each save creates a new profile revision and requests updated matches. If a recent refresh is still cooling down, refresh again shortly from My Tenders.
+            </p>
+          </div>
+        </div>
+        {message && (
+          <p role="status" className="text-xs font-semibold bg-primary-50 dark:bg-primary-950/40 text-primary-800 dark:text-primary-200 border border-primary-200 dark:border-primary-800 rounded-xl p-3">
+            {message}
+          </p>
+        )}
+        <div className="space-y-3">
+          {EDITABLE.map((f) => (
+            <form key={f.key} className="grid grid-cols-1 md:grid-cols-[220px_1fr_auto] gap-2 items-center"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    const value = (values[activeSellerId]?.[f.key] ?? current(f.key)).trim()
+                    if (value) save.mutate({ sellerId: activeSellerId, key: f.key, value_type: f.type, value })
+                  }}>
+              <label htmlFor={f.key} className="text-xs font-semibold text-metal-700 dark:text-metal-300">{f.label}</label>
+              <input id={f.key} className="border border-metal-200 dark:border-metal-700 bg-white dark:bg-metal-800 rounded-xl px-3 py-1.5 text-xs text-metal-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500" placeholder={f.hint}
+                     type={f.type === 'NUMBER' ? 'number' : 'text'} min={f.type === 'NUMBER' ? 0 : undefined}
+                     value={values[activeSellerId]?.[f.key] ?? current(f.key)}
+                     onChange={(e) => setValues((v) => ({ ...v, [activeSellerId]: { ...v[activeSellerId], [f.key]: e.target.value } }))} />
+              <Button type="submit" size="sm" variant="secondary" loading={save.isPending}>Save</Button>
+            </form>
+          ))}
+        </div>
+      </Card>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-5">
-        <h3 className="text-sm font-semibold uppercase text-gray-900 mb-2">Documents on file</h3>
+      <Card noPadding className="p-5 space-y-3">
+        <div className="flex items-center gap-2 border-b border-metal-100 dark:border-metal-800 pb-2.5">
+          <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-metal-900 dark:text-white">Documents on file</h3>
+        </div>
         {rev?.documents.length ? (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-metal-100 dark:divide-metal-800">
             {rev.documents.map((d, i) => (
-              <li key={i} className="py-2 text-sm flex items-center gap-2">
+              <li key={i} className="py-2.5 text-xs flex items-center gap-2">
                 <Badge variant="info">{d.document_type}</Badge>
-                <span className="flex-1">{d.display_name}</span>
-                <span className="text-xs text-gray-500">expires {formatDateOnly(d.expiry_date)}</span>
+                <span className="flex-1 font-medium text-metal-900 dark:text-white">{d.display_name}</span>
+                <span className="text-[11px] text-metal-400">expires {formatDateOnly(d.expiry_date)}</span>
                 <Badge variant={d.status === 'VERIFIED' ? 'success' : 'warning'}>{d.status}</Badge>
               </li>
             ))}
           </ul>
-        ) : <p className="text-sm text-gray-500">No documents recorded. Certificates such as ISO or OEM authorisation are needed to clear those requirements automatically.</p>}
-      </div>
+        ) : (
+          <p className="text-xs text-metal-500 py-3">No documents recorded. Certificates such as ISO or OEM authorisation are needed to clear those requirements automatically.</p>
+        )}
+      </Card>
     </div>
   )
 }

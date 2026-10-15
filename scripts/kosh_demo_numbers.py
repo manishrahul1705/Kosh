@@ -157,9 +157,16 @@ def run_demo(db_path: Path, out_md_path: Path):
                 final_st = seller_st
                 counts_str = "Entity facility"
 
-            # Primary reason code / explanation
-            reasons_list = [rs["reason"] for r in p_rows for rs in (r.reasons or [])]
-            reason_text = reasons_list[0] if reasons_list else "Criteria evaluated against catalogue rules."
+            # Primary reason: prefer matched-scope reasons for MATCHED products,
+            # seller-scope reason otherwise, with fallback to first available.
+            if final_st == "MATCHED" and pid in {"COLLECTIONS_PUSH", "TREDS_INVOICE_DISCOUNTING", "SUPPLIER_TERM_EXTENSION"}:
+                matched_reasons = [rs["reason"] for r in inv_matched for rs in (r.reasons or [])]
+                reason_text = matched_reasons[0] if matched_reasons else "Criterion met."
+            elif seller_res and seller_res.reasons:
+                reason_text = seller_res.reasons[0]["reason"]
+            else:
+                reasons_list = [rs["reason"] for r in p_rows for rs in (r.reasons or [])]
+                reason_text = reasons_list[0] if reasons_list else "Criteria evaluated against catalogue rules."
             product_summary.append({
                 "id": pid,
                 "name": p_cat["display_name"],

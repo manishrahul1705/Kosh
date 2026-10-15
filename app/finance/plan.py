@@ -190,12 +190,15 @@ def propose_plan(db,seller_id:int,*,target_prob=None,target_scope=None,persist=T
     total = sum(line_quote(products, x)["cost_paise"] for x in chosen)
 
     # Validity check against the target uses the GUARANTEED figure / capacity:
-    # If guaranteed plan meets target, plan is VALID (guaranteed).
-    final_status = g_status if g_status == "VALID" else status
+    # The binding plan status is strictly the guaranteed plan status.
+    # Uncertain collections (expected plan) cannot promote an INSUFFICIENT
+    # guaranteed plan to VALID — that would overstate the binding commitment.
+    final_status = g_status
 
-    # The comparison must meet the same safety target and horizon gate, using
-    # the same free collections capacity, fees, arrival and repayment cash flows.
-    baseline_levers = [x for x in levers if x["product_id"] in {"COLLECTIONS_PUSH", "NBFC_UNSECURED_BUSINESS_LOAN"}]
+    # The NBFC comparison baseline uses only the NBFC unsecured loan lever,
+    # without uncertain collections, to match the guaranteed plan's exclusion
+    # of timing-dependent relationship levers.
+    baseline_levers = [x for x in levers if x["product_id"] == "NBFC_UNSECURED_BUSINESS_LOAN"]
     _, baseline_chosen = optimize_levers(required, baseline_levers)
     baseline_chosen, baseline_after, baseline_status = validate_and_complete(baseline_chosen, baseline_levers, lambda lines: plan_scenario(inputs, run, lines, products), target_week=target, threshold=threshold, target_prob=target_prob, target_scope=target_scope)
     baseline = sum(line_quote(products, x)["cost_paise"] for x in baseline_chosen) if baseline_status == "VALID" else 0

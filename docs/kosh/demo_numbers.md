@@ -52,7 +52,7 @@ All 8 financing catalogue products evaluated deterministically against current e
 | `MUDRA_LOAN` | MUDRA loan | **REVIEW_REQUIRED** | Entity facility | Shishu: above 0 and up to 5000000 paise. |
 | `NBFC_UNSECURED_BUSINESS_LOAN` | Unsecured business loan | **MATCHED** | Entity facility | Criterion met. |
 | `SUPPLIER_TERM_EXTENSION` | Supplier term extension | **REVIEW_REQUIRED** | 0/8 eligible | Required business evidence is missing. |
-| `TREDS_INVOICE_DISCOUNTING` | TReDS invoice discounting | **MATCHED** | 1/27 eligible | Required business evidence is missing. |
+| `TREDS_INVOICE_DISCOUNTING` | TReDS invoice discounting | **MATCHED** | 1/27 eligible | Criterion met. |
 
 ## 4. Financing Plan & Optimization
 

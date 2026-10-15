@@ -127,3 +127,5 @@ In accordance with strict technical rigor and transparency for hackathon evaluat
    Empirical delay distributions assume customer payment patterns remain stationary within a rolling 6-month window; significant macroeconomic shocks require recalibration.
 10. **Production Pre-Requisites**:
     Production deployment requires periodic secret rotation (`KOSH_APPROVAL_SECRET`), external penetration testing, and formal legal review of DPDP consent artifacts.
+11. **Content Security Policy `unsafe-inline`**:
+    The backend middleware (`app/main.py`) sets `script-src 'self' 'unsafe-inline'` and `style-src 'self' 'unsafe-inline'` in the Content-Security-Policy header. `unsafe-inline` for `script-src` weakens XSS protection by permitting inline `<script>` tags to execute; for `style-src` it permits inline `<style>` elements and `style` attributes. The current prototype frontend relies on inline styles emitted by the build tooling. Production deployments must migrate to nonce-based or hash-based CSP (`script-src 'nonce-…'`; `style-src 'nonce-…'`), removing `unsafe-inline` from both directives once the frontend build pipeline supports CSP nonce injection.

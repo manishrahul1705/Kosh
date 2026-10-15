@@ -4,6 +4,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
   ResponsiveContainer,
@@ -305,8 +306,11 @@ export const CashPage = () => {
           </div>
 
           {alert.causes && alert.causes.length > 0 && (
-            <details className="pt-1.5 text-xs">
-              <summary className="font-bold cursor-pointer text-amber-900 dark:text-amber-200 hover:underline inline-flex items-center gap-1.5">
+            <details className="pt-1.5 text-xs group">
+              <summary
+                tabIndex={0}
+                className="font-bold cursor-pointer text-amber-900 dark:text-amber-200 hover:underline inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-sm select-none"
+              >
                 <span>View {alert.causes.length} contributing root causes</span>
               </summary>
               <ol className="list-decimal pl-5 mt-2 space-y-1.5 text-xs text-amber-950 dark:text-amber-200">
@@ -363,10 +367,24 @@ export const CashPage = () => {
 
         <div className="h-80 w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chart} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+            <ComposedChart data={chart} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5eaef" opacity={0.6} />
-              <XAxis dataKey="label" stroke="#475569" fontSize={12} tickLine={false} />
-              <YAxis tickFormatter={lakh} stroke="#475569" fontSize={12} tickLine={false} />
+              <XAxis
+                dataKey="label"
+                stroke="#94a3b8"
+                fontSize={12}
+                tickLine={false}
+                tick={{ fill: 'currentColor' }}
+                className="text-metal-600 dark:text-metal-300"
+              />
+              <YAxis
+                tickFormatter={lakh}
+                stroke="#94a3b8"
+                fontSize={12}
+                tickLine={false}
+                tick={{ fill: 'currentColor' }}
+                className="text-metal-600 dark:text-metal-300"
+              />
               <Tooltip
                 formatter={(value) => [formatPaiseINR(Number(value))]}
                 contentStyle={{
@@ -378,71 +396,14 @@ export const CashPage = () => {
                 }}
               />
               <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
-              <Area dataKey="low" stackId="band" stroke="none" fill="transparent" />
-              <Area name="P10-P90" dataKey="range" stackId="band" stroke="#10b981" fill="#10b981" fillOpacity={0.25} />
-              <Line name="P50" dataKey="p50_closing_balance_paise" stroke="#059669" strokeWidth={2.5} dot={{ r: 2 }} />
-              <Line name="Buffer" dataKey="buffer" stroke="#dc2626" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-            </AreaChart>
+              <Area dataKey="low" stackId="band" stroke="none" fill="transparent" isAnimationActive={false} />
+              <Area name="P10-P90" dataKey="range" stackId="band" stroke="#10b981" fill="#10b981" fillOpacity={0.25} isAnimationActive={false} />
+              <Line name="P50" dataKey="p50_closing_balance_paise" stroke="#059669" strokeWidth={2.5} dot={{ r: 2 }} isAnimationActive={false} />
+              <Line name="Buffer" dataKey="buffer" stroke="#dc2626" strokeWidth={2} strokeDasharray="5 5" dot={false} isAnimationActive={false} />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </Card>
-
-      {/* 3. What-If Drawer */}
-      {drawer && (
-        <div className="card p-5 space-y-4 border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-950/20 animate-in fade-in duration-150">
-          <div className="flex items-center justify-between border-b border-primary-100 dark:border-primary-900 pb-3">
-            <div className="flex items-center gap-2">
-              <Sliders size={16} className="text-primary-600" />
-              <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">What-if scenario</h3>
-            </div>
-            <button
-              onClick={() => {
-                setShift(0)
-                setScenario(null)
-              }}
-              className="inline-flex items-center gap-1 text-xs text-metal-600 hover:text-metal-900 dark:text-metal-400 dark:hover:text-metal-200 cursor-pointer"
-            >
-              <RotateCcw size={12} />
-              Reset scenario
-            </button>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <label className="flex-1 flex items-center gap-3 text-xs font-semibold text-metal-700 dark:text-metal-300">
-              <span className="shrink-0">Customer delay shift</span>
-              <input
-                aria-label="Customer delay shift"
-                type="range"
-                min={-30}
-                max={30}
-                value={shift}
-                onChange={(event) => setShift(Number(event.target.value))}
-                className="w-full accent-primary-600"
-              />
-              <span className="font-bold text-sm text-primary-700 dark:text-primary-300 w-16 text-right shrink-0">
-                {shift > 0 ? `+${shift}` : shift} days
-              </span>
-            </label>
-
-            <button
-              className="btn-primary text-xs py-1.5 px-4 self-end sm:self-auto cursor-pointer"
-              onClick={() =>
-                koshApi
-                  .whatIf(activeSellerId!, {
-                    customer_delay_shift_days: Object.fromEntries(
-                      (alert?.causes ?? []).filter((c) => c.counterparty_id).map((c) => [c.counterparty_id, shift])
-                    ),
-                    exclude_counterparties: [],
-                    extra_inflows: [],
-                  })
-                  .then(setScenario)
-              }
-            >
-              Apply
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 3. What-If Drawer */}
       {drawer && (

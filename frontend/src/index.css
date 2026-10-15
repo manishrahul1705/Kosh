@@ -460,3 +460,32 @@
   background-color: rgba(21, 27, 34, 0.95) !important;
   border-color: #2d3742 !important;
 }
+
+/* Recharts Dark Mode Typography, Axis Lines & Contrast */
+[data-kosh-theme="dark"] .recharts-cartesian-axis-tick text,
+[data-kosh-theme="dark"] .recharts-cartesian-axis text,
+[data-kosh-theme="dark"] .recharts-text,
+[data-kosh-theme="dark"] text.recharts-cartesian-axis-tick-value {
+  fill: #cbd5e1 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-kosh-theme="dark"] .recharts-legend-item-text {
+  color: #cbd5e1 !important;
+}
+
+[data-kosh-theme="dark"] .recharts-cartesian-axis-line,
+[data-kosh-theme="dark"] .recharts-cartesian-axis-tick-line {
+  stroke: #475569 !important;
+}
+
+[data-kosh-theme="dark"] .recharts-cartesian-grid line {
+  stroke: #2d3742 !important;
+}
+
+[data-kosh-theme="dark"] .recharts-default-tooltip {
+  background-color: #151b22 !important;
+  border-color: #2d3742 !important;
+  color: #f1f5f9 !important;
+}
+

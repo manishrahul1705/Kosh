@@ -700,7 +700,7 @@ export const PlanPage = () => {
           <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 space-y-1">
             <p className="font-semibold">{plan.data.why_this_plan}</p>
             <p className="text-[11px] text-slate-500">
-              Matched means recorded facts meet catalogue criteria; matching is not lender approval, loan sanction or guaranteed funding. Sandbox execution is not real funding. The binding plan excludes uncertain collections; expected collections remain separate.
+              Matched means recorded facts meet catalogue criteria; matching is not lender approval, loan sanction or guaranteed funding. Sandbox execution is not real funding. The binding plan excludes both uncertain collections and supplier payment extensions; expected collections remain separate.
             </p>
           </div>
 

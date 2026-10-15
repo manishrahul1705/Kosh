@@ -683,7 +683,7 @@ export const PlanPage = () => {
             <div>
               <h3 className="text-base font-bold text-slate-900 tracking-tight">Proposed gap-closing plan</h3>
               <p className="text-xs text-slate-600 mt-0.5">
-                Validity check against the target probability ({Number(plan.data.target_probability) * 100}%) across {plan.data.planning_details?.target_scope === 'ALERT_WEEK' ? 'Alert Week' : 'All Horizon Weeks'} is strictly verified using the <strong>Guaranteed plan</strong>.
+                Validity check against the target probability ({Number(plan.data.target_probability) * 100}%) across {plan.data.planning_details?.target_scope === 'ALERT_WEEK' ? 'Alert Week' : 'All Horizon Weeks'} is strictly verified using the <strong>Binding financing plan</strong>.
               </p>
             </div>
             <span
@@ -693,29 +693,32 @@ export const PlanPage = () => {
                   : 'bg-rose-100 text-rose-800 border border-rose-200'
               }`}
             >
-              {plan.data.status === 'VALID' ? 'PLAN VALID (GUARANTEED)' : plan.data.status}
+              {plan.data.status === 'VALID' ? 'PLAN VALID (BINDING)' : plan.data.status}
             </span>
           </div>
 
-          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800">
-            {plan.data.why_this_plan}
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 space-y-1">
+            <p className="font-semibold">{plan.data.why_this_plan}</p>
+            <p className="text-[11px] text-slate-500">
+              Matched means recorded facts meet catalogue criteria; matching is not lender approval, loan sanction or guaranteed funding. Sandbox execution is not real funding. The binding plan excludes uncertain collections; expected collections remain separate.
+            </p>
           </div>
 
-          {/* Dual plan metrics: Guaranteed vs Expected */}
+          {/* Dual plan metrics: Binding vs Expected */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Guaranteed Plan Card */}
+            {/* Binding Financing Plan Card */}
             <div className="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 p-4 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-sm text-blue-950">Guaranteed plan</span>
+                <span className="font-bold text-sm text-blue-950">Binding financing plan</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold border border-blue-200">
                   Cash-posting levers only
                 </span>
               </div>
               <p className="text-xs text-slate-600">
-                Only levers that post cash on execution (e.g. TReDS discounting, Bank OD). Target validity is verified against this figure.
+                Only levers that post cash on execution (e.g. TReDS discounting, Bank OD). Target validity is verified strictly against this binding financing allocation.
               </p>
               <div className="pt-2 flex items-baseline justify-between text-xs border-t border-blue-100">
-                <span className="text-slate-600">Guaranteed cost:</span>
+                <span className="text-slate-600">Binding plan cost:</span>
                 <span className="text-base font-bold text-slate-900">
                   {formatPaiseINR(plan.data.guaranteed_plan?.total_cost_paise ?? plan.data.planning_details?.guaranteed_total_cost_paise ?? plan.data.total_cost_paise)}
                 </span>

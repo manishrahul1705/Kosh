@@ -15,6 +15,7 @@ import {
   Sparkles,
   PackageCheck,
   ShieldAlert,
+  Calculator,
 } from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
@@ -68,6 +69,7 @@ export const OperationsPage = () => {
     { to: '/operations/customer-intelligence', label: 'Customers / what-if', icon: Sparkles },
     { to: '/operations/revenue', label: 'Revenue signal', icon: TrendingUp },
     { to: '/operations/reports', label: 'Reports', icon: FileText },
+    { to: '/operations/tender-to-cash', label: 'Tender to cash', icon: Calculator },
     { to: '/cash', label: 'Cash loop', icon: ArrowRight },
     { to: '/approvals', label: 'Approvals', icon: ArrowRight },
   ]

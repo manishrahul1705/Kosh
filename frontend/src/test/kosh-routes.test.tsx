@@ -245,11 +245,21 @@ describe('Kosh protected routes', () => {
       expect(screen.getByText('Cheapest available capacity arriving before the alert.')).toBeInTheDocument()
       expect(screen.getByText('Safety target not verified; build a new plan.')).toBeInTheDocument()
       expect(screen.getByText('NBFC baseline insufficient or not verified; savings unavailable.')).toBeInTheDocument()
+      expect(screen.getByText('Proposed gap-closing plan')).toBeInTheDocument()
+      expect(screen.getByText('Binding plan cost:')).toBeInTheDocument()
+      expect(screen.getAllByText('Binding financing plan')[0]).toBeInTheDocument()
+    }
+    if(path==='/ledger'){
+      expect(screen.getByText('Open receivables')).toBeInTheDocument()
+      expect(screen.getByText('Open payables (verified)')).toBeInTheDocument()
+      expect(screen.getByText('Held-for-review payables')).toBeInTheDocument()
+      expect(screen.getByText('Review Required')).toBeInTheDocument()
     }
     if(path==='/audit'){
       expect(screen.getByRole('button',{name:'Export JSONL'})).toBeInTheDocument()
       expect(await screen.findByText('injection detections: 1')).toBeInTheDocument()
     }
+    expect(screen.getByRole('link',{name:'Collections'})).toHaveAttribute('href','/operations/collections')
     cleanup();client.clear()
   })
 

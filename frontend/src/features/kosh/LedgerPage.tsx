@@ -76,7 +76,7 @@ export const LedgerPage = () => {
       </div>
 
       {/* Metric Cards */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <p className="stat-label">Open receivables</p>
@@ -95,6 +95,21 @@ export const LedgerPage = () => {
 
         <div className="stat-card">
           <div className="flex items-center justify-between">
+            <p className="stat-label">Held-for-review payables</p>
+            <AlertCircle size={16} className="text-amber-600" />
+          </div>
+          <strong className="stat-value text-amber-700 block">
+            {formatPaiseINR(
+              t.held_for_review_payables_paise ??
+                query.data.items
+                  .filter((i) => i.direction === 'PAYABLE' && i.status === 'REVIEW')
+                  .reduce((acc, i) => acc + i.amount_paise, 0)
+            )}
+          </strong>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between">
             <p className="stat-label">Overdue</p>
             <Clock size={16} className="text-rose-600" />
           </div>
@@ -109,7 +124,7 @@ export const LedgerPage = () => {
           <strong className="stat-value text-blue-600 block">{formatPaiseINR(t.latest_bank_balance_paise)}</strong>
         </div>
 
-        <div className="stat-card col-span-2 lg:col-span-1">
+        <div className="stat-card">
           <div className="flex items-center justify-between">
             <p className="stat-label">Review Required</p>
             <AlertCircle size={16} className={t.review_count > 0 ? 'text-amber-600' : 'text-slate-400'} />

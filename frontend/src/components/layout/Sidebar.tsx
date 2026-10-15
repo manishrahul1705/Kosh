@@ -14,6 +14,7 @@ import {
   BookOpen,
   LayoutGrid,
   SlidersHorizontal,
+  Clock,
   X,
 } from 'lucide-react'
 import { clsx } from '@/lib/utils'
@@ -28,6 +29,7 @@ const JOURNEY_ITEMS = [
   { to: '/ledger', icon: BookOpen, label: 'Ledger' },
   { to: '/cash', icon: Wallet, label: 'Cash' },
   { to: '/plan', icon: Route, label: 'Plan' },
+  { to: '/operations/collections', icon: Clock, label: 'Collections' },
   { to: '/approvals', icon: ShieldCheck, label: 'Approvals' },
   { to: '/audit', icon: History, label: 'Audit' },
 ]

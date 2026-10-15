@@ -15,7 +15,7 @@ export interface BusinessDocumentPlaceholder {
 }
 
 export interface LedgerRow { id:number; direction:string; party:string; invoice_number:string; invoice_date:string; due_date:string; amount_paise:number; status:string; source_location?:string }
-export interface Ledger { seller_id:number; totals:{ open_receivables_paise:number; open_payables_paise:number; overdue_receivables_paise:number; review_count:number; latest_bank_balance_paise:number|null; bank_balance_as_of:string|null }; items:LedgerRow[] }
+export interface Ledger { seller_id:number; totals:{ open_receivables_paise:number; open_payables_paise:number; held_for_review_payables_paise?:number; held_for_review_receivables_paise?:number; held_for_review_paise?:number; overdue_receivables_paise:number; review_count:number; latest_bank_balance_paise:number|null; bank_balance_as_of:string|null }; items:LedgerRow[] }
 export interface Consent { id:number; purpose:string; data_types:string[]; expires_at:string; status:string }
 export interface AuditResponse { seller_id:number; status:string; items:{sequence:number;recorded_at:string;actor_type:string;action:string;tier:string;policy_decision:string}[] }
 export interface ForecastWeek { expected_inflow_revenue_paise?:number; expected_inflow_addon_paise?:number;expected_outflow_addon_paise?:number; expected_inflow_sandbox_paise?:number;expected_outflow_sandbox_paise?:number; week_index:number;week_start:string;week_end:string;p10_closing_balance_paise:number;p50_closing_balance_paise:number;p90_closing_balance_paise:number;expected_inflow_committed_paise:number;expected_inflow_forecast_paise:number;expected_outflow_committed_paise:number;expected_outflow_forecast_paise:number;prob_below_buffer:number;expected_shortfall_paise:number }

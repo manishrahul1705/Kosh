@@ -145,155 +145,221 @@ export const PlanPage = () => {
   return (
     <section aria-label="Financing plan" className="space-y-6">
       <SandboxBanner />
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Financing options</h2>
-        <button className="rounded bg-blue-700 px-3 py-2 text-white font-medium hover:bg-blue-800" onClick={() => propose.mutate()}>
+
+      {/* Header & Propose Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/80 pb-4">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Financing options</h2>
+          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+            Objective, catalogue-wide criteria matching sorted strictly by effective annual cost.
+          </p>
+        </div>
+        <button
+          className="btn-primary self-start sm:self-auto"
+          onClick={() => propose.mutate()}
+        >
           Build plan
         </button>
       </div>
-      <p className="rounded bg-blue-50 p-3 text-sm text-blue-900">
+
+      <div className="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200/80 text-xs text-blue-950 font-medium">
         All options shown, including ones you don't qualify for. Sorted by effective annual cost; no provider pays for placement.
-      </p>
+      </div>
 
       {/* Safety vs cost */}
-      <div className="rounded border bg-white p-4 space-y-3">
-        <label className="block text-sm font-medium">
-          Plan safety target{' '}
-          <select aria-label="Plan safety target" value={target} onChange={(e) => setTarget(e.target.value)} className="ml-2 rounded border px-2 py-1 text-sm">
-            {['0.40', '0.30', '0.20', '0.10'].map((value) => (
-              <option key={value} value={value}>
-                {Number(value) * 100}%
-              </option>
-            ))}
-          </select>
-        </label>
-        <h3 className="text-base font-semibold">Safety vs cost</h3>
-        {curve.isLoading ? (
-          <p>Computing same-seed plans...</p>
-        ) : curve.isError ? (
-          <p>Evaluate the latest forecast to see the safety curve.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1">Target probability</th>
-                <th className="py-1">Cost</th>
-                <th className="py-1">After probability</th>
-                <th className="py-1">Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              {curve.data?.items.map((item) => (
-                <tr key={item.target_probability} className="border-b">
-                  <td className="py-1">{Number(item.target_probability) * 100}%</td>
-                  <td className="py-1">{formatPaiseINR(item.total_cost_paise)}</td>
-                  <td className="py-1">{(item.alert_week_probability * 100).toFixed(1)}%</td>
-                  <td className="py-1">{item.status}</td>
-                </tr>
+      <div className="card p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 tracking-tight">Safety vs cost</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Trade-off curve across same-seed simulated paths under varying safety targets.
+            </p>
+          </div>
+          <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            <span>Plan safety target</span>
+            <select
+              aria-label="Plan safety target"
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {['0.40', '0.30', '0.20', '0.10'].map((value) => (
+                <option key={value} value={value}>
+                  {Number(value) * 100}%
+                </option>
               ))}
-            </tbody>
-          </table>
+            </select>
+          </label>
+        </div>
+
+        {curve.isLoading ? (
+          <p className="text-xs text-slate-500 py-3">Computing same-seed plans...</p>
+        ) : curve.isError ? (
+          <p className="text-xs text-slate-500 py-3">Evaluate the latest forecast to see the safety curve.</p>
+        ) : (
+          <div className="table-container border-0 shadow-none">
+            <table>
+              <thead>
+                <tr>
+                  <th>Target probability</th>
+                  <th>Cost</th>
+                  <th>After probability</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {curve.data?.items.map((item) => (
+                  <tr key={item.target_probability} className="hover:bg-slate-50/70">
+                    <td className="font-bold text-slate-900">{Number(item.target_probability) * 100}%</td>
+                    <td className="font-semibold text-slate-900">{formatPaiseINR(item.total_cost_paise)}</td>
+                    <td className="text-slate-700">{(item.alert_week_probability * 100).toFixed(1)}%</td>
+                    <td>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          item.status === 'VALID'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {/* Financing Options Table */}
-      <div className="overflow-x-auto rounded border bg-white p-4">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th className="py-2">Product</th>
-              <th className="py-2">Status</th>
-              <th className="py-2">Amount</th>
-              <th className="py-2">Days</th>
-              <th className="py-2">Absolute cost</th>
-              <th className="py-2">Effective annual cost</th>
-              <th className="py-2">Time to funds</th>
-            </tr>
-          </thead>
-          <tbody>
-            {options.data?.items.map((item, i) => (
-              <tr key={`${item.product_id}-${i}`} className="border-b hover:bg-gray-50">
-                <td className="py-2">
-                  <span className="font-medium">{item.display_name}</span> {item.assumption && <small className="text-gray-500">(assumption)</small>}{' '}
-                  {item.verify_before_relying && <small className="text-amber-600">(verify before relying)</small>}
-                  <details className="mt-1 text-xs text-gray-600">
-                    <summary className="cursor-pointer text-blue-600 hover:underline">Evidence and Why not?</summary>
-                    <div className="mt-1 space-y-1 pl-2">
-                      {item.reasons.map((r, j) => (
-                        <p key={j}>
-                          <span className="font-semibold">{r.reason_code}:</span> {r.reason} {r.product_clause?.quote}
-                        </p>
-                      ))}
-                    </div>
-                  </details>
-                  {item.invoice_eligibility && (
-                    <details className="mt-1 text-xs text-gray-600">
-                      <summary className="cursor-pointer text-blue-600 hover:underline">
-                        Per-invoice eligibility ({item.invoice_eligibility.filter((x) => x.eligible).length} eligible / {item.invoice_eligibility.length} open)
-                      </summary>
-                      <ul className="mt-1 list-disc pl-4 space-y-0.5">
-                        {item.invoice_eligibility.map((invoice) => (
-                          <li key={invoice.scope}>
-                            {invoice.scope} {invoice.evidence.find((e) => e.invoice_number)?.invoice_number}: {invoice.status}{' '}
-                            {invoice.reasons
-                              .filter((r) => r.status !== 'MATCHED')
-                              .map((r) => `${r.criterion}: ${r.reason}`)
-                              .join('; ')}
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                </td>
-                <td className="py-2">
-                  <span
-                    className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${
-                      item.status === 'MATCHED'
-                        ? 'bg-green-100 text-green-800'
-                        : item.status === 'NOT_MATCHED'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}
-                    title={
-                      item.status === 'MATCHED'
-                        ? `${item.status}: Recorded business facts meet catalogue criteria. This is not a loan sanction or lender approval.`
-                        : item.status
-                    }
-                  >
-                    {formatEnumLabel(item.status)}
-                  </span>
-                  {item.status === 'MATCHED' && (
-                    <small className="block text-[10px] text-gray-500">Meets criteria; not lender approval</small>
-                  )}
-                </td>
-                <td className="py-2">{formatPaiseINR(item.amount_paise ?? item.max_amount_paise)}</td>
-                <td className="py-2">
-                  {item.days}
-                  <small className="block text-xs text-gray-500">90-day quote basis</small>
-                </td>
-                <td className="py-2">
-                  {item.cost_paise == null ? 'Pending evaluation' : formatPaiseINR(item.cost_paise)}
-                  <small className="block text-xs text-gray-500">{item.cost_assumption}</small>
-                </td>
-                <td className="py-2">{item.effective_annual_rate == null ? 'Relationship risk' : `${(Number(item.effective_annual_rate) * 100).toFixed(1)}%`}</td>
-                <td className="py-2">{item.arrival_business_days} business days</td>
+      <div className="card overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="font-bold text-sm text-slate-900 tracking-tight">Financing Options Catalogue</h3>
+          <span className="text-xs text-slate-500">{options.data?.items.length ?? 0} options available</span>
+        </div>
+        <div className="table-container border-0 shadow-none rounded-none">
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th>Days</th>
+                <th>Absolute cost</th>
+                <th>Effective annual cost</th>
+                <th>Time to funds</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {options.data?.items.map((item, i) => (
+                <tr key={`${item.product_id}-${i}`} className="hover:bg-slate-50/70">
+                  <td className="py-3">
+                    <div className="font-bold text-slate-900">{item.display_name}</div>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      {item.assumption && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-medium">
+                          (assumption)
+                        </span>
+                      )}
+                      {item.verify_before_relying && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-semibold">
+                          (verify before relying)
+                        </span>
+                      )}
+                    </div>
+                    <details className="mt-1.5 text-xs text-slate-600">
+                      <summary className="cursor-pointer font-semibold text-blue-600 hover:underline">
+                        Evidence and Why not?
+                      </summary>
+                      <div className="mt-1 space-y-1 pl-2 border-l-2 border-slate-200">
+                        {item.reasons.map((r, j) => (
+                          <p key={j} className="text-[11px] text-slate-700">
+                            <span className="font-bold text-slate-900">{r.reason_code}:</span> {r.reason}{' '}
+                            {r.product_clause?.quote && (
+                              <span className="italic text-slate-500">"{r.product_clause.quote}"</span>
+                            )}
+                          </p>
+                        ))}
+                      </div>
+                    </details>
+                    {item.invoice_eligibility && (
+                      <details className="mt-1.5 text-xs text-slate-600">
+                        <summary className="cursor-pointer font-semibold text-blue-600 hover:underline">
+                          Per-invoice eligibility ({item.invoice_eligibility.filter((x) => x.eligible).length} eligible / {item.invoice_eligibility.length} open)
+                        </summary>
+                        <ul className="mt-1 list-disc pl-4 space-y-0.5 text-[11px] text-slate-700">
+                          {item.invoice_eligibility.map((invoice) => (
+                            <li key={invoice.scope}>
+                              <span className="font-medium text-slate-900">{invoice.scope}</span>{' '}
+                              {invoice.evidence.find((e) => e.invoice_number)?.invoice_number}:{' '}
+                              <span className="font-semibold">{invoice.status}</span>{' '}
+                              {invoice.reasons
+                                .filter((r) => r.status !== 'MATCHED')
+                                .map((r) => `${r.criterion}: ${r.reason}`)
+                                .join('; ')}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </td>
+                  <td>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                        item.status === 'MATCHED'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : item.status === 'NOT_MATCHED'
+                          ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                          : 'bg-amber-100 text-amber-800 border border-amber-200'
+                      }`}
+                      title={
+                        item.status === 'MATCHED'
+                          ? `${item.status}: Recorded business facts meet catalogue criteria. This is not a loan sanction or lender approval.`
+                          : item.status
+                      }
+                    >
+                      {formatEnumLabel(item.status)}
+                    </span>
+                    {item.status === 'MATCHED' && (
+                      <small className="block text-[10px] text-slate-500 mt-0.5">Meets criteria; not lender approval</small>
+                    )}
+                  </td>
+                  <td className="font-semibold text-slate-900">
+                    {formatPaiseINR(item.amount_paise ?? item.max_amount_paise)}
+                  </td>
+                  <td>
+                    <span className="font-medium text-slate-900">{item.days}</span>
+                    <small className="block text-[10px] text-slate-400">90-day quote basis</small>
+                  </td>
+                  <td>
+                    <span className="font-semibold text-slate-900">
+                      {item.cost_paise == null ? 'Pending evaluation' : formatPaiseINR(item.cost_paise)}
+                    </span>
+                    <small className="block text-[10px] text-slate-400">{item.cost_assumption}</small>
+                  </td>
+                  <td className="font-medium text-slate-900">
+                    {item.effective_annual_rate == null ? 'Relationship risk' : `${(Number(item.effective_annual_rate) * 100).toFixed(1)}%`}
+                  </td>
+                  <td className="text-slate-700">{item.arrival_business_days} business days</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Owner Financing Eligibility Evidence Workflow */}
-      <section aria-label="Financing eligibility evidence" className="rounded border bg-white p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-3">
+      <section aria-label="Financing eligibility evidence" className="card p-5 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Financing eligibility evidence</h3>
-            <p className="text-xs text-gray-600">
+            <h3 className="text-base font-bold text-slate-900 tracking-tight">Financing eligibility evidence</h3>
+            <p className="text-xs text-slate-600 mt-0.5">
               Record business facts to verify eligibility against scheme criteria. MATCHED indicates recorded facts meet scheme criteria; it does not constitute lender approval, loan sanction, or guaranteed funding.
             </p>
           </div>
           {evidenceQuery.data?.as_of && (
-            <span className="text-xs text-gray-500 self-start sm:self-auto bg-gray-100 px-2 py-1 rounded">
+            <span className="text-xs text-slate-600 self-start sm:self-auto bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
               As-of date: <strong>{evidenceQuery.data.as_of}</strong>
             </span>
           )}
@@ -301,31 +367,31 @@ export const PlanPage = () => {
 
         {/* Missing Criteria Breakdown */}
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-gray-800">Missing criteria across review options</h4>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Missing criteria across review options</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {evidenceQuery.data?.missing_criteria.map((prod) => (
-              <div key={prod.product_id} className="rounded border p-3 bg-gray-50 text-xs space-y-1.5">
+              <div key={prod.product_id} className="rounded-xl border border-slate-200/80 p-3.5 bg-slate-50/70 text-xs space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-gray-900">{prod.display_name}</span>
+                  <span className="font-bold text-slate-900">{prod.display_name}</span>
                   <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                       prod.product_support_status === 'IMPLEMENTED' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
                     }`}
                   >
                     {prod.product_support_status === 'IMPLEMENTED' ? 'Implemented rules' : 'Under revision'}
                   </span>
                 </div>
-                <ul className="space-y-1 pl-2">
+                <ul className="space-y-1.5 pl-1">
                   {prod.criteria.map((c) => (
                     <li key={c.criterion} className="flex items-start justify-between gap-2">
                       <div>
-                        <span className="font-medium text-gray-700">{c.label}</span>
-                        <span className="block text-[11px] text-gray-500">Evidence needed: {c.evidence_required}</span>
+                        <span className="font-semibold text-slate-800">{c.label}</span>
+                        <span className="block text-[11px] text-slate-500">Evidence needed: {c.evidence_required}</span>
                       </div>
                       <span
-                        className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           c.status === 'CONFIRMED' || c.status === 'VERIFIED' || c.status === 'LINKED_DOCUMENT'
-                            ? 'bg-green-100 text-green-700'
+                            ? 'bg-emerald-100 text-emerald-800'
                             : c.status === 'PROPOSAL'
                             ? 'bg-blue-100 text-blue-700'
                             : c.status === 'UNSUPPORTED'
@@ -350,11 +416,11 @@ export const PlanPage = () => {
         </div>
 
         {/* Fictional Demonstration Fixture Selector */}
-        <div className="rounded border border-blue-200 bg-blue-50/60 p-3 space-y-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50/90 to-indigo-50/50 p-4 space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <span className="text-xs font-semibold text-blue-950 uppercase tracking-wide">Fictional demonstration fixtures</span>
-              <p className="text-xs text-blue-800">
+              <span className="text-xs font-bold text-blue-950 uppercase tracking-wider">Fictional demonstration fixtures</span>
+              <p className="text-xs text-blue-800 mt-0.5">
                 Test eligibility re-evaluations with labelled fictional test fixtures. Demonstrates outcomes without modifying real business profiles.
               </p>
             </div>
@@ -363,7 +429,7 @@ export const PlanPage = () => {
               value={selectedFixture}
               onChange={(e) => handleApplyFixture(e.target.value)}
               disabled={!isOwner || saveEvidenceMutation.isPending}
-              className="rounded border border-blue-300 bg-white px-2 py-1 text-xs text-gray-800 shadow-sm"
+              className="rounded-lg border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 shadow-xs focus:ring-2 focus:ring-blue-500"
             >
               <option value="">-- Apply a demonstration fixture --</option>
               {evidenceQuery.data?.fixtures.map((f) => (
@@ -374,18 +440,18 @@ export const PlanPage = () => {
             </select>
           </div>
           {selectedFixture && (
-            <p className="text-xs text-blue-900 bg-white/70 p-2 rounded border border-blue-200">
+            <p className="text-xs text-blue-900 bg-white/80 p-2.5 rounded-lg border border-blue-200 font-medium">
               {evidenceQuery.data?.fixtures.find((f) => f.id === selectedFixture)?.description}
             </p>
           )}
         </div>
 
         {/* Evidence Capture Form */}
-        <form onSubmit={handleSaveEvidence} className="space-y-4 pt-2">
+        <form onSubmit={handleSaveEvidence} className="space-y-4 pt-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Non-corporate */}
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-gray-700" htmlFor="ev-non-corporate">
+              <label className="label" htmlFor="ev-non-corporate">
                 Non-corporate constitution (PMMY)
               </label>
               <select
@@ -394,7 +460,7 @@ export const PlanPage = () => {
                 value={nonCorporate}
                 onChange={(e) => setNonCorporate(e.target.value as 'UNKNOWN' | 'YES' | 'NO')}
                 disabled={!isOwner}
-                className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
+                className="select text-xs"
               >
                 <option value="UNKNOWN">Unknown / Not recorded</option>
                 <option value="YES">Yes (Proprietorship / Partnership / Non-corporate)</option>
@@ -404,7 +470,7 @@ export const PlanPage = () => {
 
             {/* Non-farm */}
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-gray-700" htmlFor="ev-non-farm">
+              <label className="label" htmlFor="ev-non-farm">
                 Non-farm activity (PMMY)
               </label>
               <select
@@ -413,7 +479,7 @@ export const PlanPage = () => {
                 value={nonFarm}
                 onChange={(e) => setNonFarm(e.target.value as 'UNKNOWN' | 'YES' | 'NO')}
                 disabled={!isOwner}
-                className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
+                className="select text-xs"
               >
                 <option value="UNKNOWN">Unknown / Not recorded</option>
                 <option value="YES">Yes (Manufacturing / Trading / Services)</option>
@@ -423,7 +489,7 @@ export const PlanPage = () => {
 
             {/* Income-generating */}
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-gray-700" htmlFor="ev-income-generating">
+              <label className="label" htmlFor="ev-income-generating">
                 Income-generating purpose (PMMY)
               </label>
               <select
@@ -432,7 +498,7 @@ export const PlanPage = () => {
                 value={incomeGenerating}
                 onChange={(e) => setIncomeGenerating(e.target.value as 'UNKNOWN' | 'YES' | 'NO')}
                 disabled={!isOwner}
-                className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
+                className="select text-xs"
               >
                 <option value="UNKNOWN">Unknown / Not recorded</option>
                 <option value="YES">Yes (Commercial income-generating business)</option>
@@ -442,7 +508,7 @@ export const PlanPage = () => {
 
             {/* Micro/Small enterprise */}
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-gray-700" htmlFor="ev-mse-status">
+              <label className="label" htmlFor="ev-mse-status">
                 Micro / Small enterprise status
               </label>
               <select
@@ -451,7 +517,7 @@ export const PlanPage = () => {
                 value={mseStatus}
                 onChange={(e) => setMseStatus(e.target.value as 'UNKNOWN' | 'YES' | 'NO')}
                 disabled={!isOwner}
-                className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
+                className="select text-xs"
               >
                 <option value="UNKNOWN">Unknown / Not recorded</option>
                 <option value="YES">Yes (Micro or Small enterprise under MSMED Act)</option>
@@ -461,7 +527,7 @@ export const PlanPage = () => {
 
             {/* Udyam Certificate */}
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-gray-700" htmlFor="ev-udyam-cert">
+              <label className="label" htmlFor="ev-udyam-cert">
                 Udyam Certificate present (CGTMSE)
               </label>
               <select
@@ -470,7 +536,7 @@ export const PlanPage = () => {
                 value={udyamCert}
                 onChange={(e) => setUdyamCert(e.target.value as 'UNKNOWN' | 'YES' | 'NO')}
                 disabled={!isOwner}
-                className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
+                className="select text-xs"
               >
                 <option value="UNKNOWN">Unknown / Unrecorded</option>
                 <option value="YES">Yes (Registration certificate document uploaded / verified)</option>
@@ -480,7 +546,7 @@ export const PlanPage = () => {
 
             {/* GeM PO Document */}
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-gray-700" htmlFor="ev-gem-po">
+              <label className="label" htmlFor="ev-gem-po">
                 GeM Purchase Order document (GeM Sahay)
               </label>
               <select
@@ -489,7 +555,7 @@ export const PlanPage = () => {
                 value={gemPoDoc}
                 onChange={(e) => setGemPoDoc(e.target.value as 'UNKNOWN' | 'YES' | 'NO')}
                 disabled={!isOwner}
-                className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
+                className="select text-xs"
               >
                 <option value="UNKNOWN">Unknown / Not provided</option>
                 <option value="YES">Yes (GeM Purchase Order reference present)</option>
@@ -499,7 +565,7 @@ export const PlanPage = () => {
 
             {/* Supplier Relationship Months */}
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-gray-700" htmlFor="ev-rel-months">
+              <label className="label" htmlFor="ev-rel-months">
                 Supplier relationship tenure (months, min 12)
               </label>
               <input
@@ -512,13 +578,13 @@ export const PlanPage = () => {
                 value={relMonths}
                 onChange={(e) => setRelMonths(e.target.value)}
                 disabled={!isOwner}
-                className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
+                className="input text-xs"
               />
             </div>
 
             {/* Supplier On-time Ratio */}
             <div className="space-y-1">
-              <label className="block text-xs font-medium text-gray-700" htmlFor="ev-ontime-ratio">
+              <label className="label" htmlFor="ev-ontime-ratio">
                 Supplier on-time payment ratio (0.0 to 1.0, min 0.80)
               </label>
               <input
@@ -532,13 +598,13 @@ export const PlanPage = () => {
                 value={onTimeRatio}
                 onChange={(e) => setOnTimeRatio(e.target.value)}
                 disabled={!isOwner}
-                className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
+                className="input text-xs"
               />
             </div>
 
             {/* Supplier Extension Agreement Status */}
             <div className="space-y-1 sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-700" htmlFor="ev-ext-status">
+              <label className="label" htmlFor="ev-ext-status">
                 Supplier extension agreement status
               </label>
               <select
@@ -547,7 +613,7 @@ export const PlanPage = () => {
                 value={extensionStatus}
                 onChange={(e) => setExtensionStatus(e.target.value as 'UNKNOWN' | 'PROPOSED' | 'CONFIRMED')}
                 disabled={!isOwner}
-                className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
+                className="select text-xs"
               >
                 <option value="UNKNOWN">Unknown / Not agreed</option>
                 <option value="PROPOSED">Proposed extension (Unconfirmed request; payment dates remain unchanged)</option>
@@ -562,7 +628,7 @@ export const PlanPage = () => {
 
             {/* Evidence Reference */}
             <div className="space-y-1 sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-700" htmlFor="ev-ref">
+              <label className="label" htmlFor="ev-ref">
                 Supporting evidence reference or note (max 160 chars)
               </label>
               <input
@@ -574,16 +640,16 @@ export const PlanPage = () => {
                 value={evidenceRef}
                 onChange={(e) => setEvidenceRef(e.target.value)}
                 disabled={!isOwner}
-                className="w-full rounded border px-2 py-1.5 text-xs text-gray-800"
+                className="input text-xs"
               />
             </div>
           </div>
 
           {/* Form Actions */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t">
-            <div className="text-xs text-gray-500">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
+            <div className="text-xs text-slate-500">
               {!isOwner ? (
-                <span className="text-amber-700">Only seller owner may record or revise financing eligibility evidence.</span>
+                <span className="text-amber-700 font-semibold">Only seller owner may record or revise financing eligibility evidence.</span>
               ) : (
                 <span>Evidence changes are recorded in the append-only audit chain. Affected financing plans will be marked STALE.</span>
               )}
@@ -591,19 +657,19 @@ export const PlanPage = () => {
             <button
               type="submit"
               disabled={!isOwner || saveEvidenceMutation.isPending}
-              className="w-full sm:w-auto rounded bg-blue-700 px-4 py-2 text-xs font-medium text-white hover:bg-blue-800 disabled:opacity-50"
+              className="btn-primary text-xs py-2 px-4 w-full sm:w-auto"
             >
               {saveEvidenceMutation.isPending ? 'Saving...' : 'Save evidence'}
             </button>
           </div>
 
           {saveSuccess && (
-            <div className="rounded bg-green-50 p-2.5 text-xs text-green-800 border border-green-200" role="status">
+            <div className="rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800 border border-emerald-200 font-medium" role="status">
               {saveSuccess}
             </div>
           )}
           {saveEvidenceMutation.isError && (
-            <div className="rounded bg-red-50 p-2.5 text-xs text-red-800 border border-red-200" role="alert">
+            <div className="rounded-xl bg-rose-50 p-3 text-xs text-rose-800 border border-rose-200 font-medium" role="alert">
               Failed to save evidence. Please try again.
             </div>
           )}
@@ -612,96 +678,99 @@ export const PlanPage = () => {
 
       {/* Proposed Gap-closing Plan */}
       {plan.data ? (
-        <div className="rounded border bg-white p-4 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
+        <div className="card p-5 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Proposed gap-closing plan</h3>
-              <p className="text-xs text-gray-600">
+              <h3 className="text-base font-bold text-slate-900 tracking-tight">Proposed gap-closing plan</h3>
+              <p className="text-xs text-slate-600 mt-0.5">
                 Validity check against the target probability ({Number(plan.data.target_probability) * 100}%) across {plan.data.planning_details?.target_scope === 'ALERT_WEEK' ? 'Alert Week' : 'All Horizon Weeks'} is strictly verified using the <strong>Guaranteed plan</strong>.
               </p>
-
             </div>
             <span
-              className={`px-2 py-0.5 rounded text-xs font-semibold self-start sm:self-auto ${
-                plan.data.status === 'VALID' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              className={`px-3 py-1 rounded-full text-xs font-bold self-start sm:self-auto ${
+                plan.data.status === 'VALID'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  : 'bg-rose-100 text-rose-800 border border-rose-200'
               }`}
             >
               {plan.data.status === 'VALID' ? 'PLAN VALID (GUARANTEED)' : plan.data.status}
             </span>
           </div>
 
-          <p className="text-sm text-gray-700">{plan.data.why_this_plan}</p>
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800">
+            {plan.data.why_this_plan}
+          </div>
 
           {/* Dual plan metrics: Guaranteed vs Expected */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Guaranteed Plan Card */}
-            <div className="rounded border border-blue-200 bg-blue-50/40 p-3 space-y-2">
+            <div className="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 p-4 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-sm text-blue-950">Guaranteed plan</span>
-                <span className="text-[11px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">
+                <span className="font-bold text-sm text-blue-950">Guaranteed plan</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold border border-blue-200">
                   Cash-posting levers only
                 </span>
               </div>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-slate-600">
                 Only levers that post cash on execution (e.g. TReDS discounting, Bank OD). Target validity is verified against this figure.
               </p>
-              <div className="pt-1 flex items-baseline justify-between text-xs">
-                <span className="text-gray-600">Guaranteed cost:</span>
-                <span className="text-sm font-bold text-gray-900">
+              <div className="pt-2 flex items-baseline justify-between text-xs border-t border-blue-100">
+                <span className="text-slate-600">Guaranteed cost:</span>
+                <span className="text-base font-bold text-slate-900">
                   {formatPaiseINR(plan.data.guaranteed_plan?.total_cost_paise ?? plan.data.planning_details?.guaranteed_total_cost_paise ?? plan.data.total_cost_paise)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
-                <span className="text-gray-600">Alert week probability:</span>
-                <span className="font-medium text-gray-800">
+                <span className="text-slate-600">Alert week probability:</span>
+                <span className="font-bold text-slate-800">
                   {plan.data.guaranteed_plan
                     ? `${(plan.data.guaranteed_plan.alert_week_probability * 100).toFixed(1)}%`
                     : 'Verified <= 20%'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
-                <span className="text-gray-600">Verification status:</span>
-                <span className={`font-semibold ${plan.data.planning_details?.guaranteed_status === 'VALID' || plan.data.status === 'VALID' ? 'text-green-700' : 'text-red-700'}`}>
+                <span className="text-slate-600">Verification status:</span>
+                <span className={`font-bold ${plan.data.planning_details?.guaranteed_status === 'VALID' || plan.data.status === 'VALID' ? 'text-emerald-700' : 'text-rose-700'}`}>
                   {plan.data.planning_details?.guaranteed_status ?? plan.data.status}
                 </span>
               </div>
             </div>
 
             {/* Expected with Collections Card */}
-            <div className="rounded border border-amber-200 bg-amber-50/40 p-3 space-y-2">
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/70 to-orange-50/40 p-4 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-sm text-amber-950">Expected with collections</span>
-                <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">
+                <span className="font-bold text-sm text-amber-950">Expected with collections</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-200">
                   Uncertain cash timing
                 </span>
               </div>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-slate-600">
                 Includes collections reminder pushes. Reminders cost zero monetary fees but cash receipt remains uncertain until buyer pays.
               </p>
-              <div className="pt-1 flex items-baseline justify-between text-xs">
-                <span className="text-gray-600">Expected cost:</span>
-                <span className="text-sm font-bold text-gray-900">
+              <div className="pt-2 flex items-baseline justify-between text-xs border-t border-amber-100">
+                <span className="text-slate-600">Expected cost:</span>
+                <span className="text-base font-bold text-slate-900">
                   {formatPaiseINR(plan.data.expected_plan?.total_cost_paise ?? plan.data.planning_details?.expected_total_cost_paise ?? plan.data.total_cost_paise)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
-                <span className="text-gray-600">Alert week probability:</span>
-                <span className="font-medium text-gray-800">
+                <span className="text-slate-600">Alert week probability:</span>
+                <span className="font-bold text-slate-800">
                   {plan.data.expected_plan
                     ? `${(plan.data.expected_plan.alert_week_probability * 100).toFixed(1)}%`
                     : `${(plan.data.after_probabilities[plan.data.after_probabilities.length > 5 ? 5 : 0] * 100).toFixed(1)}%`}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
-                <span className="text-gray-600">Levers status:</span>
-                <span className="font-semibold text-amber-800">
+                <span className="text-slate-600">Levers status:</span>
+                <span className="font-bold text-amber-800">
                   {plan.data.expected_plan?.status ?? 'INCLUDED WITH COLLECTIONS'}
                 </span>
               </div>
             </div>
           </div>
 
-          <p className="text-sm font-medium">
+          <p className="text-xs sm:text-sm font-semibold text-slate-800 p-3 rounded-lg bg-slate-50 border border-slate-200">
             {plan.data.status === 'VALID'
               ? 'Same-seed forecast meets the chosen safety target and every horizon week is below the alert threshold'
               : plan.data.status === 'INSUFFICIENT'
@@ -709,48 +778,56 @@ export const PlanPage = () => {
               : 'Safety target not verified; build a new plan.'}
           </p>
 
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 pt-2">Executed Plan Levers</h4>
-          <ul className="list-disc pl-5 text-sm space-y-1">
-            {plan.data.lines.map((line) => (
-              <li key={line.id} id={`plan-line-${line.id}`}>
-                <span className="font-semibold">{line.product_id}:</span> {formatPaiseINR(line.amount_paise)}, week {line.arrival_week},{' '}
-                {line.days > 0 ? `${line.days} days (${line.funding_date} to ${line.repayment_date})` : 'timing only; no financing tenor'},{' '}
-                {line.repayment_assumption}, cost {formatPaiseINR(line.cost_paise)}, {line.required_tier}
-              </li>
-            ))}
-          </ul>
-          <p className="text-sm font-semibold">Total {formatPaiseINR(plan.data.total_cost_paise)}</p>
-          {plan.data.planning_details?.baseline_status === 'VALID' ? (
-            <p className="text-sm text-gray-700">
-              NBFC baseline {formatPaiseINR(plan.data.baseline_cost_paise)}; saving {formatPaiseINR(saving)} (
-              {plan.data.baseline_cost_paise ? ((saving / plan.data.baseline_cost_paise) * 100).toFixed(0) : 0}%)
-            </p>
-          ) : (
-            <p className="text-sm text-gray-600">NBFC baseline insufficient or not verified; savings unavailable.</p>
-          )}
-          <div className="h-56 pt-2">
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span className="font-medium">Per-week probability below buffer (Target: {plan.data.planning_details?.target_scope ?? 'ALL_WEEKS'} &le; {Number(plan.data.target_probability) * 100}%)</span>
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Executed Plan Levers</h4>
+            <ul className="list-disc pl-5 text-xs text-slate-700 space-y-1.5">
+              {plan.data.lines.map((line) => (
+                <li key={line.id} id={`plan-line-${line.id}`} className="leading-relaxed">
+                  <span className="font-bold text-slate-900">{line.product_id}:</span> {formatPaiseINR(line.amount_paise)}, week {line.arrival_week},{' '}
+                  {line.days > 0 ? `${line.days} days (${line.funding_date} to ${line.repayment_date})` : 'timing only; no financing tenor'},{' '}
+                  {line.repayment_assumption}, cost {formatPaiseINR(line.cost_paise)}, <span className="font-semibold text-blue-700">{line.required_tier}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-100 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <p className="text-sm font-bold text-slate-900">Total {formatPaiseINR(plan.data.total_cost_paise)}</p>
+            {plan.data.planning_details?.baseline_status === 'VALID' ? (
+              <p className="text-xs text-slate-700 font-medium">
+                NBFC baseline {formatPaiseINR(plan.data.baseline_cost_paise)}; saving <strong className="text-emerald-700">{formatPaiseINR(saving)}</strong> (
+                {plan.data.baseline_cost_paise ? ((saving / plan.data.baseline_cost_paise) * 100).toFixed(0) : 0}%)
+              </p>
+            ) : (
+              <p className="text-xs text-slate-600">NBFC baseline insufficient or not verified; savings unavailable.</p>
+            )}
+          </div>
+
+          <div className="h-56 pt-2 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-500 gap-1">
+              <span className="font-semibold text-slate-700">Per-week probability below buffer (Target: {plan.data.planning_details?.target_scope ?? 'ALL_WEEKS'} &le; {Number(plan.data.target_probability) * 100}%)</span>
               <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-red-600 inline-block" /> Pre-intervention</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-green-700 inline-block" /> Post-plan</span>
+                <span className="flex items-center gap-1.5 font-medium"><span className="w-3 h-0.5 bg-rose-600 inline-block" /> Pre-intervention</span>
+                <span className="flex items-center gap-1.5 font-medium"><span className="w-3 h-0.5 bg-emerald-700 inline-block" /> Post-plan</span>
               </div>
             </div>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={graph}>
-                <XAxis dataKey="week" />
-                <YAxis unit="%" domain={[0, 100]} />
+                <XAxis dataKey="week" stroke="#64748b" fontSize={11} />
+                <YAxis unit="%" domain={[0, 100]} stroke="#64748b" fontSize={11} />
                 <Tooltip formatter={(value) => [`${value}%`]} />
-                <Line name="Pre-intervention" dataKey="before" stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} />
-                <Line name="Post-plan" dataKey="after" stroke="#15803d" strokeWidth={2} dot={{ r: 3 }} />
+                <Line name="Pre-intervention" dataKey="before" stroke="#dc2626" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line name="Post-plan" dataKey="after" stroke="#15803d" strokeWidth={2.5} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-
         </div>
       ) : (
-        <p className="text-sm text-gray-500">No proposed plan yet.</p>
+        <div className="card p-8 text-center text-xs text-slate-400">
+          No proposed plan yet.
+        </div>
       )}
     </section>
   )
 }
+

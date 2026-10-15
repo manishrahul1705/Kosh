@@ -1,6 +1,17 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import {
+  Scale,
+  Calendar,
+  AlertCircle,
+  FileCheck2,
+  Send,
+  ExternalLink,
+  ShieldAlert,
+  Sparkles,
+  CheckCircle2,
+} from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi, CollectionItem } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
@@ -87,56 +98,72 @@ export const CollectionsPage = () => {
   return (
     <section aria-label="Collections" className="space-y-6">
       <SandboxBanner />
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/80 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Collections & Statutory Interest</h2>
-          <p className="text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <Scale size={20} className="text-blue-600" />
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Collections & Statutory Interest</h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
             MSMED Act Section 16 monthly-rest compound interest at 3× configured RBI bank rate.
             Section 15 limits agreed credit to 45 days (15 days if none agreed).
           </p>
         </div>
-        <div className="inline-block rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-          Calculation as-of: <strong>{asOfDate}</strong>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 text-xs font-semibold text-slate-700 border border-slate-200 self-start sm:self-auto">
+          <Calendar size={13} className="text-slate-500" />
+          <span>Calculation as-of: <strong>{asOfDate}</strong></span>
         </div>
       </div>
 
       {message && (
-        <p role="status" className="rounded-md bg-blue-50 p-3 text-sm text-blue-800">
-          {message}
-        </p>
+        <div role="status" className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+          <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+          <span>{message}</span>
+        </div>
       )}
 
       {/* Separately labelled fictional demonstration fixture */}
       {fixture && (
-        <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 space-y-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-            <h3 className="font-semibold text-purple-900 text-sm">{fixture.label}</h3>
-            <span className="self-start rounded bg-purple-200 px-2 py-0.5 text-xs font-medium text-purple-800">
+        <div className="rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50/90 to-indigo-50/50 p-5 space-y-3 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-purple-700" />
+              <h3 className="font-bold text-purple-950 text-sm tracking-tight">{fixture.label}</h3>
+            </div>
+            <span className="self-start sm:self-auto rounded-full bg-purple-200/80 text-purple-900 px-2.5 py-0.5 text-xs font-bold border border-purple-300">
               Demonstration Only (Fictional)
             </span>
           </div>
-          <p className="text-xs text-purple-700">{fixture.note}</p>
-          <div className="grid grid-cols-2 gap-3 pt-1 sm:grid-cols-4 text-xs">
-            <div className="rounded bg-white p-2 border border-purple-100">
-              <span className="text-gray-500 block">Invoice / Buyer</span>
-              <strong>{fixture.invoice_number}</strong>
-              <div className="text-gray-600">{fixture.party}</div>
+
+          <p className="text-xs text-purple-800 leading-relaxed">{fixture.note}</p>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs pt-1">
+            <div className="card p-3 border-purple-100/80">
+              <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider block">Invoice / Buyer</span>
+              <strong className="text-slate-900 block mt-0.5 text-xs sm:text-sm">{fixture.invoice_number}</strong>
+              <div className="text-slate-600 text-xs truncate">{fixture.party}</div>
             </div>
-            <div className="rounded bg-white p-2 border border-purple-100">
-              <span className="text-gray-500 block">Principal</span>
-              <strong>{formatPaiseINR(fixture.principal_paise)}</strong>
+
+            <div className="card p-3 border-purple-100/80">
+              <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider block">Principal</span>
+              <strong className="text-slate-900 block mt-0.5 text-xs sm:text-sm">{formatPaiseINR(fixture.principal_paise)}</strong>
             </div>
-            <div className="rounded bg-white p-2 border border-purple-100">
-              <span className="text-gray-500 block">Overdue Interest</span>
-              <strong className="text-purple-700">{formatPaiseINR(fixture.interest.interest_paise)}</strong>
-              <div className="text-[10px] text-gray-500">17.25% p.a., 2 rests</div>
+
+            <div className="card p-3 border-purple-100/80">
+              <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider block">Overdue Interest</span>
+              <strong className="text-purple-700 block mt-0.5 text-xs sm:text-sm">{formatPaiseINR(fixture.interest.interest_paise)}</strong>
+              <div className="text-[10px] text-slate-500">17.25% p.a., 2 rests</div>
             </div>
-            <div className="rounded bg-white p-2 border border-purple-100">
-              <span className="text-gray-500 block">Total Claim</span>
-              <strong className="text-purple-900">{formatPaiseINR(fixture.total_paise)}</strong>
+
+            <div className="card p-3 border-purple-100/80">
+              <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider block">Total Claim</span>
+              <strong className="text-purple-900 block mt-0.5 text-xs sm:text-sm">{formatPaiseINR(fixture.total_paise)}</strong>
             </div>
           </div>
-          <p className="text-[11px] text-purple-600">
+
+          <p className="text-[11px] text-purple-700 font-medium">
             Terms: Accepted {fixture.acceptance_date} · No agreed credit (15 days under Section 15, due {fixture.due_date}) · MSE Applicable · {fixture.overdue_days} days overdue as of {fixture.as_of}.
           </p>
         </div>
@@ -146,26 +173,29 @@ export const CollectionsPage = () => {
       {query.data?.role === 'OWNER' && (
         <form
           onSubmit={handleSaveTerms}
-          className="rounded-xl border border-blue-200 bg-white p-5 shadow-sm space-y-4"
+          className="card p-5 space-y-4 border-blue-200"
         >
-          <div className="border-b pb-3">
-            <h3 className="text-base font-semibold text-gray-900">
-              Document Invoice Evidence & Payment Terms
-            </h3>
-            <p className="text-xs text-gray-500">
+          <div className="border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <FileCheck2 size={16} className="text-blue-600" />
+              <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                Document Invoice Evidence & Payment Terms
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
               Owner only. Unknown facts must stay unknown. Recording evidence writes to the audit chain and does not move money or bypass approvals.
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="evidence-invoice-select" className="block text-xs font-semibold text-gray-700 mb-1">
+              <label htmlFor="evidence-invoice-select" className="label">
                 Select open invoice
               </label>
               <select
                 id="evidence-invoice-select"
                 required
-                className="w-full rounded-md border border-gray-300 p-2 text-sm bg-white"
+                className="select text-xs"
                 value={selectedInvoiceId}
                 onChange={(e) => {
                   const id = Number(e.target.value)
@@ -184,27 +214,28 @@ export const CollectionsPage = () => {
             </div>
 
             <div>
-              <label htmlFor="evidence-acceptance-date" className="block text-xs font-semibold text-gray-700 mb-1">
+              <label htmlFor="evidence-acceptance-date" className="label">
                 Acceptance date
               </label>
               <input
                 id="evidence-acceptance-date"
                 type="date"
-                className="w-full rounded-md border border-gray-300 p-2 text-sm bg-white"
+                className="input text-xs"
                 value={acceptance}
                 max={asOfDate}
                 onChange={(e) => setAcceptance(e.target.value)}
               />
-              <span className="text-[11px] text-gray-500">Leave blank if unknown</span>
+              <span className="text-[11px] text-slate-400 mt-1 block">Leave blank if unknown</span>
             </div>
 
             <div>
-              <label htmlFor="evidence-payment-terms" className="block text-xs font-semibold text-gray-700 mb-1">
+              <label htmlFor="evidence-payment-terms" className="label">
                 Payment terms
               </label>
               <select
                 id="evidence-payment-terms"
-                className="w-full rounded-md border border-gray-300 p-2 text-sm bg-white"
+                aria-label="Payment terms"
+                className="select text-xs"
                 value={agreement}
                 onChange={(e) => setAgreement(e.target.value)}
               >
@@ -216,7 +247,7 @@ export const CollectionsPage = () => {
 
             {agreement === 'AGREED' ? (
               <div>
-                <label htmlFor="evidence-agreed-days" className="block text-xs font-semibold text-gray-700 mb-1">
+                <label htmlFor="evidence-agreed-days" className="label">
                   Agreed period in days
                 </label>
                 <input
@@ -226,34 +257,35 @@ export const CollectionsPage = () => {
                   min="0"
                   max="45"
                   placeholder="e.g. 30 (statutory max 45)"
-                  className="w-full rounded-md border border-gray-300 p-2 text-sm bg-white"
+                  className="input text-xs"
                   value={days}
                   onChange={(e) => setDays(e.target.value)}
                 />
-                <span className="text-[11px] text-gray-500">Agreed credit cannot exceed 45 days under Section 15</span>
+                <span className="text-[11px] text-slate-400 mt-1 block">Agreed credit cannot exceed 45 days under Section 15</span>
               </div>
             ) : (
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label className="label">
                   Applicable statutory period
                 </label>
                 <input
                   disabled
                   readOnly
                   type="text"
-                  className="w-full rounded-md border border-gray-200 bg-gray-50 p-2 text-sm text-gray-500"
+                  className="input text-xs bg-slate-50 text-slate-500 cursor-not-allowed"
                   value={agreement === 'NONE' ? '15 days (Section 15 default)' : 'Unknown / Review Required'}
                 />
               </div>
             )}
 
             <div>
-              <label htmlFor="evidence-supplier-mse" className="block text-xs font-semibold text-gray-700 mb-1">
+              <label htmlFor="evidence-supplier-mse" className="label">
                 Micro/Small enterprise applicability
               </label>
               <select
                 id="evidence-supplier-mse"
-                className="w-full rounded-md border border-gray-300 p-2 text-sm bg-white"
+                aria-label="Micro/Small enterprise applicability"
+                className="select text-xs"
                 value={mse}
                 onChange={(e) => setMse(e.target.value)}
               >
@@ -264,7 +296,7 @@ export const CollectionsPage = () => {
             </div>
 
             <div>
-              <label htmlFor="evidence-ref-note" className="block text-xs font-semibold text-gray-700 mb-1">
+              <label htmlFor="evidence-ref-note" className="label">
                 Supporting evidence reference or note
               </label>
               <input
@@ -272,7 +304,7 @@ export const CollectionsPage = () => {
                 type="text"
                 maxLength={160}
                 placeholder="e.g. PO clause 4.2 / Udyam registration"
-                className="w-full rounded-md border border-gray-300 p-2 text-sm bg-white"
+                className="input text-xs"
                 value={evidence}
                 onChange={(e) => setEvidence(e.target.value)}
               />
@@ -283,7 +315,7 @@ export const CollectionsPage = () => {
             <button
               type="submit"
               disabled={!selectedInvoiceId}
-              className="w-full sm:w-auto rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+              className="btn-primary text-xs py-2 px-5 w-full sm:w-auto"
             >
               Save Documented Terms
             </button>
@@ -298,7 +330,7 @@ export const CollectionsPage = () => {
                   setMse('UNKNOWN')
                   setEvidence('')
                 }}
-                className="text-xs text-gray-500 hover:text-gray-700"
+                className="text-xs text-slate-500 hover:text-slate-800"
               >
                 Clear selection
               </button>
@@ -308,24 +340,28 @@ export const CollectionsPage = () => {
       )}
 
       {/* Receivables & Statutory Interest table */}
-      <div className="space-y-3">
-        <h3 className="text-base font-semibold text-gray-900">Receivables & Statutory Calculation</h3>
+      <div className="card overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="font-bold text-sm text-slate-900 tracking-tight">Receivables & Statutory Calculation</h3>
+          <span className="text-xs text-slate-500">{invoiceList.length} invoices</span>
+        </div>
+
         {invoiceList.length === 0 ? (
-          <p className="text-sm text-gray-500">No open receivables found.</p>
+          <p className="p-8 text-center text-xs text-slate-400">No open receivables found.</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-gray-50 border-b text-gray-600">
+          <div className="table-container border-0 shadow-none rounded-none">
+            <table>
+              <thead>
                 <tr>
-                  <th className="p-3">Invoice / Customer</th>
-                  <th className="p-3">Principal</th>
-                  <th className="p-3">Statutory Interest</th>
-                  <th className="p-3">Total Claim</th>
-                  <th className="p-3">Owner-entered Evidence</th>
-                  <th className="p-3">Actions</th>
+                  <th>Invoice / Customer</th>
+                  <th>Principal</th>
+                  <th>Statutory Interest</th>
+                  <th>Total Claim</th>
+                  <th>Owner-entered Evidence</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-100">
                 {invoiceList.map((row) => {
                   const interestPaise = row.interest?.interest_paise
                   const isReview = row.interest?.status === 'REVIEW_REQUIRED'
@@ -335,68 +371,69 @@ export const CollectionsPage = () => {
                   const totalClaim = row.total_paise ?? (row.amount_paise + (interestPaise || 0))
 
                   return (
-                    <tr key={row.invoice_id} className="hover:bg-gray-50">
-                      <td className="p-3">
-                        <strong className="text-gray-900">{row.invoice_number}</strong>
-                        <div className="text-gray-500">{row.party}</div>
-                        <div className="text-[10px] text-gray-400">Due: {row.due_date || 'N/A'}</div>
+                    <tr key={row.invoice_id} className="hover:bg-slate-50/70">
+                      <td className="py-3">
+                        <strong className="text-slate-900 block">{row.invoice_number}</strong>
+                        <div className="text-slate-600 text-xs">{row.party}</div>
+                        <div className="text-[10px] text-slate-400">Due: {row.due_date || 'N/A'}</div>
                       </td>
-                      <td className="p-3 font-medium text-gray-900">
+                      <td className="font-semibold text-slate-900">
                         {formatPaiseINR(row.amount_paise)}
                       </td>
-                      <td className="p-3">
+                      <td>
                         {isReview && (
                           <div>
-                            <span className="inline-block rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                              <AlertCircle size={10} />
                               REVIEW REQUIRED
                             </span>
-                            <div className="text-[11px] text-gray-500 mt-0.5">No statutory debt computed</div>
+                            <div className="text-[10px] text-slate-500 mt-0.5">No statutory debt computed</div>
                           </div>
                         )}
                         {isNotApplicable && (
                           <div>
-                            <span className="inline-block rounded bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
                               NOT APPLICABLE
                             </span>
-                            <div className="text-[11px] text-gray-500 mt-0.5">Statutory interest does not apply</div>
+                            <div className="text-[10px] text-slate-500 mt-0.5">Statutory interest does not apply</div>
                           </div>
                         )}
                         {isComputed && !isOverdue && (
                           <div>
                             <strong className="text-blue-700">{formatPaiseINR(0)}</strong>
-                            <div className="text-[10px] text-blue-600">Not yet overdue</div>
+                            <div className="text-[10px] text-blue-600 font-medium">Not yet overdue</div>
                           </div>
                         )}
                         {isComputed && isOverdue && (
                           <div>
-                            <strong className="text-red-700">{formatPaiseINR(interestPaise)}</strong>
-                            <div className="text-[10px] text-gray-500">
-                              {Number(row.interest.annual_rate) * 100}% p.a. · {row.interest.monthly_rests} rests
+                            <strong className="text-rose-700">{formatPaiseINR(interestPaise)}</strong>
+                            <div className="text-[10px] text-slate-500">
+                              {Number(row.interest?.annual_rate ?? 0) * 100}% p.a. · {row.interest?.monthly_rests} rests
                             </div>
                           </div>
                         )}
                       </td>
-                      <td className="p-3 font-semibold text-gray-900">
+                      <td className="font-bold text-slate-900">
                         {formatPaiseINR(totalClaim)}
                       </td>
-                      <td className="p-3 text-[11px] text-gray-600 max-w-xs">
+                      <td className="text-[11px] text-slate-600 max-w-xs">
                         {row.terms ? (
-                          <div>
-                            <div>Accepted: {row.terms.acceptance_date || 'Unknown'}</div>
-                            <div>Terms: {row.terms.agreement_status}{row.terms.agreed_days != null ? ` (${row.terms.agreed_days}d)` : ''}</div>
-                            <div>MSE: {row.terms.supplier_mse === true ? 'Yes' : row.terms.supplier_mse === false ? 'No' : 'Unknown'}</div>
-                            {row.evidence_ref && <div className="text-gray-500 italic">Ref: {row.evidence_ref}</div>}
+                          <div className="space-y-0.5">
+                            <div>Accepted: <span className="font-medium">{row.terms.acceptance_date || 'Unknown'}</span></div>
+                            <div>Terms: <span className="font-medium">{row.terms.agreement_status}{row.terms.agreed_days != null ? ` (${row.terms.agreed_days}d)` : ''}</span></div>
+                            <div>MSE: <span className="font-medium">{row.terms.supplier_mse === true ? 'Yes' : row.terms.supplier_mse === false ? 'No' : 'Unknown'}</span></div>
+                            {row.evidence_ref && <div className="text-slate-400 italic">Ref: {row.evidence_ref}</div>}
                           </div>
                         ) : (
-                          <span className="text-gray-400 italic">No evidence recorded</span>
+                          <span className="text-slate-400 italic">No evidence recorded</span>
                         )}
                       </td>
-                      <td className="p-3">
+                      <td>
                         <div className="flex flex-col sm:flex-row gap-1.5">
                           {query.data?.role === 'OWNER' && (
                             <button
                               onClick={() => selectInvoice(row)}
-                              className="rounded border border-blue-600 px-2.5 py-1 text-[11px] font-medium text-blue-600 hover:bg-blue-50"
+                              className="btn-secondary text-[11px] py-1 px-2.5 font-semibold"
                             >
                               Edit evidence
                             </button>
@@ -415,7 +452,7 @@ export const CollectionsPage = () => {
                                   )
                                 )
                               }
-                              className="rounded border border-gray-300 px-2.5 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                              className="btn-ghost text-[11px] py-1 px-2.5"
                             >
                               Draft reminder
                             </button>
@@ -432,24 +469,28 @@ export const CollectionsPage = () => {
       </div>
 
       {/* Reminder outreach section */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-gray-900">Outreach Configuration</h3>
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <Send size={16} className="text-blue-600" />
+          <h3 className="font-bold text-sm text-slate-900 tracking-tight">Outreach Configuration</h3>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-xs font-medium text-gray-700">
-            Sandbox channel
+          <div>
+            <label className="label">Sandbox channel</label>
             <select
-              className="mt-1 block w-full rounded border border-gray-300 p-1.5 text-xs bg-white"
+              className="select text-xs"
               value={channel}
               onChange={(e) => setChannel(e.target.value)}
             >
               <option>EMAIL</option>
               <option>WHATSAPP</option>
             </select>
-          </label>
-          <label className="block text-xs font-medium text-gray-700">
-            Tone
+          </div>
+          <div>
+            <label className="label">Tone</label>
             <select
-              className="mt-1 block w-full rounded border border-gray-300 p-1.5 text-xs bg-white"
+              className="select text-xs"
               value={tone}
               onChange={(e) => setTone(e.target.value)}
             >
@@ -457,22 +498,25 @@ export const CollectionsPage = () => {
               <option>PROFESSIONAL</option>
               <option>FIRM</option>
             </select>
-          </label>
+          </div>
         </div>
 
         {draft && (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 space-y-2 text-xs">
-            <h4 className="font-semibold text-amber-900">T1 Internal Reminder Draft</h4>
-            <p className="text-gray-800 whitespace-pre-wrap">{draft.body}</p>
-            <div className="flex gap-2 pt-1 items-center">
+          <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 space-y-2.5 text-xs">
+            <h4 className="font-bold text-amber-900">T1 Internal Reminder Draft</h4>
+            <p className="text-slate-800 whitespace-pre-wrap font-mono text-[11px] bg-white/70 p-3 rounded-lg border border-amber-200">
+              {draft.body}
+            </p>
+            <div className="flex flex-wrap gap-3 pt-1 items-center">
               <button
                 onClick={() => void run(() => koshApi.reminderIntent(activeSellerId!, draft.id))}
-                className="rounded bg-amber-700 px-3 py-1 font-medium text-white hover:bg-amber-800"
+                className="btn-primary text-xs py-1.5 px-3.5 bg-amber-700 hover:bg-amber-800"
               >
                 Propose T2 send
               </button>
-              <Link to="/approvals" className="text-amber-800 underline">
+              <Link to="/approvals" className="text-amber-900 font-semibold underline hover:text-amber-950 flex items-center gap-1">
                 Review in Approvals
+                <ExternalLink size={11} />
               </Link>
             </div>
           </div>
@@ -481,3 +525,4 @@ export const CollectionsPage = () => {
     </section>
   )
 }
+

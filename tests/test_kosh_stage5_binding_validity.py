@@ -11,7 +11,7 @@ Asserts:
 4. NBFC baseline comparison excludes collections.
 """
 from decimal import Decimal
-from datetime import date
+from datetime import date, timedelta
 import pytest
 from sqlalchemy import select
 
@@ -180,14 +180,22 @@ def test_binding_plan_amounts_and_costs_match_guaranteed_allocation(client, db, 
     assert plan.total_cost_paise > 0
     assert plan.after_probabilities == plan.planning_details["guaranteed_plan"]["after_probabilities"]
 
-    # Persisted lines must be financing-only (no collections push)
+    # Explicitly assert that expected and binding allocations differ
+    expected_lines = plan.planning_details["expected_plan"]["lines"]
+    guaranteed_lines = plan.planning_details["guaranteed_plan"]["lines"]
+    assert expected_lines != guaranteed_lines, "Expected and binding allocations must differ"
+    assert any(l["product_id"] == "COLLECTIONS_PUSH" for l in expected_lines), "Expected plan should include collections"
+    assert all(l["product_id"] != "COLLECTIONS_PUSH" for l in guaranteed_lines), "Guaranteed plan must exclude collections"
+
+    # Persisted lines must be financing-only and match guaranteed_plan.lines
     lines = db.scalars(select(KoshPlanLine).where(KoshPlanLine.plan_id == plan.id)).all()
-    assert len(lines) == 1
-    line = lines[0]
-    assert line.product_id == "TREDS_INVOICE_DISCOUNTING"
-    assert line.status == "VALID"
-    assert line.cost_paise == plan.total_cost_paise
-    assert all(l.product_id != "COLLECTIONS_PUSH" for l in lines)
+    assert len(lines) == len(guaranteed_lines)
+    for persisted_line, g_line in zip(lines, guaranteed_lines):
+        assert persisted_line.product_id == g_line["product_id"]
+        assert persisted_line.amount_paise == g_line["amount_paise"]
+        assert persisted_line.cost_paise == g_line["cost_paise"]
+        assert persisted_line.status == "VALID"
+        assert persisted_line.product_id != "COLLECTIONS_PUSH"
 
 
 def test_all_weeks_action_proof_checks_every_week(client, db, monkeypatch):
@@ -254,24 +262,46 @@ def test_all_weeks_action_proof_checks_every_week(client, db, monkeypatch):
 
 
 def test_nbfc_baseline_excludes_collections(client, db, monkeypatch):
-    """The NBFC comparison baseline must not include COLLECTIONS_PUSH levers."""
+    """The NBFC comparison baseline must not include COLLECTIONS_PUSH levers.
+
+    A real, non-empty NBFC allocation must be generated and meet the same
+    target and scope without collections.
+    """
     monkeypatch.setenv("KOSH_AS_OF_DATE", "2026-10-13")
 
     subject = "eeeeeeee-0000-0000-0000-baseline-test"
     seller = make_seller(db, name="BaselineCheck Seller", owner_subject=subject)
-    party = KoshCounterparty(
-        seller_id=seller.id, name="Buyer BL", kind="CUSTOMER", treds_onboarded=True,
+
+    # Set up cash shortfall and criteria to make NBFC_UNSECURED_BUSINESS_LOAN MATCHED
+    rev = db.query(SellerRevision).filter_by(seller_id=seller.id, is_active=True).one()
+    db.add(SellerAttribute(revision_id=rev.id, key="cash_buffer_paise", value_type="NUMBER", value_number=10_000_000))
+    db.add(SellerAttribute(revision_id=rev.id, key="gstin", value_type="TEXT", value_text="29ABCDE1234F1Z5"))
+    db.add(SellerAttribute(revision_id=rev.id, key="incorporation_date", value_type="TEXT", value_text="2020-01-01"))
+    db.commit()
+
+    party_treds = KoshCounterparty(
+        seller_id=seller.id, name="Buyer BL TReDS", kind="CUSTOMER", treds_onboarded=True,
     )
-    db.add(party)
+    party_reg = KoshCounterparty(
+        seller_id=seller.id, name="Buyer BL Regular", kind="CUSTOMER", treds_onboarded=False,
+    )
+    db.add_all([party_treds, party_reg])
     db.flush()
 
-    inv = KoshInvoice(
-        seller_id=seller.id, counterparty_id=party.id, direction="RECEIVABLE",
+    inv_treds = KoshInvoice(
+        seller_id=seller.id, counterparty_id=party_treds.id, direction="RECEIVABLE",
         invoice_number="INV-BL-1", invoice_date=date(2026, 10, 1),
-        due_date=date(2026, 11, 20), amount_paise=500_000, status="OPEN",
+        due_date=date(2026, 11, 20), amount_paise=5_000_000, status="OPEN",
         accepted_by_buyer=True,
     )
-    db.add(inv)
+    # Non-TReDS invoice eligible for COLLECTIONS_PUSH (operational lever)
+    inv_col = KoshInvoice(
+        seller_id=seller.id, counterparty_id=party_reg.id, direction="RECEIVABLE",
+        invoice_number="INV-BL-COL", invoice_date=date(2026, 10, 1),
+        due_date=date(2026, 10, 20), amount_paise=20_000_000, status="OPEN",
+        accepted_by_buyer=True,
+    )
+    db.add_all([inv_treds, inv_col])
     db.commit()
 
     sign_in(client.app, subject)
@@ -279,14 +309,145 @@ def test_nbfc_baseline_excludes_collections(client, db, monkeypatch):
     assert client.post(prefix + "/forecast/run", json={"n_paths": 10, "seed": 42, "include_forecast_sales": False}).status_code == 200
     assert client.post(prefix + "/financing/evaluate").status_code == 200
 
-    plan_data = propose_plan(db, seller.id, target_prob=Decimal(".20"), persist=False)
+    plan_data = propose_plan(db, seller.id, target_prob=Decimal(".20"), target_scope="ALERT_WEEK", persist=False)
 
     baseline_lines = plan_data.get("planning_details", {}).get("baseline_lines", [])
+    assert len(baseline_lines) > 0, "NBFC baseline must have a real, non-empty allocation"
+    assert all(line["product_id"] == "NBFC_UNSECURED_BUSINESS_LOAN" for line in baseline_lines)
+    assert all(line["amount_paise"] > 0 for line in baseline_lines)
+    assert plan_data["planning_details"]["baseline_status"] == "VALID"
+
     baseline_product_ids = {line["product_id"] for line in baseline_lines}
     assert "COLLECTIONS_PUSH" not in baseline_product_ids, (
         "NBFC baseline must not include COLLECTIONS_PUSH; got: " + str(baseline_product_ids)
     )
-    for pid in baseline_product_ids:
-        assert pid == "NBFC_UNSECURED_BUSINESS_LOAN", (
-            f"Unexpected product {pid} in NBFC baseline"
-        )
+
+    # Assert baseline meets the same target and scope without collections
+    target_idx = plan_data["planning_details"]["alert_week"] - 1
+    baseline_prob = plan_data["planning_details"]["baseline_after_probabilities"][target_idx]
+    assert baseline_prob <= Decimal(".20"), f"Baseline probability {baseline_prob} must meet target 0.20"
+
+
+def test_separate_collections_workflow_requires_approval_and_preserves_cash(client, db, monkeypatch):
+    """Demonstrate existing separate collections workflow.
+
+    - Create a reminder through the normal collections path (draft -> intent).
+    - Prove execution before T2 approval is rejected and creates no outbox entry.
+    - Approve and execute through the existing gate.
+    - Assert exactly one simulated reminder is created.
+    - Assert cash and forecast probabilities remain unchanged.
+    - Keep collections excluded from binding financing lines.
+    - No alternative approval bypass exists.
+    """
+    from sqlalchemy import func
+    from app.actions.approvals import approve, ActionError
+    from app.actions.execution import execute
+    from app.policy.controls import editable_control
+    from app.utils.dates import utcnow
+    from app.database.kosh_models import (
+        KoshSandboxOutbox,
+        KoshSandboxLedgerEntry,
+        KoshForecastRun,
+        KoshForecastWeek,
+        KoshActionIntent,
+    )
+
+    monkeypatch.setenv("KOSH_AS_OF_DATE", "2026-10-13")
+
+    subject = "eeeeeeee-0000-0000-0000-coll-workflow"
+    seller = make_seller(db, name="CollectionsWorkflow Seller", owner_subject=subject)
+
+    party = KoshCounterparty(
+        seller_id=seller.id, name="Buyer CW", kind="CUSTOMER", treds_onboarded=False,
+    )
+    db.add(party)
+    db.flush()
+
+    # Pre-configure allowlist with satisfied 24-hour cool-off
+    ctrl = editable_control(db, seller.id)
+    ctrl.allowlist = [{"key": f"counterparty:{party.id}", "added_at": (utcnow() - timedelta(days=2)).isoformat() + "Z"}]
+    db.commit()
+
+    inv = KoshInvoice(
+        seller_id=seller.id, counterparty_id=party.id, direction="RECEIVABLE",
+        invoice_number="INV-CW-01", invoice_date=date(2026, 10, 1),
+        due_date=date(2026, 10, 20), amount_paise=10_000_000, status="OPEN",
+        accepted_by_buyer=True,
+    )
+    db.add(inv)
+    db.commit()
+
+    sign_in(client.app, subject)
+    from app.database.auth_models import AppUser
+    user_id = db.scalar(select(AppUser.id).where(AppUser.supabase_user_id == subject))
+    prefix = f"/api/kosh/sellers/{seller.id}"
+    assert client.post(prefix + "/forecast/run", json={"n_paths": 10, "seed": 42, "include_forecast_sales": False}).status_code == 200
+    db.commit()
+
+    # Capture pre-execution forecast state
+    pre_run = db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id == seller.id).order_by(KoshForecastRun.id.desc()).limit(1))
+    pre_weeks = db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id == pre_run.id).order_by(KoshForecastWeek.week_index)).all()
+    pre_probs = [w.prob_below_buffer for w in pre_weeks]
+    pre_balances = [w.p50_closing_balance_paise for w in pre_weeks]
+
+    # 1. Create a reminder through the normal collections path: POST /drafts then POST /drafts/{id}/intent
+    draft_res = client.post(f"{prefix}/collections/drafts", json={"invoice_id": inv.id, "channel": "EMAIL", "tone": "PROFESSIONAL"})
+    assert draft_res.status_code == 200
+    draft_data = draft_res.json()
+    assert draft_data["tier"] == "T1"
+    draft_id = draft_data["id"]
+
+    intent_res = client.post(f"{prefix}/collections/drafts/{draft_id}/intent")
+    assert intent_res.status_code == 200
+    intent_data = intent_res.json()
+    intent_id = intent_data["id"]
+    assert intent_data["tier"] == "T2"
+    assert intent_data["action_type"] == "COLLECTIONS_REMINDER"
+    assert intent_data["status"] == "PROPOSED"
+
+    # Confirm collections intent is completely excluded from binding financing lines
+    db.commit()
+    intent_row = db.get(KoshActionIntent, intent_id)
+    assert intent_row is not None
+    assert intent_row.plan_line_id is None
+
+    # 2. Prove execution before T2 approval is rejected and creates no outbox entry
+    initial_outbox = db.scalars(select(func.count()).select_from(KoshSandboxOutbox)).one()
+    initial_ledger = db.scalars(select(func.count()).select_from(KoshSandboxLedgerEntry)).one()
+    assert initial_outbox == 0
+
+    with pytest.raises(ActionError):
+        execute(db, seller_id=seller.id, intent_id=intent_id, actor_id=user_id, token="unapproved.token.value")
+    db.rollback()
+
+    assert db.scalars(select(func.count()).select_from(KoshSandboxOutbox)).one() == 0
+
+    # 3. Approve and execute through the existing gate
+    approval_artifact, token = approve(db, seller_id=seller.id, intent_id=intent_id, actor_id=user_id)
+    db.commit()
+
+    exec_result = execute(db, seller_id=seller.id, intent_id=intent_id, actor_id=user_id, token=token)
+    db.commit()
+
+    # 4. Assert exactly one simulated reminder is created
+    outbox_entries = db.scalars(select(KoshSandboxOutbox).where(KoshSandboxOutbox.intent_id == intent_id)).all()
+    assert len(outbox_entries) == 1
+    assert outbox_entries[0].status == "SUBMITTED"
+    assert outbox_entries[0].channel == "EMAIL"
+    assert outbox_entries[0].recipient_ref == f"counterparty:{party.id}"
+
+    # 5. Assert cash and forecast probabilities remain unchanged
+    # Zero ledger entries created (messaging does not change bank balance)
+    ledger_entries = db.scalars(select(func.count()).select_from(KoshSandboxLedgerEntry)).one()
+    assert ledger_entries == initial_ledger
+
+    # Reforecast ran, but probabilities and balances are strictly identical
+    post_run = db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id == seller.id).order_by(KoshForecastRun.id.desc()).limit(1))
+    post_weeks = db.scalars(select(KoshForecastWeek).where(KoshForecastWeek.run_id == post_run.id).order_by(KoshForecastWeek.week_index)).all()
+    post_probs = [w.prob_below_buffer for w in post_weeks]
+    post_balances = [w.p50_closing_balance_paise for w in post_weeks]
+
+    assert post_probs == pre_probs
+    assert post_balances == pre_balances
+    assert exec_result.result["before_probabilities"] == exec_result.result["after_probabilities"]
+

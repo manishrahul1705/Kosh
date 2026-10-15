@@ -429,6 +429,10 @@ def run_demo(db_path: Path, out_md_path: Path):
         # 8. Audit Chain Verification
         print("[9/10] Verifying cryptographic SHA-256 audit chain...", flush=True)
         chain_verification = verify_chain(session)
+        if not chain_verification.valid:
+            raise RuntimeError(
+                f"Cryptographic audit chain verification FAILED at sequence {chain_verification.broken_at_sequence}: {chain_verification.reason}"
+            )
         audit_count = session.scalar(select(func.count()).select_from(KoshAuditEntry).where(KoshAuditEntry.seller_id == seller.id))
 
         # 9. MSMED Statutory Example & ABC Analysis

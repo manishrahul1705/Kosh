@@ -33,6 +33,10 @@ def test_native_reminder_needs_t2_approval_before_outbox(client,db):
     assert db.scalar(select(func.count()).select_from(KoshSandboxOutbox))==0
     db.rollback();row=create_from_draft(db,seller_id=seller.id,draft_id=draft['id'],creator_id=user.id);db.commit()
     assert row.tier=='T2' and row.plan_line_id is None
+    from app.actions.approvals import ActionError
+    with pytest.raises(ActionError):
+        execute(db,seller_id=seller.id,intent_id=row.id,actor_id=user.id,token="unapproved.token")
+    assert db.scalar(select(func.count()).select_from(KoshSandboxOutbox))==0
     _,token=approve(db,seller_id=seller.id,intent_id=row.id,actor_id=user.id);db.commit()
     executed=execute(db,seller_id=seller.id,intent_id=row.id,actor_id=user.id,token=token);db.commit()
     assert executed.status=='SETTLED' and executed.result['before_probabilities']==executed.result['after_probabilities']

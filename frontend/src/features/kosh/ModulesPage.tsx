@@ -11,7 +11,6 @@ import {
 } from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
-import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 
@@ -28,7 +27,6 @@ export const ModulesPage = () => {
 
   return (
     <section aria-label="Kosh modules" className="space-y-6">
-      <SandboxBanner />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">

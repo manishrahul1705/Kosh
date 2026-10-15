@@ -10,7 +10,6 @@ import {
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
-import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 
@@ -24,7 +23,6 @@ export const RevenuePage = () => {
 
   return (
     <section aria-label="Revenue signal" className="space-y-6">
-      <SandboxBanner />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">

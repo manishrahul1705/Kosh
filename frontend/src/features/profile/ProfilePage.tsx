@@ -95,18 +95,32 @@ export const ProfilePage: React.FC = () => {
         )}
         <div className="space-y-3">
           {EDITABLE.map((f) => (
-            <form key={f.key} className="grid grid-cols-1 md:grid-cols-[220px_1fr_auto] gap-2 items-center"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    const value = (values[activeSellerId]?.[f.key] ?? current(f.key)).trim()
-                    if (value) save.mutate({ sellerId: activeSellerId, key: f.key, value_type: f.type, value })
-                  }}>
-              <label htmlFor={f.key} className="text-xs font-semibold text-metal-700 dark:text-metal-300">{f.label}</label>
-              <input id={f.key} className="border border-metal-200 dark:border-metal-700 bg-white dark:bg-metal-800 rounded-xl px-3 py-1.5 text-xs text-metal-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500" placeholder={f.hint}
-                     type={f.type === 'NUMBER' ? 'number' : 'text'} min={f.type === 'NUMBER' ? 0 : undefined}
-                     value={values[activeSellerId]?.[f.key] ?? current(f.key)}
-                     onChange={(e) => setValues((v) => ({ ...v, [activeSellerId]: { ...v[activeSellerId], [f.key]: e.target.value } }))} />
-              <Button type="submit" size="sm" variant="secondary" loading={save.isPending}>Save</Button>
+            <form
+              key={f.key}
+              className="grid grid-cols-1 lg:grid-cols-[200px_1fr_auto] gap-2 sm:gap-3 items-center min-w-0 pb-1.5 lg:pb-0"
+              onSubmit={(e) => {
+                e.preventDefault()
+                const value = (values[activeSellerId]?.[f.key] ?? current(f.key)).trim()
+                if (value) save.mutate({ sellerId: activeSellerId, key: f.key, value_type: f.type, value })
+              }}
+            >
+              <label htmlFor={f.key} className="text-xs font-semibold text-metal-700 dark:text-metal-300 min-w-0 truncate">
+                {f.label}
+              </label>
+              <input
+                id={f.key}
+                className="border border-metal-200 dark:border-metal-700 bg-white dark:bg-metal-800 rounded-xl px-3 py-1.5 text-xs text-metal-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 w-full min-w-0"
+                placeholder={f.hint}
+                type={f.type === 'NUMBER' ? 'number' : 'text'}
+                min={f.type === 'NUMBER' ? 0 : undefined}
+                value={values[activeSellerId]?.[f.key] ?? current(f.key)}
+                onChange={(e) => setValues((v) => ({ ...v, [activeSellerId]: { ...v[activeSellerId], [f.key]: e.target.value } }))}
+              />
+              <div className="flex justify-end lg:block shrink-0">
+                <Button type="submit" size="sm" variant="secondary" loading={save.isPending}>
+                  Save
+                </Button>
+              </div>
             </form>
           ))}
         </div>

@@ -15,7 +15,6 @@ import {
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
-import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { Card } from '@/components/ui/Card'
 import { formatEnumLabel } from '@/lib/koshLabels'
 
@@ -66,8 +65,6 @@ export const ConnectPage = () => {
 
   return (
     <section aria-label="Connect" className="space-y-6">
-      <SandboxBanner />
-
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200 pb-4">
         <div className="flex items-center gap-3">

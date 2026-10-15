@@ -46,11 +46,11 @@ export const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
   const initial = userEmail ? userEmail.charAt(0).toUpperCase() : 'U'
 
   return (
-    <header className="fixed left-0 md:left-[var(--sidebar-width)] top-0 right-0 h-16 bg-white/90 border-b border-metal-200 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 z-30 transition-all duration-200 shadow-xs">
-      <div className="flex items-center gap-3.5 min-w-0">
+    <header className="fixed left-0 md:left-[var(--sidebar-width)] top-0 right-0 h-16 bg-white/90 dark:bg-metal-900/90 border-b border-metal-200 dark:border-metal-800 backdrop-blur-md flex items-center justify-between px-3 sm:px-6 z-30 transition-all duration-200 shadow-xs">
+      <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1 mr-2">
         <button
           onClick={onMenuToggle}
-          className="md:hidden p-2 -ml-1 rounded-lg text-metal-600 hover:text-metal-900 hover:bg-metal-100 focus:outline-none"
+          className="md:hidden p-1.5 -ml-1 rounded-lg text-metal-600 dark:text-metal-400 hover:text-metal-900 dark:hover:text-white hover:bg-metal-100 dark:hover:bg-metal-800 focus:outline-none shrink-0"
           aria-label="Open mobile navigation"
         >
           <Menu size={20} />
@@ -59,23 +59,23 @@ export const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
         {/* MetalliSense Green Section Marker */}
         <div className="w-1.5 h-7 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full shadow-xs shrink-0 hidden sm:block" />
 
-        <h1 className="text-sm sm:text-base font-bold text-metal-900 truncate tracking-tight">
+        <h1 className="text-xs sm:text-base font-bold text-metal-900 dark:text-white truncate tracking-tight min-w-0">
           {title}
         </h1>
       </div>
 
-      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         {sellers.length > 1 && (
-          <div className="flex items-center gap-1.5 bg-metal-50 rounded-lg px-2.5 py-1.5 border border-metal-200">
-            <Building size={14} className="text-metal-500 shrink-0 hidden sm:inline" />
+          <div className="flex items-center gap-1 bg-metal-50 dark:bg-metal-800 rounded-lg px-2 sm:px-2.5 py-1 border border-metal-200 dark:border-metal-700 max-w-[110px] sm:max-w-xs">
+            <Building size={13} className="text-metal-500 shrink-0 hidden sm:inline" />
             <select
               aria-label="Active seller"
-              className="text-xs sm:text-sm font-medium text-metal-800 bg-transparent border-none focus:outline-none cursor-pointer max-w-32 sm:max-w-xs truncate"
+              className="text-[11px] sm:text-xs font-medium text-metal-800 dark:text-metal-200 bg-transparent border-none focus:outline-none cursor-pointer w-full truncate"
               value={activeSellerId ?? ''}
               onChange={(e) => setActiveSellerId(Number(e.target.value))}
             >
               {sellers.map((s) => (
-                <option key={s.id} value={s.id}>
+                <option key={s.id} value={s.id} className="dark:bg-metal-900">
                   {s.name}
                 </option>
               ))}
@@ -83,18 +83,18 @@ export const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
           </div>
         )}
 
-        <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-metal-50 border border-metal-200">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-xs shadow-2xs">
+        <div className="flex items-center gap-2 px-1.5 sm:px-2.5 py-1 rounded-lg bg-metal-50 dark:bg-metal-800 border border-metal-200 dark:border-metal-700 shrink-0">
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-[11px] sm:text-xs shadow-2xs shrink-0">
             {initial}
           </div>
-          <span className="hidden sm:inline text-xs font-medium text-metal-700 truncate max-w-[140px]">
+          <span className="hidden sm:inline text-xs font-medium text-metal-700 dark:text-metal-300 truncate max-w-[140px]">
             {userEmail}
           </span>
         </div>
 
         <button
           onClick={logout}
-          className="p-2 rounded-lg text-metal-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+          className="p-1.5 sm:p-2 rounded-lg text-metal-500 dark:text-metal-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors shrink-0"
           title="Sign out"
           aria-label="Sign out"
         >

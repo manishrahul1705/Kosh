@@ -20,7 +20,6 @@ import {
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
-import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -81,7 +80,6 @@ export const OperationsPage = () => {
 
   return (
     <section aria-label="Operations" className="space-y-6 animate-fadeIn">
-      <SandboxBanner />
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-metal-200/80 dark:border-metal-800">

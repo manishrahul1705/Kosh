@@ -7,7 +7,6 @@ import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { koshApi, FinancingEvidencePayload } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
-import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { formatEnumLabel } from '@/lib/koshLabels'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -140,7 +139,6 @@ export const PlanPage = () => {
   if (options.data && !Array.isArray(options.data.items)) {
     return (
       <section aria-label="Financing plan" className="space-y-6">
-        <SandboxBanner />
         <ErrorAlert message="Received an incompatible or malformed financing options response from the server." />
       </section>
     )
@@ -156,8 +154,6 @@ export const PlanPage = () => {
 
   return (
     <section aria-label="Financing plan" className="space-y-6">
-      <SandboxBanner />
-
       {/* Header & Propose Action */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
         <div>
@@ -409,8 +405,8 @@ export const PlanPage = () => {
                 </div>
                 <ul className="space-y-1.5 pl-1">
                   {prod.criteria?.map((c) => (
-                    <li key={c.criterion} className="flex items-start justify-between gap-2">
-                      <div>
+                    <li key={c.criterion} className="flex items-start justify-between gap-2 min-w-0">
+                      <div className="min-w-0 flex-1 break-words">
                         <span className="font-semibold text-metal-800 dark:text-metal-200">{c.label}</span>
                         <span className="block text-[11px] text-metal-500">Evidence needed: {c.evidence_required}</span>
                       </div>
@@ -440,12 +436,12 @@ export const PlanPage = () => {
         </div>
 
         {/* Fictional Demonstration Fixture Selector */}
-        <div className="rounded-2xl border border-primary-200 dark:border-primary-800 bg-gradient-to-r from-primary-50/70 to-metal-50/50 dark:from-primary-950/30 dark:to-metal-900/40 p-4 space-y-2.5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <span className="text-xs font-bold text-primary-950 dark:text-primary-200 uppercase tracking-wider">Fictional demonstration fixtures</span>
+        <div className="rounded-2xl border border-primary-200 dark:border-primary-800 bg-gradient-to-r from-primary-50/70 to-metal-50/50 dark:from-primary-950/30 dark:to-metal-900/40 p-4 space-y-2.5 min-w-0">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 min-w-0">
+            <div className="min-w-0 flex-1">
+              <span className="text-xs font-bold text-primary-950 dark:text-primary-200 uppercase tracking-wider">Sample data demonstration fixtures</span>
               <p className="text-xs text-primary-800 dark:text-primary-300 mt-0.5">
-                Test eligibility re-evaluations with labelled fictional test fixtures. Demonstrates outcomes without modifying real business profiles.
+                Test eligibility re-evaluations with labelled sample fixtures. Demonstrates outcomes without modifying real business profiles.
               </p>
             </div>
             <select
@@ -453,9 +449,9 @@ export const PlanPage = () => {
               value={selectedFixture}
               onChange={(e) => handleApplyFixture(e.target.value)}
               disabled={!isOwner || saveEvidenceMutation.isPending}
-              className="rounded-xl border border-primary-300 dark:border-primary-700 bg-white dark:bg-metal-800 px-3 py-1.5 text-xs font-semibold text-metal-800 dark:text-white shadow-xs focus:ring-2 focus:ring-primary-500"
+              className="rounded-xl border border-primary-300 dark:border-primary-700 bg-white dark:bg-metal-800 px-3 py-1.5 text-xs font-semibold text-metal-800 dark:text-white shadow-xs focus:ring-2 focus:ring-primary-500 w-full lg:w-auto max-w-full truncate min-w-0"
             >
-              <option value="">-- Apply a demonstration fixture --</option>
+              <option value="">-- Apply a sample demonstration fixture --</option>
               {evidenceQuery.data?.fixtures?.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.label} ({f.id})

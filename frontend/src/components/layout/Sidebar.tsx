@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex items-center gap-1.5">
                 <span className="text-metal-900 dark:text-white font-extrabold text-base tracking-tight truncate">Kosh</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  SANDBOX
+                  DEMO
                 </span>
               </div>
               <p className="text-metal-500 dark:text-metal-400 text-xs font-medium truncate">SME Finance Copilot</p>

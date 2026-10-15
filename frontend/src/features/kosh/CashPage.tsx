@@ -344,25 +344,9 @@ export const CashPage = () => {
 
       {/* 2. Main 13-Week Chart (Positioned High for Immediate Visibility on Phone & Desktop) */}
       <Card noPadding className="p-5 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
-            <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Closing Balance Trajectory (P10 - P50 - P90)</h3>
-          </div>
-          <div className="flex items-center gap-3.5 text-xs text-metal-600 dark:text-metal-300 font-medium">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-xs bg-primary-200 dark:bg-primary-800 inline-block border border-primary-400" />
-              P10-P90 Range
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-primary-600 dark:bg-primary-400 inline-block" />
-              P50 Median
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-rose-600 inline-block border-b border-dashed" />
-              Safety Buffer
-            </span>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
+          <h3 className="font-bold text-sm text-metal-900 dark:text-white tracking-tight">Closing Balance Trajectory</h3>
         </div>
 
         <div className="h-80 w-full pt-2">
@@ -386,7 +370,18 @@ export const CashPage = () => {
                 className="text-metal-600 dark:text-metal-300"
               />
               <Tooltip
-                formatter={(value) => [formatPaiseINR(Number(value))]}
+                formatter={(value, name) => {
+                  if (name === 'low') return null
+                  const label =
+                    name === 'range' || name === 'Forecast range (P10–P90)'
+                      ? 'Forecast range (P10–P90)'
+                      : name === 'p50_closing_balance_paise' || name === 'Median (P50)'
+                      ? 'Median (P50)'
+                      : name === 'buffer' || name === 'Safety buffer'
+                      ? 'Safety buffer'
+                      : String(name)
+                  return [formatPaiseINR(Number(value)), label]
+                }}
                 contentStyle={{
                   backgroundColor: '#ffffff',
                   borderRadius: '0.75rem',
@@ -395,11 +390,45 @@ export const CashPage = () => {
                   fontSize: '12px',
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
-              <Area dataKey="low" stackId="band" stroke="none" fill="transparent" isAnimationActive={false} />
-              <Area name="P10-P90" dataKey="range" stackId="band" stroke="#10b981" fill="#10b981" fillOpacity={0.25} isAnimationActive={false} />
-              <Line name="P50" dataKey="p50_closing_balance_paise" stroke="#059669" strokeWidth={2.5} dot={{ r: 2 }} isAnimationActive={false} />
-              <Line name="Buffer" dataKey="buffer" stroke="#dc2626" strokeWidth={2} strokeDasharray="5 5" dot={false} isAnimationActive={false} />
+              <Legend
+                wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}
+                iconType="circle"
+              />
+              <Area
+                dataKey="low"
+                stackId="band"
+                stroke="none"
+                fill="transparent"
+                legendType="none"
+                tooltipType="none"
+                isAnimationActive={false}
+              />
+              <Area
+                name="Forecast range (P10–P90)"
+                dataKey="range"
+                stackId="band"
+                stroke="#10b981"
+                fill="#10b981"
+                fillOpacity={0.25}
+                isAnimationActive={false}
+              />
+              <Line
+                name="Median (P50)"
+                dataKey="p50_closing_balance_paise"
+                stroke="#059669"
+                strokeWidth={2.5}
+                dot={{ r: 2 }}
+                isAnimationActive={false}
+              />
+              <Line
+                name="Safety buffer"
+                dataKey="buffer"
+                stroke="#dc2626"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                isAnimationActive={false}
+              />
             </ComposedChart>
           </ResponsiveContainer>
         </div>

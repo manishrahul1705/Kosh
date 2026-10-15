@@ -16,7 +16,6 @@ import {
 import { useSeller } from '@/app/SellerContext'
 import { koshApi, CollectionItem } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
-import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { formatEnumLabel } from '@/lib/koshLabels'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -101,8 +100,6 @@ export const CollectionsPage = () => {
 
   return (
     <section aria-label="Collections" className="space-y-6">
-      <SandboxBanner />
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
         <div>
@@ -128,7 +125,7 @@ export const CollectionsPage = () => {
         </div>
       )}
 
-      {/* Separately labelled fictional demonstration fixture */}
+      {/* Separately labelled demonstration fixture */}
       {fixture && (
         <div className="rounded-2xl border border-primary-200 dark:border-primary-800 bg-gradient-to-br from-primary-50/70 to-metal-50/40 dark:from-primary-950/30 dark:to-metal-900/40 p-5 space-y-3 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-primary-100 dark:border-primary-900 pb-2.5">
@@ -137,7 +134,7 @@ export const CollectionsPage = () => {
               <h3 className="font-bold text-primary-950 dark:text-primary-200 text-sm tracking-tight">{fixture.label}</h3>
             </div>
             <span className="self-start sm:self-auto rounded-full bg-primary-200/80 dark:bg-primary-900/60 text-primary-900 dark:text-primary-200 px-3 py-0.5 text-xs font-bold border border-primary-300 dark:border-primary-700">
-              Demonstration Only (Fictional)
+              Sample data · Statutory interest demonstration (Demonstration Only)
             </span>
           </div>
 

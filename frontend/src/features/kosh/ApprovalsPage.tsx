@@ -16,7 +16,6 @@ import {
 } from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
-import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { formatEnumLabel } from '@/lib/koshLabels'
 import { Card } from '@/components/ui/Card'
@@ -107,7 +106,6 @@ export const ApprovalsPage = () => {
   if (intents.data && !Array.isArray(intents.data.items)) {
     return (
       <section aria-label="Approvals" className="space-y-6">
-        <SandboxBanner />
         <ErrorAlert message="Received an incompatible or malformed action intents response from the server." />
       </section>
     )
@@ -115,8 +113,6 @@ export const ApprovalsPage = () => {
 
   return (
     <section aria-label="Approvals" className="space-y-6">
-      <SandboxBanner />
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
         <div>

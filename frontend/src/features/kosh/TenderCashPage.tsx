@@ -16,7 +16,6 @@ import {
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
 import { formatPaiseINR } from '@/lib/formatMoney'
-import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 
 interface FieldDef {
@@ -156,7 +155,6 @@ export const TenderCashPage = () => {
 
   return (
     <section aria-label="Tender to cash" className="space-y-8 animate-fadeIn">
-      <SandboxBanner />
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-border">

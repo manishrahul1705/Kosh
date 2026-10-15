@@ -35,7 +35,7 @@ export const AppLayout: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 shadow-2xs">
                 <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 animate-pulse" />
-                <span>Sandbox — no real money moves</span>
+                <span>Demo environment — no real money moves</span>
               </span>
               <span className="hidden md:inline text-xs text-metal-500 dark:text-metal-400 font-medium">
                 Simulated financial workspace

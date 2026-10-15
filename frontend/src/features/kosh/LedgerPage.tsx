@@ -20,7 +20,6 @@ import { formatPaiseINR } from '@/lib/formatMoney'
 import { formatEnumLabel } from '@/lib/koshLabels'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
-import { SandboxBanner } from '@/components/ui/SandboxBanner'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -50,7 +49,6 @@ export const LedgerPage = () => {
   if ('status' in query.data && (query.data as { status?: string }).status === 'NOT_IMPLEMENTED') {
     return (
       <section aria-label="Ledger" className="space-y-6">
-        <SandboxBanner />
         <div className="flex items-center gap-2 border-b border-metal-200/80 dark:border-metal-800 pb-4">
           <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
           <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Ledger & Invoices</h2>
@@ -69,7 +67,6 @@ export const LedgerPage = () => {
   if (!query.data.totals || !Array.isArray(query.data.items)) {
     return (
       <section aria-label="Ledger" className="space-y-6">
-        <SandboxBanner />
         <div className="flex items-center gap-2 border-b border-metal-200/80 dark:border-metal-800 pb-4">
           <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary-500 to-primary-600 shrink-0" />
           <h2 className="text-xl font-bold text-metal-900 dark:text-white tracking-tight">Ledger & Invoices</h2>
@@ -94,8 +91,6 @@ export const LedgerPage = () => {
 
   return (
     <section aria-label="Ledger" className="space-y-6">
-      <SandboxBanner />
-
       {/* Header with MetalliSense emerald styling */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-metal-200/80 dark:border-metal-800 pb-4">
         <div>
@@ -116,35 +111,47 @@ export const LedgerPage = () => {
       </div>
 
       {/* Metric Cards - MetalliSense KPI card treatment */}
-      <div className="grid gap-3.5 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <p className="stat-label">Open receivables</p>
-            <div className="w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 min-w-0">
+        <div className="stat-card min-w-0">
+          <div className="flex items-center justify-between gap-1">
+            <p className="stat-label truncate">Open receivables</p>
+            <div className="w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center shrink-0">
               <ArrowDownLeft size={15} className="text-primary-600 dark:text-primary-400" />
             </div>
           </div>
-          <strong className="stat-value text-primary-600 dark:text-primary-400 block mt-1">{formatPaiseINR(t.open_receivables_paise)}</strong>
+          <strong className="stat-value text-primary-600 dark:text-primary-400 block mt-1 truncate" title={formatPaiseINR(t.open_receivables_paise)}>
+            {formatPaiseINR(t.open_receivables_paise)}
+          </strong>
         </div>
 
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <p className="stat-label">Open payables (verified)</p>
-            <div className="w-7 h-7 rounded-lg bg-metal-100 dark:bg-metal-800 flex items-center justify-center">
+        <div className="stat-card min-w-0">
+          <div className="flex items-center justify-between gap-1">
+            <p className="stat-label truncate" title="Open payables (verified)">Open payables (verified)</p>
+            <div className="w-7 h-7 rounded-lg bg-metal-100 dark:bg-metal-800 flex items-center justify-center shrink-0">
               <ArrowUpRight size={15} className="text-metal-600 dark:text-metal-400" />
             </div>
           </div>
-          <strong className="stat-value text-metal-900 dark:text-white block mt-1">{formatPaiseINR(t.open_payables_paise)}</strong>
+          <strong className="stat-value text-metal-900 dark:text-white block mt-1 truncate" title={formatPaiseINR(t.open_payables_paise)}>
+            {formatPaiseINR(t.open_payables_paise)}
+          </strong>
         </div>
 
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <p className="stat-label">Held-for-review payables</p>
-            <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center">
+        <div className="stat-card min-w-0">
+          <div className="flex items-center justify-between gap-1">
+            <p className="stat-label truncate" title="Held-for-review payables">Held-for-review payables</p>
+            <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center shrink-0">
               <AlertCircle size={15} className="text-amber-600 dark:text-amber-400" />
             </div>
           </div>
-          <strong className="stat-value text-amber-700 dark:text-amber-400 block mt-1">
+          <strong
+            className="stat-value text-amber-700 dark:text-amber-400 block mt-1 truncate"
+            title={formatPaiseINR(
+              t.held_for_review_payables_paise ??
+                query.data.items
+                  .filter((i) => i.direction === 'PAYABLE' && i.status === 'REVIEW')
+                  .reduce((acc, i) => acc + i.amount_paise, 0)
+            )}
+          >
             {formatPaiseINR(
               t.held_for_review_payables_paise ??
                 query.data.items
@@ -154,34 +161,38 @@ export const LedgerPage = () => {
           </strong>
         </div>
 
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <p className="stat-label">Overdue</p>
-            <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/50 flex items-center justify-center">
+        <div className="stat-card min-w-0">
+          <div className="flex items-center justify-between gap-1">
+            <p className="stat-label truncate">Overdue</p>
+            <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/50 flex items-center justify-center shrink-0">
               <Clock size={15} className="text-rose-600 dark:text-rose-400" />
             </div>
           </div>
-          <strong className="stat-value text-rose-600 dark:text-rose-400 block mt-1">{formatPaiseINR(t.overdue_receivables_paise)}</strong>
+          <strong className="stat-value text-rose-600 dark:text-rose-400 block mt-1 truncate" title={formatPaiseINR(t.overdue_receivables_paise)}>
+            {formatPaiseINR(t.overdue_receivables_paise)}
+          </strong>
         </div>
 
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <p className="stat-label">Bank balance</p>
-            <div className="w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center">
+        <div className="stat-card min-w-0">
+          <div className="flex items-center justify-between gap-1">
+            <p className="stat-label truncate">Bank balance</p>
+            <div className="w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center shrink-0">
               <Building size={15} className="text-primary-600 dark:text-primary-400" />
             </div>
           </div>
-          <strong className="stat-value text-primary-700 dark:text-primary-300 block mt-1">{formatPaiseINR(t.latest_bank_balance_paise)}</strong>
+          <strong className="stat-value text-primary-700 dark:text-primary-300 block mt-1 truncate" title={formatPaiseINR(t.latest_bank_balance_paise)}>
+            {formatPaiseINR(t.latest_bank_balance_paise)}
+          </strong>
         </div>
 
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <p className="stat-label">Review Required</p>
-            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${t.review_count > 0 ? 'bg-amber-50 dark:bg-amber-950/50' : 'bg-metal-100 dark:bg-metal-800'}`}>
+        <div className="stat-card min-w-0">
+          <div className="flex items-center justify-between gap-1">
+            <p className="stat-label truncate">Review Required</p>
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${t.review_count > 0 ? 'bg-amber-50 dark:bg-amber-950/50' : 'bg-metal-100 dark:bg-metal-800'}`}>
               <AlertCircle size={15} className={t.review_count > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-metal-400'} />
             </div>
           </div>
-          <strong className={`stat-value block mt-1 ${t.review_count > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-metal-900 dark:text-white'}`}>
+          <strong className={`stat-value block mt-1 truncate ${t.review_count > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-metal-900 dark:text-white'}`}>
             {t.review_count} {t.review_count === 1 ? 'invoice' : 'invoices'}
           </strong>
         </div>

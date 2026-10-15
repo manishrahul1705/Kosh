@@ -46,13 +46,25 @@ All 8 financing catalogue products evaluated deterministically against current e
 | Product ID | Product Name | Status | Eligible Scope / Invoices | Evaluation Reason |
 | :--- | :--- | :--- | :--- | :--- |
 | `BANK_OD_DRAWDOWN` | Bank OD drawdown | **MATCHED** | Entity facility | Criterion met. |
-| `CGTMSE_BACKED_WC_LOAN` | CGTMSE-backed working capital loan | **REVIEW_REQUIRED** | Entity facility | Criterion met. |
-| `COLLECTIONS_PUSH` | Collections push | **MATCHED** | 14/27 eligible | Criterion met. |
+| `CGTMSE_BACKED_WC_LOAN` | CGTMSE-backed working capital loan | **REVIEW_REQUIRED** | Entity facility | Required business evidence is missing. |
+| `COLLECTIONS_PUSH` | Collections push | **MATCHED** | 14/27 eligible | Matched scope: 14 invoices (Criterion met). Other invoice scopes shown separately. |
 | `GEM_SAHAY_PO_FINANCE` | GeM Sahay PO finance | **REVIEW_REQUIRED** | Entity facility | Required business evidence is missing. |
-| `MUDRA_LOAN` | MUDRA loan | **REVIEW_REQUIRED** | Entity facility | Shishu: above 0 and up to 5000000 paise. |
+| `MUDRA_LOAN` | MUDRA loan | **REVIEW_REQUIRED** | Entity facility | Required business evidence is missing. |
 | `NBFC_UNSECURED_BUSINESS_LOAN` | Unsecured business loan | **MATCHED** | Entity facility | Criterion met. |
 | `SUPPLIER_TERM_EXTENSION` | Supplier term extension | **REVIEW_REQUIRED** | 0/8 eligible | Required business evidence is missing. |
-| `TREDS_INVOICE_DISCOUNTING` | TReDS invoice discounting | **MATCHED** | 1/27 eligible | Criterion met. |
+| `TREDS_INVOICE_DISCOUNTING` | TReDS invoice discounting | **MATCHED** | 1/27 eligible | Matched scope: Invoice 395 (Criterion met). Other invoice scopes shown separately. |
+
+### Invoice Scope Breakdown for Multi-Scope Levers
+
+- **`TREDS_INVOICE_DISCOUNTING`** (1/27 eligible):
+  - **Matched Scope (1)**: Invoice 395 meets approved CPSE buyer, verified invoice, and tenor <= 90 days criteria.
+  - **Other Invoice Scopes (26)**: 21 review required (buyer TReDS platform onboarding required); 5 not matched (tenor/ineligible).
+- **`COLLECTIONS_PUSH`** (14/27 eligible):
+  - **Matched Scopes (14)**: Invoices 378, 379, 381, 383, 393, 384, 385, 386, 387, 388, 389, 390, 391, 392 meet statutory reminder eligibility (overdue or due within 30 days).
+  - **Other Invoice Scopes (13)**: 13 not matched (due > 30 days or not yet eligible).
+- **`SUPPLIER_TERM_EXTENSION`** (0/8 eligible):
+  - **Matched Scopes (0)**: None.
+  - **Other Invoice Scopes (8)**: 8 payables in review (supplier payment term negotiation addendum required).
 
 ## 4. Financing Plan & Optimization
 
@@ -124,7 +136,8 @@ Per-week probability of cash balance falling below the ₹10,00,000 buffer befor
 
 ## 7. Stage 4 Execution, Ledger Postings & Security Results
 
-- **Reminders Dispatched (Outbox)**: 14 collections reminders queued/sent (zero monetary cash fabricated).
+- **Reminders Dispatched (Outbox)**: 0 collections reminders queued/sent (zero monetary cash fabricated).
+- **Simulated Delivery & Offline Test Substitution**: All collections reminders and OTP challenges use deterministic local simulated outboxes/inboxes. Execution actors, credentials and as-of dates (`2026-10-13`) operate entirely offline without network side-effects.
 - **Sandbox Ledger Postings**: 1 posting(s).
   - **TREDS_SETTLEMENT** (SANDBOX): Net cash proceeds of ₹1,392,250.59 posted on `2026-10-16`; receivable reduction ₹1,407,657.69.
 
@@ -132,23 +145,23 @@ Per-week probability of cash balance falling below the ₹10,00,000 buffer befor
 
 | Security Test | Tier | Result |
 | :--- | :--- | :--- |
-| OTP Step-Up Enforcement | `T3` | PASS (OTP verified before token issuance; unverified approval blocked) |
-| Approval Token Replay (Single-Use) | `T2/T3` | PASS (403 TOKEN_REPLAY rejected on second consume: True) |
-| Parameter Tampering Resistance | `T2/T3` | PASS (403 PARAMS_TAMPERED rejected modified amount: True) |
-| Document-Origin Direct Payment Attack (T4 Blocked) | `T4` | PASS (403 DENIED with rule: DOCUMENT_PARAMETERS) |
-| Tenant Kill Switch (Instant Circuit Breaker) | `T4` | PASS (403 KILL_SWITCH rejected all actions: True) |
+| OTP Step-Up Enforcement | `T3` | PASS (Unverified approval rejected with ActionError OTP_REQUIRED; challenge delivered to simulated sandbox inbox and verified) |
+| Approval Token Replay (Single-Use) | `T2/T3` | PASS (Single-use token consumed; second consume rejected with ActionError TOKEN_REPLAY, status_code=403) |
+| Parameter Tampering Resistance | `T2/T3` | PASS (Modified payload rejected with ActionError PARAMS_TAMPERED, status_code=403) |
+| Document-Origin Direct Payment Attack (T4 Blocked) | `T4` | PASS (Policy evaluation DENY: rules=DOCUMENT_PARAMETERS, tier=T4) |
+| Tenant Kill Switch (Instant Circuit Breaker) | `T4` | PASS (Policy evaluation DENY with rule: KILL_SWITCH) |
 
 ### Security Incident Counters
 
 | Counter | Value | Description |
 | :--- | :--- | :--- |
-| `blocked_intents` | **1** | Total intents rejected by security policy gates |
+| `blocked_intents` | **2** | Total intents rejected by security policy gates |
 | `token_replays` | **1** | Attempts to replay an already-consumed single-use token |
 | `injection_detections` | **3** | Poisoned document prompt injection attempts detected |
 
 ## 8. Cryptographic Audit Chain
 
-- **Total Audit Log Entries**: 168
+- **Total Audit Log Entries**: 59
 - **Hash Chain Verification**: **VALID**
 - **Audit Verification Result**: All SHA-256 parent hash links valid; 0 broken or tampered entries.
 

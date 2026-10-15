@@ -33,7 +33,11 @@ def create_from_plan_line(db,*,seller_id,plan_line_id,creator_id,source="PLANNER
     if plan.status!="VALID" or line.status!="VALID":raise ValueError("VALID_PLAN_REQUIRED")
     target=Decimal(plan.planning_details["target_probability"])
     alert_week=plan.planning_details["alert_week"]
-    if Decimal(str(plan.after_probabilities[alert_week-1]))>target or any(Decimal(str(p))>=Decimal(plan.planning_details["alert_threshold"]) for p in plan.after_probabilities):raise ValueError("PLAN_PROOF_INVALID")
+    target_scope=plan.planning_details.get("target_scope","ALERT_WEEK")
+    if target_scope=="ALL_WEEKS":
+        if any(Decimal(str(p))>target for p in plan.after_probabilities):raise ValueError("PLAN_PROOF_INVALID")
+    else:
+        if Decimal(str(plan.after_probabilities[alert_week-1]))>target or any(Decimal(str(p))>=Decimal(plan.planning_details["alert_threshold"]) for p in plan.after_probabilities):raise ValueError("PLAN_PROOF_INVALID")
     latest=db.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id==seller_id,KoshForecastRun.status=="SUCCESS").order_by(KoshForecastRun.id.desc()).limit(1))
     if not latest or latest.id!=plan.forecast_run_id or latest.input_fingerprint!=plan.forecast_fingerprint:raise ValueError("STALE_PLAN")
     from app.finance.forecast import current_fingerprint

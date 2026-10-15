@@ -111,7 +111,7 @@ export const LedgerPage = () => {
       </div>
 
       {/* Metric Cards - MetalliSense KPI card treatment */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 min-w-0">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 min-w-0">
         <div className="stat-card min-w-0">
           <div className="flex items-center justify-between gap-1">
             <p className="stat-label truncate">Open receivables</p>
@@ -119,7 +119,7 @@ export const LedgerPage = () => {
               <ArrowDownLeft size={15} className="text-primary-600 dark:text-primary-400" />
             </div>
           </div>
-          <strong className="stat-value text-primary-600 dark:text-primary-400 block mt-1 truncate" title={formatPaiseINR(t.open_receivables_paise)}>
+          <strong className="stat-value text-primary-600 dark:text-primary-400 block mt-1 break-words" title={formatPaiseINR(t.open_receivables_paise)}>
             {formatPaiseINR(t.open_receivables_paise)}
           </strong>
         </div>
@@ -131,7 +131,7 @@ export const LedgerPage = () => {
               <ArrowUpRight size={15} className="text-metal-600 dark:text-metal-400" />
             </div>
           </div>
-          <strong className="stat-value text-metal-900 dark:text-white block mt-1 truncate" title={formatPaiseINR(t.open_payables_paise)}>
+          <strong className="stat-value text-metal-900 dark:text-white block mt-1 break-words" title={formatPaiseINR(t.open_payables_paise)}>
             {formatPaiseINR(t.open_payables_paise)}
           </strong>
         </div>
@@ -144,7 +144,7 @@ export const LedgerPage = () => {
             </div>
           </div>
           <strong
-            className="stat-value text-amber-700 dark:text-amber-400 block mt-1 truncate"
+            className="stat-value text-amber-700 dark:text-amber-400 block mt-1 break-words"
             title={formatPaiseINR(
               t.held_for_review_payables_paise ??
                 query.data.items
@@ -168,7 +168,7 @@ export const LedgerPage = () => {
               <Clock size={15} className="text-rose-600 dark:text-rose-400" />
             </div>
           </div>
-          <strong className="stat-value text-rose-600 dark:text-rose-400 block mt-1 truncate" title={formatPaiseINR(t.overdue_receivables_paise)}>
+          <strong className="stat-value text-rose-600 dark:text-rose-400 block mt-1 break-words" title={formatPaiseINR(t.overdue_receivables_paise)}>
             {formatPaiseINR(t.overdue_receivables_paise)}
           </strong>
         </div>
@@ -180,7 +180,7 @@ export const LedgerPage = () => {
               <Building size={15} className="text-primary-600 dark:text-primary-400" />
             </div>
           </div>
-          <strong className="stat-value text-primary-700 dark:text-primary-300 block mt-1 truncate" title={formatPaiseINR(t.latest_bank_balance_paise)}>
+          <strong className="stat-value text-primary-700 dark:text-primary-300 block mt-1 break-words" title={formatPaiseINR(t.latest_bank_balance_paise)}>
             {formatPaiseINR(t.latest_bank_balance_paise)}
           </strong>
         </div>
@@ -192,7 +192,7 @@ export const LedgerPage = () => {
               <AlertCircle size={15} className={t.review_count > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-metal-400'} />
             </div>
           </div>
-          <strong className={`stat-value block mt-1 truncate ${t.review_count > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-metal-900 dark:text-white'}`}>
+          <strong className={`stat-value block mt-1 break-words ${t.review_count > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-metal-900 dark:text-white'}`}>
             {t.review_count} {t.review_count === 1 ? 'invoice' : 'invoices'}
           </strong>
         </div>

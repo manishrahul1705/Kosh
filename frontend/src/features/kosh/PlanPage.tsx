@@ -165,13 +165,22 @@ export const PlanPage = () => {
             Objective, catalogue-wide criteria matching sorted strictly by effective annual cost.
           </p>
         </div>
-        <Button
-          variant="primary"
-          className="self-start sm:self-auto"
-          onClick={() => propose.mutate()}
-        >
-          Build plan
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            variant="secondary"
+            loading={evaluate.isPending}
+            onClick={() => evaluate.mutate()}
+          >
+            Evaluate options
+          </Button>
+          <Button
+            variant="primary"
+            loading={propose.isPending}
+            onClick={() => propose.mutate()}
+          >
+            Build plan
+          </Button>
+        </div>
       </div>
 
       <div className="p-3.5 rounded-xl bg-primary-50/70 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 text-xs text-primary-950 dark:text-primary-200 font-medium flex items-center gap-2.5">
@@ -257,115 +266,133 @@ export const PlanPage = () => {
           </div>
           <span className="text-xs text-metal-500 dark:text-metal-400">{options.data?.items.length ?? 0} options available</span>
         </div>
-        <div className="table-container border-0 shadow-none rounded-none">
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Days</th>
-                <th>Absolute cost</th>
-                <th>Effective annual cost</th>
-                <th>Time to funds</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
-              {options.data?.items?.map((item, i) => (
-                <tr key={`${item.product_id}-${i}`} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
-                  <td className="py-3">
-                    <div className="font-bold text-metal-900 dark:text-white">{item.display_name}</div>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                      {item.assumption && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-metal-100 dark:bg-metal-800 text-metal-500 font-medium">
-                          (assumption)
-                        </span>
-                      )}
-                      {item.verify_before_relying && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-800">
-                          (verify before relying)
-                        </span>
-                      )}
-                    </div>
-                    <details className="mt-1.5 text-xs text-metal-600 dark:text-metal-400">
-                      <summary className="cursor-pointer font-semibold text-primary-600 dark:text-primary-400 hover:underline">
-                        Evidence and Why not?
-                      </summary>
-                      <div className="mt-1 space-y-1 pl-2 border-l-2 border-metal-200 dark:border-metal-700">
-                        {item.reasons?.map((r, j) => (
-                          <p key={j} className="text-[11px] text-metal-700 dark:text-metal-300">
-                            <span className="font-bold text-metal-900 dark:text-white">{r.reason_code}:</span> {r.reason}{' '}
-                            {r.product_clause?.quote && (
-                              <span className="italic text-metal-500">"{r.product_clause.quote}"</span>
-                            )}
-                          </p>
-                        ))}
+        {(!options.data?.items || options.data.items.length === 0) ? (
+          <div className="p-8 text-center space-y-3 bg-white dark:bg-metal-900">
+            <Layers size={32} className="mx-auto text-metal-300 dark:text-metal-600 mb-1" />
+            <h4 className="text-sm font-bold text-metal-900 dark:text-white">Financing options not evaluated yet</h4>
+            <p className="text-xs text-metal-500 max-w-md mx-auto">
+              Run catalogue criteria matching against your verified invoices and seller attributes to assess eligibility across all 8 working-capital products.
+            </p>
+            <Button
+              variant="primary"
+              loading={evaluate.isPending}
+              onClick={() => evaluate.mutate()}
+              className="mt-2"
+            >
+              Evaluate 8 financing options
+            </Button>
+          </div>
+        ) : (
+          <div className="table-container border-0 shadow-none rounded-none">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Status</th>
+                  <th>Amount</th>
+                  <th>Days</th>
+                  <th>Absolute cost</th>
+                  <th>Effective annual cost</th>
+                  <th>Time to funds</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
+                {options.data?.items?.map((item, i) => (
+                  <tr key={`${item.product_id}-${i}`} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
+                    <td className="py-3">
+                      <div className="font-bold text-metal-900 dark:text-white">{item.display_name}</div>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                        {item.assumption && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-metal-100 dark:bg-metal-800 text-metal-500 font-medium">
+                            (assumption)
+                          </span>
+                        )}
+                        {item.verify_before_relying && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-800">
+                            (verify before relying)
+                          </span>
+                        )}
                       </div>
-                    </details>
-                    {item.invoice_eligibility && (
                       <details className="mt-1.5 text-xs text-metal-600 dark:text-metal-400">
                         <summary className="cursor-pointer font-semibold text-primary-600 dark:text-primary-400 hover:underline">
-                          Per-invoice eligibility ({item.invoice_eligibility.filter((x) => x.eligible).length} eligible / {item.invoice_eligibility.length} open)
+                          Evidence and Why not?
                         </summary>
-                        <ul className="mt-1 list-disc pl-4 space-y-0.5 text-[11px] text-metal-700 dark:text-metal-300">
-                          {item.invoice_eligibility.map((invoice) => (
-                            <li key={invoice.scope}>
-                              <span className="font-medium text-metal-900 dark:text-white">{invoice.scope}</span>{' '}
-                              {invoice.evidence.find((e) => e.invoice_number)?.invoice_number}:{' '}
-                              <span className="font-semibold">{invoice.status}</span>{' '}
-                              {invoice.reasons
-                                .filter((r) => r.status !== 'MATCHED')
-                                .map((r) => `${r.criterion}: ${r.reason}`)
-                                .join('; ')}
-                            </li>
+                        <div className="mt-1 space-y-1 pl-2 border-l-2 border-metal-200 dark:border-metal-700">
+                          {item.reasons?.map((r, j) => (
+                            <p key={j} className="text-[11px] text-metal-700 dark:text-metal-300">
+                              <span className="font-bold text-metal-900 dark:text-white">{r.reason_code}:</span> {r.reason}{' '}
+                              {r.product_clause?.quote && (
+                                <span className="italic text-metal-500">"{r.product_clause.quote}"</span>
+                              )}
+                            </p>
                           ))}
-                        </ul>
+                        </div>
                       </details>
-                    )}
-                  </td>
-                  <td>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                        item.status === 'MATCHED'
-                          ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-300 border border-primary-200 dark:border-primary-800'
-                          : item.status === 'NOT_MATCHED'
-                          ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                          : 'bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
-                      }`}
-                      title={
-                        item.status === 'MATCHED'
-                          ? `${item.status}: Recorded business facts meet catalogue criteria. This is not a loan sanction or lender approval.`
-                          : item.status
-                      }
-                    >
-                      {formatEnumLabel(item.status)}
-                    </span>
-                    {item.status === 'MATCHED' && (
-                      <small className="block text-[10px] text-metal-500 mt-0.5">Meets criteria; not lender approval</small>
-                    )}
-                  </td>
-                  <td className="font-semibold text-metal-900 dark:text-white">
-                    {formatPaiseINR(item.amount_paise ?? item.max_amount_paise)}
-                  </td>
-                  <td>
-                    <span className="font-medium text-metal-900 dark:text-white">{item.days}</span>
-                    <small className="block text-[10px] text-metal-400">90-day quote basis</small>
-                  </td>
-                  <td>
-                    <span className="font-semibold text-metal-900 dark:text-white">
-                      {item.cost_paise == null ? 'Pending evaluation' : formatPaiseINR(item.cost_paise)}
-                    </span>
-                    <small className="block text-[10px] text-metal-400">{item.cost_assumption}</small>
-                  </td>
-                  <td className="font-medium text-metal-900 dark:text-white">
-                    {item.effective_annual_rate == null ? 'Relationship risk' : `${(Number(item.effective_annual_rate) * 100).toFixed(1)}%`}
-                  </td>
-                  <td className="text-metal-700 dark:text-metal-300">{item.arrival_business_days} business days</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      {item.invoice_eligibility && (
+                        <details className="mt-1.5 text-xs text-metal-600 dark:text-metal-400">
+                          <summary className="cursor-pointer font-semibold text-primary-600 dark:text-primary-400 hover:underline">
+                            Per-invoice eligibility ({item.invoice_eligibility.filter((x) => x.eligible).length} eligible / {item.invoice_eligibility.length} open)
+                          </summary>
+                          <ul className="mt-1 list-disc pl-4 space-y-0.5 text-[11px] text-metal-700 dark:text-metal-300">
+                            {item.invoice_eligibility.map((invoice) => (
+                              <li key={invoice.scope}>
+                                <span className="font-medium text-metal-900 dark:text-white">{invoice.scope}</span>{' '}
+                                {invoice.evidence.find((e) => e.invoice_number)?.invoice_number}:{' '}
+                                <span className="font-semibold">{invoice.status}</span>{' '}
+                                {invoice.reasons
+                                  .filter((r) => r.status !== 'MATCHED')
+                                  .map((r) => `${r.criterion}: ${r.reason}`)
+                                  .join('; ')}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </td>
+                    <td>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                          item.status === 'MATCHED'
+                            ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-300 border border-primary-200 dark:border-primary-800'
+                            : item.status === 'NOT_MATCHED'
+                            ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                            : 'bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                        }`}
+                        title={
+                          item.status === 'MATCHED'
+                            ? `${item.status}: Recorded business facts meet catalogue criteria. This is not a loan sanction or lender approval.`
+                            : item.status
+                        }
+                      >
+                        {formatEnumLabel(item.status)}
+                      </span>
+                      {item.status === 'MATCHED' && (
+                        <small className="block text-[10px] text-metal-500 mt-0.5">Meets criteria; not lender approval</small>
+                      )}
+                    </td>
+                    <td className="font-semibold text-metal-900 dark:text-white">
+                      {formatPaiseINR(item.amount_paise ?? item.max_amount_paise)}
+                    </td>
+                    <td>
+                      <span className="font-medium text-metal-900 dark:text-white">{item.days}</span>
+                      <small className="block text-[10px] text-metal-400">90-day quote basis</small>
+                    </td>
+                    <td>
+                      <span className="font-semibold text-metal-900 dark:text-white">
+                        {item.cost_paise == null ? 'Pending evaluation' : formatPaiseINR(item.cost_paise)}
+                      </span>
+                      <small className="block text-[10px] text-metal-400">{item.cost_assumption}</small>
+                    </td>
+                    <td className="font-medium text-metal-900 dark:text-white">
+                      {item.effective_annual_rate == null ? 'Relationship risk' : `${(Number(item.effective_annual_rate) * 100).toFixed(1)}%`}
+                    </td>
+                    <td className="text-metal-700 dark:text-metal-300">{item.arrival_business_days} business days</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       {/* Owner Financing Eligibility Evidence Workflow */}
@@ -751,7 +778,7 @@ export const PlanPage = () => {
                 <span className="font-bold text-metal-800 dark:text-metal-200">
                   {plan.data.guaranteed_plan
                     ? `${(plan.data.guaranteed_plan.alert_week_probability * 100).toFixed(1)}%`
-                    : 'Verified <= 20%'}
+                    : 'Meets <= 20% risk target'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">

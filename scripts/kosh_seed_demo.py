@@ -83,6 +83,59 @@ def seed(database_url:str,data_dir:Path,storage:Path)->dict:
             expires_at=(utcnow() + timedelta(days=365)).replace(tzinfo=timezone.utc),
         )
         session.commit()
+        # Seed a matched GeM tender for Tender-to-Cash scenario simulation
+        from app.database.matching_models import SellerTenderMatch
+        from app.database.models import Tender
+        demo_bid = "GEM/2026/B/8921045"
+        tender = session.scalar(select(Tender).where(Tender.bid_number == demo_bid))
+        if not tender:
+            now_dt = utcnow()
+            tender = Tender(
+                bid_number=demo_bid,
+                title="Supply of Precision CNC Machined Components & Flanges",
+                category="Machined Metal Components",
+                buyer_name="Heavy Electricals Bharat Ltd (CPSE)",
+                status="ONGOING",
+                published_at=now_dt - timedelta(days=10),
+                bid_end_at=now_dt + timedelta(days=35),
+                first_seen_at=now_dt,
+                last_seen_at=now_dt,
+                source_fingerprint="kosh-demo-tender-01",
+            )
+            session.add(tender)
+            session.flush()
+        match = session.scalar(select(SellerTenderMatch).where(
+            SellerTenderMatch.seller_id == seller.id,
+            SellerTenderMatch.tender_id == tender.id
+        ))
+        if not match:
+            session.add(SellerTenderMatch(
+                seller_id=seller.id,
+                tender_id=tender.id,
+                seller_revision_id=revision.id,
+                relevance_status="RELEVANT",
+                eligibility_status="ELIGIBLE",
+                match_status="MATCHED",
+                tender_state_fingerprint="kosh-demo-tender-match-v1",
+                matcher_version="1.0",
+                passed_count=5,
+                failed_count=0,
+                review_count=0
+            ))
+            session.commit()
+        try:
+            from app.database.kosh_models import KoshForecastRun
+            f_run = session.scalar(select(KoshForecastRun).where(KoshForecastRun.seller_id == seller.id, KoshForecastRun.status == "SUCCESS").limit(1))
+            if f_run:
+                from decimal import Decimal
+                from app.lending.service import run_evaluation
+                from app.finance.plan import propose_plan
+                run_evaluation(session, seller.id, date(2026, 10, 13))
+                session.commit()
+                propose_plan(session, seller.id, target_prob=Decimal("0.20"), target_scope="ALL_WEEKS")
+                session.commit()
+        except Exception:
+            session.rollback()
         from app.api.cash import get_ledger
         ledger=get_ledger(seller.id,session,None)
         result={"seller_id":seller.id,"documents_processed":processed,"review_items":review,"ledger_totals":ledger["totals"]};print(json.dumps(result,default=str,indent=2));return result

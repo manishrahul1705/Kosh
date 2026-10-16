@@ -242,9 +242,9 @@ def propose_plan(db,seller_id:int,*,target_prob=None,target_scope=None,persist=T
     if final_status == "VALID":
         if target_scope == "ALL_WEEKS":
             max_p = max(g_after_p)
-            why += f" Same-seed forecast: all horizon weeks guaranteed <= {target_prob:.4f} (maximum week probability: {max_p:.4f}); every horizon week below alert threshold {threshold:.4f}. Paid capacity trimmed to the smallest valid paise amount."
+            why += f" Same-seed forecast: all 13 weeks meet the <= {target_prob:.4f} risk target in this configured simulation (maximum week probability: {max_p:.4f}); every horizon week below alert threshold {threshold:.4f}. Paid capacity trimmed to the smallest valid paise amount."
         else:
-            why += f" Same-seed forecast at week {target}: guaranteed probability {g_after_p[target-1]:.4f} (expected with collections {after_p[target-1]:.4f}), required at most {target_prob:.4f}; every horizon week below {threshold:.4f}. Paid capacity trimmed to the smallest valid paise amount."
+            why += f" Same-seed forecast at week {target}: simulated probability {g_after_p[target-1]:.4f} meets the <= {target_prob:.4f} risk target in this configured simulation (expected with collections {after_p[target-1]:.4f}); every horizon week below {threshold:.4f}. Paid capacity trimmed to the smallest valid paise amount."
     else:
         why += f" Available eligible capacity cannot bring the target ({target_scope}) and horizon safety conditions; this plan is INSUFFICIENT (best achievable max-week probability: {best_achievable_max_prob:.2%}, cost: ₹{best_achievable_cost/100:,.2f})."
     details["why_this_plan"] = why

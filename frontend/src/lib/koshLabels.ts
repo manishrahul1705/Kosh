@@ -19,6 +19,8 @@ export const formatEnumLabel = (val: string | null | undefined): string => {
       return 'Out of date: re-run'
     case 'VALID':
       return 'Valid'
+    case 'PROCESSED':
+      return 'Processed clean'
     case 'PROPOSED':
       return 'Proposed'
     case 'PENDING':
@@ -44,6 +46,30 @@ export const formatEnumLabel = (val: string | null | undefined): string => {
       return 'Paid'
     case 'PARTIAL':
       return 'Partial'
+    case 'OBLIGATION_CLUSTER':
+      return 'Payments due together'
+    case 'SUPPLIER_PAYMENT':
+      return 'Supplier payment'
+    case 'COLLECTION_FOLLOWUP':
+      return 'Collection follow-up'
+    case 'TREDS_INVOICE_DISCOUNTING':
+      return 'TReDS invoice discounting'
+    case 'CGTMSE_WORKING_CAPITAL':
+      return 'CGTMSE credit guarantee'
+    case 'GEM_SAHAY_PO_FINANCING':
+      return 'GeM Sahay PO financing'
+    case 'NBFC_LINE':
+      return 'NBFC credit line'
+    case 'BANK_STATEMENT':
+      return 'Bank statement'
+    case 'SALES_INVOICES':
+      return 'Sales invoices'
+    case 'PURCHASE_BILLS':
+      return 'Purchase bills'
+    case 'BOOKS_EXPORT':
+      return 'Accounting export'
+    case 'CRAC_RECEIPT':
+      return 'CRAC acceptance'
     default:
       return val.replace(/_/g, ' ')
   }

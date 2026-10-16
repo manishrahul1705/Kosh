@@ -21,6 +21,12 @@ export const RevenuePage = () => {
     enabled: activeSellerId !== null,
   })
 
+  const weeks = query.data?.weeks ?? []
+  const totalPredictedPaise = weeks.reduce((acc, w) => acc + (w.predicted_revenue_paise || 0), 0)
+  const avgPredictedPaise = weeks.length > 0 ? Math.round(totalPredictedPaise / weeks.length) : 0
+  const totalLevelPaise = weeks.reduce((acc, w) => acc + (w.level_contribution_paise || 0), 0)
+  const totalTrendPaise = weeks.reduce((acc, w) => acc + (w.trend_contribution_paise || 0), 0)
+
   return (
     <section aria-label="Revenue signal" className="space-y-6">
 
@@ -37,37 +43,76 @@ export const RevenuePage = () => {
         </div>
       </div>
 
+      {/* Revenue Signal Summary Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 rounded-xl border border-metal-200/80 dark:border-metal-800 bg-white dark:bg-metal-900 shadow-2xs space-y-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-metal-400">
+            Total 13-Week Signal
+          </span>
+          <p className="text-2xl font-bold font-mono text-primary-700 dark:text-primary-300">
+            {formatPaiseINR(totalPredictedPaise)}
+          </p>
+          <span className="text-xs text-metal-500 dark:text-metal-400 block">
+            Sum of weekly forecasted receipts
+          </span>
+        </div>
+
+        <div className="p-4 rounded-xl border border-metal-200/80 dark:border-metal-800 bg-white dark:bg-metal-900 shadow-2xs space-y-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-metal-400">
+            Weekly Average Inflow
+          </span>
+          <p className="text-2xl font-bold font-mono text-metal-900 dark:text-white">
+            {formatPaiseINR(avgPredictedPaise)}
+          </p>
+          <span className="text-xs text-metal-500 dark:text-metal-400 block">
+            Projected weekly run-rate
+          </span>
+        </div>
+
+        <div className="p-4 rounded-xl border border-metal-200/80 dark:border-metal-800 bg-white dark:bg-metal-900 shadow-2xs space-y-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-metal-400">
+            Baseline vs Trend Outlay
+          </span>
+          <div className="flex flex-wrap items-baseline gap-1 font-mono font-bold text-sm text-metal-800 dark:text-metal-200">
+            <span>{formatPaiseINR(totalLevelPaise)}</span>
+            <span className="text-metal-400 font-normal">/</span>
+            <span className="text-primary-700 dark:text-primary-300">{formatPaiseINR(totalTrendPaise)}</span>
+          </div>
+          <span className="text-xs text-metal-500 dark:text-metal-400 block">
+            Level baseline / additive trend
+          </span>
+        </div>
+      </div>
+
       {/* Model Metadata Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="space-y-1">
           <span className="text-[10px] font-bold uppercase text-metal-400 tracking-wider">Model</span>
-          <p className="text-xs font-bold text-metal-900 dark:text-white">{query.data?.model}</p>
+          <p className="text-xs font-bold text-metal-900 dark:text-white">{query.data?.model ?? 'Holt Linear / Fallback'}</p>
         </Card>
         <Card className="space-y-1">
           <span className="text-[10px] font-bold uppercase text-metal-400 tracking-wider">Rationale</span>
-          <p className="text-xs font-semibold text-metal-800 dark:text-metal-200">{query.data?.reason}</p>
+          <p className="text-xs font-semibold text-metal-800 dark:text-metal-200">{query.data?.reason ?? 'Decomposes owned historical invoices without fabricating external benchmarks'}</p>
         </Card>
         <Card className="space-y-1">
           <span className="text-[10px] font-bold uppercase text-metal-400 tracking-wider">Explainability</span>
-          <p className="text-xs font-semibold text-metal-800 dark:text-metal-200">{query.data?.explainability}</p>
+          <p className="text-xs font-semibold text-metal-800 dark:text-metal-200">{query.data?.explainability ?? 'Level and slope parameters fitted directly on confirmed payment dates'}</p>
         </Card>
         <Card className="space-y-1">
           <span className="text-[10px] font-bold uppercase text-metal-400 tracking-wider">Cash Timing</span>
-          <p className="text-xs font-semibold text-metal-800 dark:text-metal-200">{query.data?.cash_timing}</p>
+          <p className="text-xs font-semibold text-metal-800 dark:text-metal-200">{query.data?.cash_timing ?? 'Aligned to 13-week forecast horizon'}</p>
         </Card>
       </div>
 
-      <div className="p-3.5 rounded-xl bg-primary-50/70 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 text-xs text-primary-950 dark:text-primary-200 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Info size={15} className="text-primary-600 shrink-0" />
-          <span>
-            Source: {query.data?.source}. Enable or disable this separately labelled input on{' '}
-            <Link to="/cash" className="font-bold underline hover:text-primary-950 dark:hover:text-white">
-              Cash
-            </Link>
-            . Monte Carlo remains the authoritative cash forecast.
-          </span>
-        </div>
+      <div className="p-3.5 rounded-xl bg-primary-50/70 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 text-xs text-primary-950 dark:text-primary-200 flex items-start gap-2.5">
+        <Info size={15} className="text-primary-600 shrink-0 mt-0.5" />
+        <span className="leading-relaxed">
+          Source: {query.data?.source ?? 'Owned historical invoices'}. Enable or disable this separately labelled input on{' '}
+          <Link to="/cash" className="font-bold underline hover:text-primary-950 dark:hover:text-white">
+            Cash
+          </Link>
+          . Monte Carlo remains the authoritative cash forecast.
+        </span>
       </div>
 
       {/* Breakdown Table */}

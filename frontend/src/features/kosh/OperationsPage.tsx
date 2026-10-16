@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
-import { formatPaiseINR } from '@/lib/formatMoney'
+import { formatPaiseINR, parseRupeesToPaise } from '@/lib/formatMoney'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -137,7 +137,7 @@ export const OperationsPage = () => {
 
       {/* Sales / Procurement Proposal Forms */}
       {query.data?.role !== 'VIEWER' && ['sales', 'procurement'].includes(module ?? '') && (
-        <Card noPadding className="p-5 space-y-5">
+        <Card className="space-y-5">
           <div className="flex items-center gap-2 pb-3 border-b border-metal-100 dark:border-metal-800">
             <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
             <div>
@@ -153,15 +153,17 @@ export const OperationsPage = () => {
           <form
             onSubmit={(e) => {
               e.preventDefault()
+              const parsedAmt = parseRupeesToPaise(amount) ?? (amount && !isNaN(Number(amount)) ? Number(amount) : 0)
+              const parsedCost = estimatedCost ? (parseRupeesToPaise(estimatedCost) ?? (!isNaN(Number(estimatedCost)) ? Number(estimatedCost) : null)) : null
               void run(() =>
                 koshApi.orderProposal(activeSellerId!, {
                   direction: module === 'sales' ? 'SALE' : 'PO',
                   counterparty_id: Number(party),
-                  amount_paise: Number(amount),
+                  amount_paise: parsedAmt,
                   payment_date: day,
                   material_code: material,
                   evidence_ref: evidence,
-                  estimated_cost_paise: estimatedCost ? Number(estimatedCost) : null,
+                  estimated_cost_paise: parsedCost,
                 })
               )
             }}
@@ -189,21 +191,19 @@ export const OperationsPage = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-metal-700 dark:text-metal-300 mb-1.5">
-                  Amount (paise) <span className="text-rose-600">*</span>
+                  Amount (₹) <span className="text-rose-600">*</span>
                 </label>
                 <input
                   required
-                  type="number"
-                  min="1"
-                  step="1"
-                  placeholder="e.g. 5000000"
+                  type="text"
+                  placeholder="e.g. 50,000"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-metal-200 dark:border-metal-700 bg-white dark:bg-metal-800 text-metal-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                 />
-                {amount && !isNaN(Number(amount)) && (
+                {amount && (
                   <span className="text-[11px] font-mono text-primary-700 dark:text-primary-300 mt-1 block">
-                    ≈ {formatPaiseINR(Number(amount))}
+                    ≈ {formatPaiseINR(parseRupeesToPaise(amount) ?? (Number(amount) || 0))} ({(parseRupeesToPaise(amount) ?? (Number(amount) || 0)).toLocaleString('en-IN')} paise)
                   </span>
                 )}
               </div>
@@ -250,20 +250,18 @@ export const OperationsPage = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-metal-700 dark:text-metal-300 mb-1.5">
-                  Documented estimated cost (paise; optional)
+                  Documented estimated cost (₹; optional)
                 </label>
                 <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Optional cost in paise"
+                  type="text"
+                  placeholder="e.g. 35,000 (optional)"
                   value={estimatedCost}
                   onChange={(e) => setEstimatedCost(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-metal-200 dark:border-metal-700 bg-white dark:bg-metal-800 text-metal-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
                 />
-                {estimatedCost && !isNaN(Number(estimatedCost)) && (
+                {estimatedCost && (
                   <span className="text-[11px] font-mono text-metal-500 mt-1 block">
-                    ≈ {formatPaiseINR(Number(estimatedCost))}
+                    ≈ {formatPaiseINR(parseRupeesToPaise(estimatedCost) ?? (Number(estimatedCost) || 0))} ({(parseRupeesToPaise(estimatedCost) ?? (Number(estimatedCost) || 0)).toLocaleString('en-IN')} paise)
                   </span>
                 )}
               </div>

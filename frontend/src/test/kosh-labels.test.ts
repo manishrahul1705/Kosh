@@ -11,6 +11,12 @@ describe('formatEnumLabel', () => {
     expect(formatEnumLabel('STALE')).toBe('Out of date: re-run')
     expect(formatEnumLabel('PROPOSED')).toBe('Proposed')
     expect(formatEnumLabel('PENDING_APPROVAL')).toBe('Pending approval')
+    expect(formatEnumLabel('OBLIGATION_CLUSTER')).toBe('Payments due together')
+    expect(formatEnumLabel('SUPPLIER_PAYMENT')).toBe('Supplier payment')
+    expect(formatEnumLabel('COLLECTION_FOLLOWUP')).toBe('Collection follow-up')
+    expect(formatEnumLabel('TREDS_INVOICE_DISCOUNTING')).toBe('TReDS invoice discounting')
+    expect(formatEnumLabel('CGTMSE_WORKING_CAPITAL')).toBe('CGTMSE credit guarantee')
+    expect(formatEnumLabel('PROCESSED')).toBe('Processed clean')
   })
 
   it('handles null and undefined safely', () => {

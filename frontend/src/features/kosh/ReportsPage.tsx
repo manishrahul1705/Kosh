@@ -39,7 +39,13 @@ export const ReportsPage = () => {
   const run = async (task: () => Promise<unknown>) => {
     try {
       const result = await task()
-      setMessage(JSON.stringify(result))
+      if (typeof result === 'string') {
+        setMessage(result)
+      } else if (result && typeof result === 'object' && 'message' in result) {
+        setMessage(String((result as { message: unknown }).message))
+      } else {
+        setMessage('Operation completed and recorded to audit chain.')
+      }
       await qc.invalidateQueries({ queryKey: ['kosh'] })
     } catch (error) {
       setMessage(String(error))

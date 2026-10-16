@@ -16,9 +16,17 @@ import {
   FileText,
   Smartphone,
   ChevronDown,
+  Award,
+  TrendingUp,
+  AlertTriangle,
+  PackageCheck,
+  ShieldAlert,
+  BarChart3,
+  Clock,
 } from 'lucide-react'
 import { useSeller } from '@/app/SellerContext'
 import { koshApi } from '@/lib/api/kosh'
+import { formatPaiseINR } from '@/lib/formatMoney'
 
 type Field = {
   key: string
@@ -842,53 +850,421 @@ export const OperationResources = () => {
         </div>
       </div>
 
-      {/* Cash Impact & Executive Timeline Accordion */}
-      <div className="card space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-semibold text-foreground">
-              Cash impact and executive timeline
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Live operational roll-up metrics driving forecast adjustments.
-            </p>
-          </div>
-          <Link
-            to="/approvals"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors"
-          >
-            Approve / execute paused actions
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+      {/* Cash Impact & Executive Operations Intelligence */}
+      {(() => {
+        interface InventoryItem {
+          material_id: number
+          material_code: string
+          quantity: number
+          reorder_point: number
+          shortage_units: number
+          shortage_cost_paise: number
+          signal: string
+        }
+        interface QuoteItem {
+          id: number
+          rfq_draft_id: number
+          supplier_id: number
+          price_paise: number
+          lead_days: number
+          quality_score: number
+          reliability_score: number
+          status: string
+          score?: string
+          recommended?: boolean
+          scoring_assumption?: string
+          reason?: string
+        }
+        interface SalesMarginItem {
+          order_id: number
+          estimated_margin_paise: number | null
+          estimated_margin_rate: string | null
+          status: string
+          source: string
+        }
+        interface GoalMeasurementItem {
+          goal_id: number
+          goal: string
+          status: string
+          measured_paise: number | null
+          gap_paise: number | null
+          source: string
+          reason: string
+        }
+        interface WorkflowItem {
+          id: number
+          status: string
+          intent_status: string | null
+          steps: Array<{ name: string; status: string }>
+          intent_id: number | null
+        }
+        interface AuditTimelineItem {
+          sequence: number
+          action: string
+          tier: string
+        }
 
-        <div className="space-y-2">
-          {Object.entries(dashboard.data ?? {}).map(([name, value]) => (
-            <details
-              key={name}
-              className="group p-3 rounded-xl border border-border bg-card [&_summary::-webkit-details-marker]:hidden"
-            >
-              <summary className="flex items-center justify-between cursor-pointer font-semibold text-xs text-foreground select-none">
-                <span className="capitalize">{name.replace(/_/g, ' ')}</span>
-                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="pt-3 mt-2 border-t border-border/50 text-xs">
-                {Array.isArray(value) ? (
+        const dashData = dashboard.data as {
+          inventory?: InventoryItem[]
+          quotes?: QuoteItem[]
+          sales_margins?: SalesMarginItem[]
+          goal_measurements?: GoalMeasurementItem[]
+          workflows?: WorkflowItem[]
+          outbox_count?: number
+          timeline?: AuditTimelineItem[]
+          agent_rule?: string
+          role?: string
+          [key: string]: unknown
+        } | undefined
+
+        const inventory = dashData?.inventory ?? []
+        const quotes = dashData?.quotes ?? []
+        const salesMargins = dashData?.sales_margins ?? []
+        const goalMeasurements = dashData?.goal_measurements ?? []
+        const workflows = dashData?.workflows ?? []
+        const timeline = dashData?.timeline ?? []
+        const outboxCount = dashData?.outbox_count ?? 0
+        const agentRule = dashData?.agent_rule
+
+        const shortages = inventory.filter((i) => i.shortage_units > 0)
+        const totalShortageCost = shortages.reduce((acc, i) => acc + (i.shortage_cost_paise || 0), 0)
+        const recommendedQuote = quotes.find((q) => q.recommended)
+        const totalEstimatedMargin = salesMargins.reduce((acc, s) => acc + (s.estimated_margin_paise || 0), 0)
+
+        return (
+          <div className="space-y-6">
+            {/* Executive Operations Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
+              <div>
+                <h3 className="text-base font-bold text-foreground">
+                  Cash Impact & Operations Intelligence
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Live operational roll-up metrics driving forecast adjustments. Verified owned facts only.
+                </p>
+              </div>
+              <Link
+                to="/approvals"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors shrink-0"
+              >
+                Approve / execute paused actions
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            {/* 4-KPI Executive Roll-up Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-xl border border-border bg-card shadow-2xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Reorder Shortages
+                  </span>
+                  <div className={`p-1.5 rounded-md ${shortages.length > 0 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
+                    <Boxes className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-mono text-foreground">
+                    {shortages.length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {shortages.length > 0 ? `Cost: ${formatPaiseINR(totalShortageCost)}` : 'All materials in buffer'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-border bg-card shadow-2xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Active Quotes
+                  </span>
+                  <div className="p-1.5 rounded-md bg-primary-500/10 text-primary-600 dark:text-primary-400">
+                    <Award className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-mono text-foreground">
+                    {quotes.length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {recommendedQuote ? `Top pick: RFQ #${recommendedQuote.rfq_draft_id}` : 'Quotes under evaluation'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-border bg-card shadow-2xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Sales Est. Margin
+                  </span>
+                  <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xl font-bold font-mono text-foreground">
+                    {formatPaiseINR(totalEstimatedMargin)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {salesMargins.length} confirmed sales orders
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-border bg-card shadow-2xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Pending Dispatches
+                  </span>
+                  <div className="p-1.5 rounded-md bg-metal-500/10 text-metal-600 dark:text-metal-400">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-mono text-foreground">
+                    {outboxCount}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {workflows.length} tracked workflows
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Supplier Quotes Comparison Section */}
+            {quotes.length > 0 && (
+              <div className="card space-y-3 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                    <h4 className="text-sm font-bold text-foreground">
+                      Supplier Quote Evaluation Matrix
+                    </h4>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Weights: Price 55%, Lead 25%, Quality 10%, Reliability 10%
+                  </span>
+                </div>
+                <div className="table-container border border-border rounded-lg overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/40 text-muted-foreground text-left">
+                        <th className="p-2.5">RFQ Draft</th>
+                        <th className="p-2.5">Supplier</th>
+                        <th className="p-2.5">Unit Price</th>
+                        <th className="p-2.5">Lead Time</th>
+                        <th className="p-2.5">Quality / Reliability</th>
+                        <th className="p-2.5">Composite Score</th>
+                        <th className="p-2.5">Recommendation</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {quotes.map((q) => (
+                        <tr key={q.id} className={q.recommended ? 'bg-emerald-50/50 dark:bg-emerald-950/20' : 'hover:bg-muted/30'}>
+                          <td className="p-2.5 font-mono font-medium text-foreground">#{q.rfq_draft_id}</td>
+                          <td className="p-2.5 text-foreground font-semibold">Supplier #{q.supplier_id}</td>
+                          <td className="p-2.5 font-mono font-bold text-foreground">{formatPaiseINR(q.price_paise)}</td>
+                          <td className="p-2.5 text-muted-foreground">{q.lead_days ? `${q.lead_days} days` : '-'}</td>
+                          <td className="p-2.5 text-muted-foreground font-mono">
+                            {q.quality_score != null ? `${(Number(q.quality_score) * 100).toFixed(0)}%` : '-'} / {q.reliability_score != null ? `${(Number(q.reliability_score) * 100).toFixed(0)}%` : '-'}
+                          </td>
+                          <td className="p-2.5 font-mono font-bold text-foreground">
+                            {q.score ? Number(q.score).toFixed(3) : '-'}
+                          </td>
+                          <td className="p-2.5">
+                            {q.recommended ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                Recommended
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground">Eligible alternative</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Inventory Buffers & Shortage Proposals */}
+            {inventory.length > 0 && (
+              <div className="card space-y-3 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Boxes className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                    <h4 className="text-sm font-bold text-foreground">
+                      Inventory Buffers & Reorder Thresholds
+                    </h4>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Deterministic buffer tracking from verified stock count
+                  </span>
+                </div>
+                <div className="table-container border border-border rounded-lg overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/40 text-muted-foreground text-left">
+                        <th className="p-2.5">Material Code</th>
+                        <th className="p-2.5">Stock on Hand</th>
+                        <th className="p-2.5">Reorder Threshold</th>
+                        <th className="p-2.5">Shortage Units</th>
+                        <th className="p-2.5">Est. Reorder Outlay</th>
+                        <th className="p-2.5">Operational Signal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {inventory.map((item) => (
+                        <tr key={item.material_id} className={item.shortage_units > 0 ? 'bg-amber-50/40 dark:bg-amber-950/20' : 'hover:bg-muted/30'}>
+                          <td className="p-2.5 font-bold font-mono text-foreground">{item.material_code}</td>
+                          <td className="p-2.5 font-mono text-foreground">{item.quantity}</td>
+                          <td className="p-2.5 font-mono text-muted-foreground">{item.reorder_point}</td>
+                          <td className="p-2.5 font-mono font-bold text-foreground">
+                            {item.shortage_units > 0 ? (
+                              <span className="text-amber-700 dark:text-amber-400 font-bold">-{item.shortage_units}</span>
+                            ) : (
+                              <span className="text-emerald-700 dark:text-emerald-400">0</span>
+                            )}
+                          </td>
+                          <td className="p-2.5 font-mono font-semibold text-foreground">
+                            {formatPaiseINR(item.shortage_cost_paise)}
+                          </td>
+                          <td className="p-2.5">
+                            {item.shortage_units > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                                <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                                Reorder Required
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                Within Buffer
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Sales Margins & Goal Measurements Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Sales Order Profitability */}
+              <div className="card space-y-3 p-4">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <h4 className="text-sm font-bold text-foreground">Sales Order Profitability</h4>
+                </div>
+                {salesMargins.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No confirmed sales orders recorded.</p>
+                ) : (
                   <div className="space-y-2">
-                    {value.map((row, i) => (
-                      <div key={i} className="p-2.5 rounded-lg bg-muted/20 border border-border/40">
-                        <BusinessFields data={row as Record<string, unknown>} />
+                    {salesMargins.map((s) => (
+                      <div key={s.order_id} className="p-2.5 rounded-lg bg-muted/20 border border-border flex items-center justify-between text-xs">
+                        <div>
+                          <span className="font-bold text-foreground font-mono">Order #{s.order_id}</span>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{s.source}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold font-mono text-foreground">{formatPaiseINR(s.estimated_margin_paise)}</p>
+                          <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                            {s.estimated_margin_rate ? `${(Number(s.estimated_margin_rate) * 100).toFixed(1)}% margin` : s.status}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-muted-foreground">{String(value)}</p>
                 )}
               </div>
+
+              {/* Goal Measurements */}
+              <div className="card space-y-3 p-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  <h4 className="text-sm font-bold text-foreground">Operational Goals & Cash Gap</h4>
+                </div>
+                {goalMeasurements.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No active operational goals registered.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {goalMeasurements.map((g) => (
+                      <div key={g.goal_id} className="p-2.5 rounded-lg bg-muted/20 border border-border flex items-center justify-between text-xs">
+                        <div>
+                          <span className="font-bold text-foreground capitalize">{g.goal.replace(/_/g, ' ').toLowerCase()}</span>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{g.reason}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold font-mono text-foreground">
+                            {formatPaiseINR(g.measured_paise)}
+                          </p>
+                          <span className="text-[10px] font-semibold text-muted-foreground">
+                            {g.gap_paise ? `Gap: ${formatPaiseINR(g.gap_paise)}` : g.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Agent Rule & Executive Audit Governance */}
+            <div className="card space-y-3 p-4 bg-muted/10 border-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    Executive Governance & Audit Policy
+                  </h4>
+                </div>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  {timeline.length} recent audit checkpoints
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {agentRule || 'Deterministic proposals and evidence checks only; outbound steps pause for Stage 4 approval.'}
+              </p>
+              {timeline.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {timeline.slice(0, 6).map((t) => (
+                    <span
+                      key={t.sequence}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-background border border-border text-foreground"
+                    >
+                      <span className="text-muted-foreground font-semibold">#{t.sequence}</span>
+                      <span>{t.action}</span>
+                      <span className="text-primary-600 font-bold">[{t.tier}]</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Technical Payload Inspection (Collapsible for Auditing) */}
+            <details className="group p-3 rounded-xl border border-border bg-card [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex items-center justify-between cursor-pointer font-semibold text-xs text-muted-foreground hover:text-foreground select-none">
+                <span>Inspect technical raw payload & data structures</span>
+                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="pt-3 mt-2 border-t border-border/50 text-xs space-y-2">
+                {Object.entries(dashboard.data ?? {}).map(([name, value]) => (
+                  <div key={name} className="p-2 rounded bg-muted/20 border border-border/40">
+                    <span className="font-mono font-bold text-[11px] text-foreground uppercase">{name.replace(/_/g, ' ')}</span>
+                    <pre className="mt-1 font-mono text-[10px] overflow-x-auto text-muted-foreground whitespace-pre-wrap">
+                      {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
             </details>
-          ))}
-        </div>
-      </div>
+          </div>
+        )
+      })()}
     </section>
   )
 }

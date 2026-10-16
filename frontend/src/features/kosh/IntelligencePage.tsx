@@ -15,6 +15,40 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 
+const getSignalBadge = (signal: string) => {
+  switch (signal) {
+    case 'LOW_DELAY':
+      return {
+        label: 'Minimal delay',
+        desc: 'Consistent on-time settlement (<15d)',
+        className:
+          'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+      }
+    case 'MODERATE_DELAY':
+      return {
+        label: 'Moderate delay (15–44d)',
+        desc: 'Average payment cycle between 15 and 44 days',
+        className:
+          'bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+      }
+    case 'HIGH_DELAY':
+      return {
+        label: 'Severe delay (≥45d)',
+        desc: 'Chronic late settlement exceeding 45 days',
+        className:
+          'bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+      }
+    case 'REVIEW_REQUIRED':
+    default:
+      return {
+        label: 'Review required (<5 obs)',
+        desc: 'Insufficient verified payment history',
+        className:
+          'bg-metal-100 text-metal-800 dark:bg-metal-800 dark:text-metal-300 border-metal-200 dark:border-metal-700',
+      }
+  }
+}
+
 export const IntelligencePage = () => {
   const { activeSellerId } = useSeller()
   const qc = useQueryClient()
@@ -97,19 +131,38 @@ export const IntelligencePage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-metal-100 dark:divide-metal-800">
-              {query.data?.items.map((item) => (
-                <tr key={item.counterparty_id} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
-                  <td className="font-bold text-metal-900 dark:text-white">{item.name}</td>
-                  <td className="font-semibold text-metal-900 dark:text-white">{formatPaiseINR(item.open_receivables_paise)}</td>
-                  <td className="text-metal-700 dark:text-metal-300">{item.median_delay_days ?? 'unknown'} days</td>
-                  <td className="text-metal-700 dark:text-metal-300 font-medium">{item.concentration_share ?? 'unknown'}</td>
-                  <td>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-800 dark:bg-primary-950/50 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
-                      {item.credit_signal}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {query.data?.items.map((item) => {
+                const badge = getSignalBadge(item.credit_signal)
+                const delayText =
+                  item.median_delay_days != null
+                    ? `${item.median_delay_days} ${item.median_delay_days === 1 ? 'day' : 'days'}`
+                    : 'Unknown'
+                const concentrationText =
+                  item.concentration_share != null
+                    ? `${(Number(item.concentration_share) * 100).toFixed(1)}%`
+                    : '—'
+
+                return (
+                  <tr key={item.counterparty_id} className="hover:bg-metal-50/80 dark:hover:bg-metal-800/50">
+                    <td className="font-bold text-metal-900 dark:text-white">{item.name}</td>
+                    <td className="font-semibold font-mono text-metal-900 dark:text-white">
+                      {formatPaiseINR(item.open_receivables_paise)}
+                    </td>
+                    <td className="text-metal-700 dark:text-metal-300 font-medium">{delayText}</td>
+                    <td className="text-metal-700 dark:text-metal-300 font-mono font-medium">
+                      {concentrationText}
+                    </td>
+                    <td>
+                      <span
+                        title={badge.desc}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badge.className}`}
+                      >
+                        {badge.label}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

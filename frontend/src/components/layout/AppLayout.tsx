@@ -1,15 +1,19 @@
 import React, { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { ChatDrawer } from '@/features/kosh/ChatDrawer'
-import { Moon, Sun } from 'lucide-react'
+import { OnboardingTour } from '@/features/tour/OnboardingTour'
+import { Moon, Sun, Compass } from 'lucide-react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { useSeller } from '@/app/SellerContext'
 import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
 
 export const AppLayout: React.FC = () => {
+  const { activeSellerId } = useSeller()
   const [dark, setDark] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [tourOpen, setTourOpen] = useState(false)
   const sidebarWidth = collapsed ? 80 : 272
 
   return (
@@ -43,6 +47,14 @@ export const AppLayout: React.FC = () => {
             </div>
             <div className="flex items-center gap-2.5">
               <button
+                onClick={() => setTourOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-metal-200 bg-white text-metal-700 hover:bg-metal-50 hover:text-metal-900 transition-colors shadow-2xs cursor-pointer"
+                title="Open guided showcase tour"
+              >
+                <Compass size={13} className="text-primary-600 dark:text-primary-400" />
+                <span>Product Tour</span>
+              </button>
+              <button
                 aria-pressed={dark}
                 onClick={() => setDark(!dark)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-metal-200 bg-white text-metal-700 hover:bg-metal-50 hover:text-metal-900 transition-colors shadow-2xs cursor-pointer"
@@ -62,6 +74,8 @@ export const AppLayout: React.FC = () => {
               <ChatDrawer />
             </div>
           </div>
+
+          <OnboardingTour open={tourOpen} onClose={() => setTourOpen(false)} workspaceId={activeSellerId} />
 
           <ErrorBoundary>
             <Outlet />

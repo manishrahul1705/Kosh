@@ -190,10 +190,10 @@ export const ConnectPage = () => {
                   onChange={(e) => setKind(e.target.value)}
                   className="select text-xs"
                 >
-                  <option value="BOOKS_EXPORT">BOOKS_EXPORT</option>
-                  <option value="BANK_STATEMENT">BANK_STATEMENT</option>
-                  <option value="SALES_INVOICE">SALES_INVOICE</option>
-                  <option value="PURCHASE_BILL">PURCHASE_BILL</option>
+                  <option value="BOOKS_EXPORT">Accounting Export (Tally / Zoho / Books)</option>
+                  <option value="BANK_STATEMENT">Bank Statement</option>
+                  <option value="SALES_INVOICE">Sales Invoice</option>
+                  <option value="PURCHASE_BILL">Purchase Bill</option>
                 </select>
               </div>
 
@@ -269,7 +269,7 @@ export const ConnectPage = () => {
                         className="flex items-center gap-2 text-xs font-semibold text-rose-800 bg-rose-50 p-3 rounded-lg border border-rose-200"
                       >
                         <AlertTriangle size={15} className="shrink-0 text-rose-600" />
-                        <span>⚠ Instruction-like payment text detected. Quarantined in REVIEW.</span>
+                        <span>⚠ Suspicious instruction-like text detected. Quarantined for review and excluded from cash forecast.</span>
                       </div>
                     )}
 

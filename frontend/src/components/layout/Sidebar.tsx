@@ -29,22 +29,22 @@ const TENDER_ITEMS = [
 ]
 
 const FINANCE_JOURNEY_ITEMS = [
-  { to: '/connect', icon: Plug, label: 'Connect' },
-  { to: '/ledger', icon: BookOpen, label: 'Ledger' },
-  { to: '/cash', icon: Wallet, label: 'Cash' },
-  { to: '/plan', icon: Route, label: 'Plan' },
-  { to: '/operations/collections', icon: Clock, label: 'Collections' },
-  { to: '/approvals', icon: ShieldCheck, label: 'Approvals' },
-  { to: '/audit', icon: History, label: 'Audit' },
+  { to: '/connect', icon: Plug, label: 'Connect', exact: true },
+  { to: '/ledger', icon: BookOpen, label: 'Ledger', exact: true },
+  { to: '/cash', icon: Wallet, label: 'Cash', exact: true },
+  { to: '/plan', icon: Route, label: 'Plan', exact: true },
+  { to: '/operations/collections', icon: Clock, label: 'Collections', exact: true },
+  { to: '/approvals', icon: ShieldCheck, label: 'Approvals', exact: true },
+  { to: '/audit', icon: History, label: 'Audit', exact: true },
 ]
 
 const OPERATIONS_ITEMS = [
-  { to: '/operations', icon: SlidersHorizontal, label: 'Operations' },
-  { to: '/operations/tender-to-cash', icon: Calculator, label: 'Tender to cash' },
-  { to: '/operations/customer-intelligence', icon: TrendingUp, label: 'Customer intelligence' },
-  { to: '/operations/revenue', icon: BarChart3, label: 'Revenue signal' },
-  { to: '/operations/reports', icon: FileText, label: 'Cash reports' },
-  { to: '/modules', icon: LayoutGrid, label: 'Kosh modules' },
+  { to: '/operations', icon: SlidersHorizontal, label: 'Operations', exact: true },
+  { to: '/operations/tender-to-cash', icon: Calculator, label: 'Tender to cash', exact: true },
+  { to: '/operations/customer-intelligence', icon: TrendingUp, label: 'Customer intelligence', exact: true },
+  { to: '/operations/revenue', icon: BarChart3, label: 'Revenue signal', exact: true },
+  { to: '/operations/reports', icon: FileText, label: 'Cash reports', exact: true },
+  { to: '/modules', icon: LayoutGrid, label: 'Kosh modules', exact: true },
 ]
 
 interface SidebarProps {
@@ -112,6 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.exact}
                 onClick={onMobileClose}
                 className={({ isActive }) =>
                   clsx(
@@ -151,6 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.exact}
                 onClick={onMobileClose}
                 className={({ isActive }) =>
                   clsx(

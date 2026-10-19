@@ -17,7 +17,7 @@ from app.actions.read import out
 from app.utils.dates import utcnow
 from app.core.config import get_settings
 router=APIRouter(prefix="/api/kosh/sellers/{seller_id}/operations",tags=["kosh-operations"])
-MARKET_SAMPLE=[{"material_code":"STEEL","change_percent":"8","source":"Bundled fictional offline sample","verified_market_fact":False},{"material_code":"ALUMINIUM","change_percent":"-3","source":"Bundled fictional offline sample","verified_market_fact":False}]
+MARKET_SAMPLE=[{"material_code":"STEEL","change_percent":"8","source":"Procurement price reference; not a live market quote","verified_market_fact":False},{"material_code":"ALUMINIUM","change_percent":"-3","source":"Procurement price reference; not a live market quote","verified_market_fact":False}]
 class StrictInput(BaseModel):model_config=ConfigDict(extra="forbid")
 class OrderIn(StrictInput):
     direction:Literal["SALE","PO"]
@@ -92,7 +92,7 @@ def pricing(seller_id:int,payload:PricingIn,db:Session=Depends(get_db),access:Au
 @router.post("/rfqs")
 def rfq(seller_id:int,payload:RFQIn,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
     reserve_sqlite_writer(db,renew_read=True);gate(db,seller_id,access.user_id,source="ADDON:procurement");recipient=party(db,seller_id,payload.counterparty_id)
-    row=KoshAddonDraft(seller_id=seller_id,module="procurement",kind="RFQ_MESSAGE",body=f"Request quotation for {payload.quantity} units of {payload.material_code}, required {payload.needed_date.isoformat()}. Please provide price and delivery terms.",params={"feature_module":"procurement","counterparty_id":recipient.id,"amount_paise":0,"allowlist_key":f"counterparty:{recipient.id}","funding_date":payload.needed_date.isoformat(),"days":0,"cost_paise":0,"evidence_reference":payload.evidence_ref},evidence_hash="",status="DRAFT",created_by_user_id=access.user_id);row.evidence_hash=draft_hash(row);db.add(row);db.flush();record(db,seller_id,access,"operations.rfq.draft",{"draft_id":row.id});return {"id":row.id,"body":row.body,"tier":"T1","drafts":[{"id":d.id,"module":d.module,"kind":d.kind,"body":d.body,"status":d.status} for d in db.scalars(select(KoshAddonDraft).where(KoshAddonDraft.seller_id==seller_id))],"external_delivery":False}
+    row=KoshAddonDraft(seller_id=seller_id,module="procurement",kind="RFQ_MESSAGE",body=f"Request quotation for {payload.quantity} units of {payload.material_code}, required {payload.needed_date.isoformat()}. Please provide price and delivery terms.",params={"feature_module":"procurement","material_code":payload.material_code,"quantity":payload.quantity,"counterparty_id":recipient.id,"amount_paise":0,"allowlist_key":f"counterparty:{recipient.id}","funding_date":payload.needed_date.isoformat(),"days":0,"cost_paise":0,"evidence_reference":payload.evidence_ref},evidence_hash="",status="DRAFT",created_by_user_id=access.user_id);row.evidence_hash=draft_hash(row);db.add(row);db.flush();record(db,seller_id,access,"operations.rfq.draft",{"draft_id":row.id});return {"id":row.id,"body":row.body,"tier":"T1","drafts":[{"id":d.id,"module":d.module,"kind":d.kind,"body":d.body,"status":d.status} for d in db.scalars(select(KoshAddonDraft).where(KoshAddonDraft.seller_id==seller_id))],"external_delivery":False}
 @router.post("/drafts/{draft_id}/intent")
 def intent(seller_id:int,draft_id:int,db:Session=Depends(get_db),access:AuthorizedSeller=Depends(require_seller_edit)):
     try:row=create_from_draft(db,seller_id=seller_id,draft_id=draft_id,creator_id=access.user_id)

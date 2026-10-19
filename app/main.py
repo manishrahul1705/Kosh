@@ -50,6 +50,9 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         db_url = settings.resolved_database_url
+        if app.state.owns_engine:
+            from app.core.bootstrap import bootstrap_workspace
+            bootstrap_workspace(settings)
         if not settings.auto_migrate and app.state.owns_engine:
             check_schema_revision(db_url)
         if settings.auto_migrate and app.state.owns_engine:

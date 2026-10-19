@@ -1,7 +1,7 @@
 """Deterministic operational analytics over seller-owned persisted facts."""
 from decimal import Decimal
 from sqlalchemy import select
-from app.database.kosh_models import KoshOperationRecord,KoshCashEvent,KoshActionIntent,KoshSandboxOutbox,KoshAuditEntry,KoshForecastRun,KoshForecastWeek
+from app.database.kosh_models import KoshOperationRecord,KoshCashEvent,KoshActionIntent,KoshSandboxOutbox,KoshAuditEntry,KoshForecastRun,KoshForecastWeek,KoshAddonDraft
 
 def analytics(db,seller_id):
     rows=list(db.scalars(select(KoshOperationRecord).where(KoshOperationRecord.seller_id==seller_id).order_by(KoshOperationRecord.id)))
@@ -19,7 +19,10 @@ def analytics(db,seller_id):
         complete=all(r.data.get(k) is not None for k in ('lead_days','quality_score','reliability_score'))
         quotes.append({'id':r.id,**r.data,'status':'COMPARABLE' if complete else 'REVIEW_REQUIRED','scoring_assumption':'Illustrative weights: price 55%, lead time 25%, quality 10%, reliability 10%; not a probability.','reason':'Documented price, lead time, quality and reliability required; missing scores are never invented.'})
     groups={}
-    for quote in quotes:groups.setdefault(quote['rfq_draft_id'],[]).append(quote)
+    for quote in quotes:
+        rfq=db.get(KoshAddonDraft,quote['rfq_draft_id'])
+        key=(rfq.params['material_code'],rfq.params['quantity'],rfq.params['funding_date']) if rfq and 'material_code' in rfq.params and 'quantity' in rfq.params else quote['rfq_draft_id']
+        groups.setdefault(key,[]).append(quote)
     for group in groups.values():
         eligible=[q for q in group if q['status']=='COMPARABLE']
         if not eligible:continue

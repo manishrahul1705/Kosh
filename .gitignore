@@ -12,6 +12,7 @@ backups/
 data/
 storage/
 private_storage/
+.kosh_bootstrap/
 demo_data/
 /validation/
 private_notes/

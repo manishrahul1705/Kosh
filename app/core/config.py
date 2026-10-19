@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # Local test sign-in without Supabase (app/api/dev_login.py). Development only:
     # refused when APP_ENV=production, and only answers requests from this computer.
     dev_login_enabled: bool = False
+    kosh_auto_bootstrap: bool = True
     # Supabase project URL (public). Read from the environment or .env; see app/api/auth.py.
     supabase_url: str = ""
     # Permitted CORS origins for API requests (comma-separated; never '*' in production)
@@ -259,6 +260,19 @@ class Settings(BaseSettings):
     @classmethod
     def _upper_level(cls, v: str) -> str:
         return v.upper()
+
+    @model_validator(mode="before")
+    @classmethod
+    def _local_workspace_defaults(cls, values):
+        values=dict(values or {})
+        environment=str(values.get("app_env","development")).strip().lower()
+        if environment=="development":
+            for key,value in {
+                "database_url":"sqlite:///./kosh_work.db", "dev_login_enabled":True,
+                "kosh_as_of_date":"2026-10-13", "auto_migrate":False,
+                "scheduler_enabled":False,"collect_on_startup":False,"startup_recovery_enabled":False,
+            }.items(): values.setdefault(key,value)
+        return values
 
     @model_validator(mode="after")
     def _enforce_startup_safety(self) -> "Settings":

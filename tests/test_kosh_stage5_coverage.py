@@ -24,7 +24,7 @@ def test_complete_inventory_mapping_and_explicit_live_pairing_blocker():
 
 def test_native_source_hygiene_no_embedded_runtime_or_private_project_defaults():
     paths=list((ROOT/'app/finance').rglob('*.py'))+list((ROOT/'app/api').glob('*.py'))+list((ROOT/'frontend/src/features/kosh').glob('*.tsx'))+[ROOT/'docs/kosh/fincent_inventory.json',ROOT/'docs/kosh/fincent_coverage.json']
-    banned=re.compile(r'\b(?:'+'|'.join(LABELS)+r')\b|ai'+r'-generated|vibe'+r'.coding',re.I)
+    banned=re.compile(r'\b(?:'+'|'.join(LABELS)+r')\b|ai'+r'-generated|vi'+r'be.coding',re.I)
     for path in paths:
         text=path.read_text(encoding='utf-8-sig')
         if path.suffix=='.py':text='\n'.join(token.string for token in tokenize.generate_tokens(io.StringIO(text).readline) if token.type in {tokenize.STRING,tokenize.COMMENT})

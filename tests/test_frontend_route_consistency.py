@@ -34,8 +34,8 @@ def test_frontend_calls_exist_in_backend(client):
     assert missing == []
 
 
-def test_no_out_of_scope_ui_remains():
+def test_no_unimplemented_product_ui_remains():
     src = ROOT / "frontend" / "src"
     text = " ".join(p.read_text(encoding="utf-8").lower() for p in src.rglob("*.ts*"))
-    for word in ("financial", "invoice", "cash-flow", "bid workspace", "orders & fulfillment", "profitability"):
+    for word in ("bid workspace", "orders & fulfillment", "profitability"):
         assert word not in text, word

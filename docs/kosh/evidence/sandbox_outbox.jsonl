@@ -1,0 +1,2 @@
+{"body":"Payment reminder: Frontier Fabrication, please arrange INR 395,794.00 against invoice MPC-S-00502, due 2026-09-29. Please confirm the payment date.","channel":"EMAIL","id":"9ba7c0b4-f5a8-4fc3-b040-9f3ebc688278","intent_id":"55e339b3-44ee-4e0f-b8f6-75a57250f390","recipient_ref":"counterparty:8","status":"SUBMITTED"}
+{"delivery":"SANDBOX","intent_id":"d4a3dcdd-863a-4bd0-9c5b-44a8a0936cff","kind":"OTP","message":"OTP delivery [MASKED]"}

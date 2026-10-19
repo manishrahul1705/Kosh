@@ -14,9 +14,10 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.ai.job_worker import AIAnalysisJobWorker
-from app.api import ai_analysis, collection, corpus, dev_login, documents, eligibility, extractions, health, portal, sellers, stats, tender_fields, tenders, user_provisioning
+from app.api import business_documents, cash, consents, ai_analysis, collection, corpus, dev_login, documents, eligibility, extractions, health, portal, sellers, stats, tender_fields, tenders, user_provisioning
 import app.database.auth_models  # noqa: F401  (register ORM tables)
 import app.database.matching_models  # noqa: F401
+import app.database.kosh_models  # noqa: F401
 import app.database.platform_auth_models  # noqa: F401
 from app.collectors.base import Collector
 from app.collectors.gem_collector import build_collector
@@ -106,6 +107,36 @@ def create_app(
                      "deterministic status tracking, automatic seller matching and a per-client portal."),
         lifespan=lifespan,
     )
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi import Request
+    raw_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+    if settings.app_env.strip().lower() == "production":
+        origins = [o for o in raw_origins if o != "*"]
+        if not origins:
+            origins = ["http://localhost:5180"]
+    else:
+        origins = raw_origins if raw_origins else ["*"]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none';"
+        )
+        return response
+
     app.state.settings = settings
     app.state.scheduler = None
     if session_factory is None:
@@ -140,6 +171,39 @@ def create_app(
     app.include_router(user_provisioning.router)
     app.include_router(corpus.router)
     app.include_router(portal.router)
+    app.include_router(business_documents.router)
+    app.include_router(cash.router)
+    from app.api import cash_events
+    app.include_router(cash_events.router)
+    from app.api import collections
+    app.include_router(collections.router)
+    from app.api import native_operations
+    app.include_router(native_operations.router)
+    from app.api import intelligence
+    app.include_router(intelligence.router)
+    from app.api import revenue
+    app.include_router(revenue.router)
+    from app.api import kosh_chat
+    app.include_router(kosh_chat.router)
+    from app.api import cash_reports
+    app.include_router(cash_reports.router)
+    from app.api import tender_cash
+    app.include_router(tender_cash.router)
+    from app.api import modules
+    app.include_router(modules.router)
+    from app.api import financing
+    app.include_router(financing.router)
+    from app.api import policy
+    app.include_router(policy.router)
+    from app.api import actions
+    app.include_router(actions.router)
+    from app.api import sandbox
+    app.include_router(sandbox.router)
+    app.include_router(consents.router)
+    from app.api import sharing_consents
+    app.include_router(sharing_consents.router)
+    from app.api import audit_export
+    app.include_router(audit_export.router)
     dev_login.install(app, settings)  # no-op unless DEV_LOGIN_ENABLED=true (never in production)
 
     @app.get("/", include_in_schema=False)

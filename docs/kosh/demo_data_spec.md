@@ -1,0 +1,13 @@
+# Kosh demo data specification
+
+The deterministic seed 42 dataset represents the fictional 40-person Peenya CNC job shop Meenakshi Precision Components from January 2024 through 13 October 2026. `KOSH_AS_OF_DATE=2026-10-13` fixes the demonstration clock. No invoice, payment, or bank transaction is dated later than that date. Currency values are decimal INR text at the file boundary and become integer paise at intake.
+
+Monthly sales target Rs 50-60 lakh with mild seasonality. Customer terms are 45-60 days and the portfolio DSO target is 55-65 days. Open receivables target Rs 80 lakh-Rs 1.1 crore across 25-40 invoices. ABC Industries has two large open invoices totalling Rs 12-16 lakh and its recent delay is 12 days worse. Deccan Heavy Machines Ltd (CPSE) has one accepted open invoice of Rs 18-24 lakh due in forecast week 8-10.
+
+Purchases target 50-58% of sales, with 30-45 day terms and Rs 30-45 lakh open payables. Monthly obligations are payroll Rs 12 lakh on the last working day, rent Rs 2.5 lakh on the 1st, equipment EMI Rs 3.2 lakh on the 5th, GST Rs 4.8 lakh on the 20th, and TDS Rs 0.8 lakh on the 7th. A Rs 17 lakh annual machine-insurance renewal falls on 18 November. The as-of bank balance target is Rs 25 lakh. The active seller revision stores a typed Rs 10 lakh cash buffer. Generator inputs are calibrated so the median forecast reaches the buffer around weeks 5-7; forecast rules are not altered to force that result.
+
+Twelve fictional customers receive one invoice per month. Their nominal payment delays in days are: ABC Industries 52, Deccan Heavy Machines Ltd (CPSE) 34, Aranya Motion Works 38, Bluepeak Foundry 45, Cauvery Tooling House 31, Dakshin Drives 42, Evergreen Process Systems 36, Frontier Fabrication 48, Granite Industrial Works 40, Horizon Mechatronics 33, Indus Valley Components 46 and Jasmine Engineering Works 29. A seeded uniform variation of plus or minus seven days applies. ABC Industries receives a further 12-day delay from July 2026. The Deccan customer is marked CPSE and TReDS-onboarded during seeding.
+
+Four fictional suppliers receive monthly purchases. Settled sales and purchases have paid dates and corresponding bank entries. Recent invoices remain open. The bank account is masked to its last four digits and begins at INR 95,000. Monthly payroll, rent, equipment EMI, GST and TDS obligations create a plausible liquidity pressure five to seven weeks after 13 October 2026 when realistic collection delays are applied.
+
+Fourteen native-text customer invoices mirror open receivables. One supplier invoice contains otherwise legitimate fields plus tiny instruction-like payment text. Intake must keep the legitimate invoice evidence while marking that document for review.

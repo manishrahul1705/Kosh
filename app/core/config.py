@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from decimal import Decimal
 from typing import Literal
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -39,6 +40,8 @@ class Settings(BaseSettings):
     dev_login_enabled: bool = False
     # Supabase project URL (public). Read from the environment or .env; see app/api/auth.py.
     supabase_url: str = ""
+    # Permitted CORS origins for API requests (comma-separated; never '*' in production)
+    cors_origins: str = "http://localhost:5180,http://127.0.0.1:5180"
     database_url: str = "sqlite:///./data/gem.db"
     auto_migrate: bool = True
     # Startup mode. normal = existing behaviour. verify = read-only inspection: no
@@ -239,6 +242,18 @@ class Settings(BaseSettings):
     save_debug_snapshots: bool = False
     debug_dir: str = "data/debug"
     lock_file: str = "data/collection.lock"
+    kosh_private_storage_path: str = "private_storage"
+    kosh_max_upload_mb: int = Field(default=10, ge=1, le=100)
+    kosh_as_of_date: str = ""
+    kosh_alert_threshold: float = Field(default=0.5, ge=0, le=1)
+    kosh_approval_secret: SecretStr | None = None
+    kosh_global_kill_switch: bool = False
+    kosh_action_limit_paise: int = Field(default=200_000_000,ge=0)
+    kosh_day_limit_paise: int = Field(default=1_000_000_000,ge=0)
+    kosh_rbi_bank_rate: Decimal = Field(default=Decimal("5.75"),ge=0,le=100)
+    kosh_plan_target_prob: Decimal = Field(default=Decimal("0.20"), ge=0, lt=1)
+    kosh_plan_percentile: int = Field(default=25, ge=10, le=50)
+    kosh_plan_target_scope: Literal["ALL_WEEKS", "ALERT_WEEK"] = "ALL_WEEKS"
 
     @field_validator("log_level")
     @classmethod
@@ -247,6 +262,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _enforce_startup_safety(self) -> "Settings":
+        if self.app_env.strip().lower() == "production" and (self.kosh_approval_secret is None or len(self.kosh_approval_secret.get_secret_value().encode("utf-8"))<32):
+            raise ValueError("KOSH_APPROVAL_SECRET is required in production with at least 32 bytes")
         self.assert_startup_safe()
         return self
 
@@ -272,6 +289,10 @@ class Settings(BaseSettings):
         if self.app_env.strip().lower() == "production" and self.auto_migrate:
             problems.append("AUTO_MIGRATE must be false when APP_ENV=production "
                             "(apply migrations with scripts/migrate.py)")
+        if self.app_env.strip().lower() == "production":
+            origins = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+            if "*" in origins:
+                problems.append("CORS_ORIGINS cannot contain '*' when APP_ENV=production")
         if problems:
             raise ValueError("Unsafe startup configuration: " + "; ".join(problems))
 

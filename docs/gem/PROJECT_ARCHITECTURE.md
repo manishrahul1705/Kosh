@@ -1,5 +1,7 @@
 # Project architecture
 
+This document describes the separate **GeM-only demo** on ports **8000/5173**, using **demo@gem.local**. For the Kosh cash-gap demo on 8010/5180, follow [the main quick start](../../README.md#judge-quick-start). The GeM-only snapshot under `validation/` is an optional local input, not a bundled submission artifact.
+
 The core path is deterministic and does not require AI:
 
 ```mermaid

@@ -4,7 +4,7 @@ import { getAccessToken, signOut } from '@/lib/auth'
 export const apiClient = axios.create({
   baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
-  timeout: 30000,
+  timeout: 60000,
 })
 
 apiClient.interceptors.request.use(async (config) => {

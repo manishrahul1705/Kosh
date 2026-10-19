@@ -1,0 +1,145 @@
+{
+  "id": "MUDRA_LOAN",
+  "display_name": "MUDRA loan",
+  "provider_label": "Illustrative financing partner",
+  "cost_model": {
+    "annual_rate": "0.105",
+    "tenor_days": 90,
+    "processing_fee_rate": "0.01",
+    "assumption": true
+  },
+  "arrival_business_days": 12,
+  "min_amount_paise": 100000,
+  "max_amount_paise": 200000000,
+  "criteria": [
+    {
+      "type": "MUDRA_CATEGORY_AMOUNT",
+      "category": "Shishu",
+      "min_exclusive": 0,
+      "max": 5000000,
+      "source_url": "https://www.mudra.org.in/",
+      "verified_on": "2026-10-13",
+      "source": {
+        "url": "https://www.mudra.org.in/",
+        "source_url": "https://www.mudra.org.in/",
+        "verified_on": "2026-10-13",
+        "as_of_date": "2026-10-13",
+        "verified": false,
+        "verification_basis": "Stage 3.1 supplied PMMY criteria; live primary-source verification pending (offline)."
+      }
+    },
+    {
+      "type": "MUDRA_CATEGORY_AMOUNT",
+      "category": "Kishore",
+      "min_exclusive": 5000000,
+      "max": 50000000,
+      "source_url": "https://www.mudra.org.in/",
+      "verified_on": "2026-10-13",
+      "source": {
+        "url": "https://www.mudra.org.in/",
+        "source_url": "https://www.mudra.org.in/",
+        "verified_on": "2026-10-13",
+        "as_of_date": "2026-10-13",
+        "verified": false,
+        "verification_basis": "Stage 3.1 supplied PMMY criteria; live primary-source verification pending (offline)."
+      }
+    },
+    {
+      "type": "MUDRA_CATEGORY_AMOUNT",
+      "category": "Tarun",
+      "min_exclusive": 50000000,
+      "max": 100000000,
+      "source_url": "https://www.mudra.org.in/",
+      "verified_on": "2026-10-13",
+      "source": {
+        "url": "https://www.mudra.org.in/",
+        "source_url": "https://www.mudra.org.in/",
+        "verified_on": "2026-10-13",
+        "as_of_date": "2026-10-13",
+        "verified": false,
+        "verification_basis": "Stage 3.1 supplied PMMY criteria; live primary-source verification pending (offline)."
+      }
+    },
+    {
+      "type": "MUDRA_CATEGORY_AMOUNT",
+      "category": "Tarun Plus",
+      "min_exclusive": 100000000,
+      "max": 200000000,
+      "source_url": "https://www.mudra.org.in/",
+      "verified_on": "2026-10-13",
+      "source": {
+        "url": "https://www.mudra.org.in/",
+        "source_url": "https://www.mudra.org.in/",
+        "verified_on": "2026-10-13",
+        "as_of_date": "2026-10-13",
+        "verified": false,
+        "verification_basis": "Stage 3.1 supplied PMMY criteria; live primary-source verification pending (offline)."
+      }
+    },
+    {
+      "type": "NON_CORPORATE",
+      "source_url": "https://www.mudra.org.in/",
+      "verified_on": "2026-10-13",
+      "source": {
+        "url": "https://www.mudra.org.in/",
+        "source_url": "https://www.mudra.org.in/",
+        "verified_on": "2026-10-13",
+        "as_of_date": "2026-10-13",
+        "verified": false,
+        "verification_basis": "Stage 3.1 supplied PMMY criteria; live primary-source verification pending (offline)."
+      }
+    },
+    {
+      "type": "NON_FARM",
+      "source_url": "https://www.mudra.org.in/",
+      "verified_on": "2026-10-13",
+      "source": {
+        "url": "https://www.mudra.org.in/",
+        "source_url": "https://www.mudra.org.in/",
+        "verified_on": "2026-10-13",
+        "as_of_date": "2026-10-13",
+        "verified": false,
+        "verification_basis": "Stage 3.1 supplied PMMY criteria; live primary-source verification pending (offline)."
+      }
+    },
+    {
+      "type": "INCOME_GENERATING",
+      "source_url": "https://www.mudra.org.in/",
+      "verified_on": "2026-10-13",
+      "source": {
+        "url": "https://www.mudra.org.in/",
+        "source_url": "https://www.mudra.org.in/",
+        "verified_on": "2026-10-13",
+        "as_of_date": "2026-10-13",
+        "verified": false,
+        "verification_basis": "Stage 3.1 supplied PMMY criteria; live primary-source verification pending (offline)."
+      }
+    },
+    {
+      "type": "MICRO_SMALL_ENTERPRISE",
+      "source_url": "https://www.mudra.org.in/",
+      "verified_on": "2026-10-13",
+      "source": {
+        "url": "https://www.mudra.org.in/",
+        "source_url": "https://www.mudra.org.in/",
+        "verified_on": "2026-10-13",
+        "as_of_date": "2026-10-13",
+        "verified": false,
+        "verification_basis": "Stage 3.1 supplied PMMY criteria; live primary-source verification pending (offline)."
+      }
+    },
+    {
+      "type": "TARUN_AVAILED_AND_REPAID",
+      "source_url": "https://www.mudra.org.in/",
+      "verified_on": "2026-10-13",
+      "source": {
+        "url": "https://www.mudra.org.in/",
+        "source_url": "https://www.mudra.org.in/",
+        "verified_on": "2026-10-13",
+        "as_of_date": "2026-10-13",
+        "verified": false,
+        "verification_basis": "Stage 3.1 supplied PMMY criteria; live primary-source verification pending (offline)."
+      }
+    }
+  ]
+}

@@ -18,6 +18,7 @@ tzdata>=2024.1
 
 # Stage 3A: local PDF text/table extraction (MIT; pulls pdfminer.six, pypdfium2, Pillow)
 pdfplumber>=0.11.4,<0.12
+reportlab==5.0.1
 
 # Optional Stage 3A OCR (OCR_ENABLED=true): local Tesseract CLI on PATH or OCR_EXECUTABLE.
 # Uses existing Pillow/pypdfium2; no cloud service or pytesseract dependency required.

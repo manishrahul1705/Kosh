@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 # Make importing app.main side-effect free for the test run.
+os.environ.setdefault("KOSH_APPROVAL_SECRET", "offline-test-secret-for-approval-fixtures-only")
 os.environ.setdefault("SCHEDULER_ENABLED", "false")
 os.environ.setdefault("COLLECTOR_MODE", "fixture")
 os.environ.setdefault("DATABASE_URL", "sqlite:///./data/test-import.db")

@@ -1,0 +1,1029 @@
+{
+  "source_sha256": "c9a7f963554cf0a4a9679137891682cdbf14c1d233f5796e88d78cdfb5e3907b",
+  "routes": [
+    "src/app/api/action-center/approve/route.ts",
+    "src/app/api/chat/route.ts",
+    "src/app/api/collections/generate-outreach/route.ts",
+    "src/app/api/collections/log-outreach/route.ts",
+    "src/app/api/customers/route.ts",
+    "src/app/api/demo/run/route.ts",
+    "src/app/api/explain/route.ts",
+    "src/app/api/load-sample/route.ts",
+    "src/app/api/operations/route.ts",
+    "src/app/api/pricing/import/route.ts",
+    "src/app/api/pricing/route.ts",
+    "src/app/api/procurement/conversations/route.ts",
+    "src/app/api/procurement/missions/[id]/node/route.ts",
+    "src/app/api/procurement/missions/[id]/route.ts",
+    "src/app/api/procurement/missions/route.ts",
+    "src/app/api/procurement/trigger/route.ts",
+    "src/app/api/sales/missions/[id]/route.ts",
+    "src/app/api/sales/missions/route.ts",
+    "src/app/api/sales/orders/route.ts",
+    "src/app/api/simulate/route.ts",
+    "src/app/api/supplier/rfq/route.ts",
+    "src/app/api/supplier/tally-sync/route.ts",
+    "src/app/api/supplier/upload-invoice/route.ts",
+    "src/app/api/suppliers/route.ts",
+    "src/app/api/upload/route.ts",
+    "src/app/api/whatsapp/qr/route.ts",
+    "src/app/api/whatsapp/receive/route.ts",
+    "src/app/api/whatsapp/route.ts",
+    "src/app/api/whatsapp/status/route.ts"
+  ],
+  "pages": [
+    "src/app/ask-ai-cfo/page.tsx",
+    "src/app/collections-agent/page.tsx",
+    "src/app/customer-intelligence/page.tsx",
+    "src/app/executive-advisor/page.tsx",
+    "src/app/market-intelligence/page.tsx",
+    "src/app/operations/page.tsx",
+    "src/app/page.tsx",
+    "src/app/pricing-agent/inventory/page.tsx",
+    "src/app/pricing-agent/long-term-risks/page.tsx",
+    "src/app/pricing-agent/market-signals/page.tsx",
+    "src/app/pricing-agent/page.tsx",
+    "src/app/pricing-agent/supply-chain/page.tsx",
+    "src/app/reports/page.tsx",
+    "src/app/revenue-intelligence/page.tsx",
+    "src/app/sales-agent/page.tsx",
+    "src/app/supplier-agent/page.tsx",
+    "src/app/what-if-simulator/page.tsx"
+  ],
+  "models": [
+    "Material",
+    "Order",
+    "Shipment",
+    "ShipmentStep",
+    "MarketSignal",
+    "PricingRecommendation",
+    "StructuralRisk",
+    "IndustryNews",
+    "InventoryItem",
+    "OutreachLog",
+    "Supplier",
+    "WorkflowInstance",
+    "WorkflowStepExecution",
+    "WorkflowAuditLog",
+    "BusinessGoal",
+    "TaskInstance",
+    "KnowledgeItem",
+    "OperationState",
+    "ProcurementMission",
+    "MissionParticipant",
+    "QuoteRecord",
+    "PurchaseOrderRecord",
+    "RFQRecord",
+    "BusinessEvent",
+    "Customer",
+    "SalesMission",
+    "SalesOrder"
+  ],
+  "features": [
+    {
+      "source": "services/ml-engine/analyze.py",
+      "decision": "BRIDGE",
+      "cash_mapping": "optional revenue signal and explainability from local data"
+    },
+    {
+      "source": "services/whatsapp-daemon/whatsapp.py",
+      "decision": "BRIDGE",
+      "cash_mapping": "disabled unofficial transport; persisted sandbox messages via Stage 4 only"
+    },
+    {
+      "source": "src/app/api/action-center/approve/route.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "persisted Stage 4 intent approval only; no autonomous workflow approval"
+    },
+    {
+      "source": "src/app/api/chat/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "read-only computed facts with source links; no action authority"
+    },
+    {
+      "source": "src/app/api/collections/generate-outreach/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "overdue invoice evidence, T1 outreach drafts, T2 approved reminders and monthly-rest MSMED interest"
+    },
+    {
+      "source": "src/app/api/collections/log-outreach/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "overdue invoice evidence, T1 outreach drafts, T2 approved reminders and monthly-rest MSMED interest"
+    },
+    {
+      "source": "src/app/api/customers/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "switchable payment-delay history, customer concentration and same-seed scenarios"
+    },
+    {
+      "source": "src/app/api/demo/run/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "deterministic sandbox proposals, never autonomous execution"
+    },
+    {
+      "source": "src/app/api/explain/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "source-linked computed forecast explanations"
+    },
+    {
+      "source": "src/app/api/load-sample/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "bundled fictional sample proposals requiring owner confirmation"
+    },
+    {
+      "source": "src/app/api/operations/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "cash-event proposals, module state and evidence-backed operational timeline"
+    },
+    {
+      "source": "src/app/api/pricing/import/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/app/api/pricing/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/app/api/procurement/conversations/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/app/api/procurement/missions/[id]/node/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/app/api/procurement/missions/[id]/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/app/api/procurement/missions/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/app/api/procurement/trigger/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/app/api/sales/missions/[id]/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "confirmed sales order to EXPECTED_RECEIVABLE, mission state and owner confirmation"
+    },
+    {
+      "source": "src/app/api/sales/missions/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "confirmed sales order to EXPECTED_RECEIVABLE, mission state and owner confirmation"
+    },
+    {
+      "source": "src/app/api/sales/orders/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "confirmed sales order to EXPECTED_RECEIVABLE, mission state and owner confirmation"
+    },
+    {
+      "source": "src/app/api/simulate/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "same-seed customer-delay/material-price cash scenarios"
+    },
+    {
+      "source": "src/app/api/supplier/rfq/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "purchase invoices/documents and approved PO payable, supplier comparisons and sandbox RFQs"
+    },
+    {
+      "source": "src/app/api/supplier/tally-sync/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "purchase invoices/documents and approved PO payable, supplier comparisons and sandbox RFQs"
+    },
+    {
+      "source": "src/app/api/supplier/upload-invoice/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "purchase invoices/documents and approved PO payable, supplier comparisons and sandbox RFQs"
+    },
+    {
+      "source": "src/app/api/suppliers/route.ts",
+      "decision": "PORT",
+      "cash_mapping": "purchase invoices/documents and approved PO payable, supplier comparisons and sandbox RFQs"
+    },
+    {
+      "source": "src/app/api/upload/route.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "existing seller-private Kosh document intake/consent/injection checks"
+    },
+    {
+      "source": "src/app/api/whatsapp/qr/route.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "disabled unofficial transport; persisted sandbox messages via Stage 4 only"
+    },
+    {
+      "source": "src/app/api/whatsapp/receive/route.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "disabled unofficial transport; persisted sandbox messages via Stage 4 only"
+    },
+    {
+      "source": "src/app/api/whatsapp/route.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "disabled unofficial transport; persisted sandbox messages via Stage 4 only"
+    },
+    {
+      "source": "src/app/api/whatsapp/status/route.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "disabled unofficial transport; persisted sandbox messages via Stage 4 only"
+    },
+    {
+      "source": "src/app/ask-ai-cfo/page.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/app/collections-agent/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "overdue invoice evidence, T1 outreach drafts, T2 approved reminders and monthly-rest MSMED interest"
+    },
+    {
+      "source": "src/app/customer-intelligence/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "switchable payment-delay history, customer concentration and same-seed scenarios"
+    },
+    {
+      "source": "src/app/executive-advisor/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "cash summary, pending decisions and read-only linked recommendations"
+    },
+    {
+      "source": "src/app/market-intelligence/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "offline bundled market signals to proposed COST_CHANGE; no live crawler"
+    },
+    {
+      "source": "src/app/operations/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "cash-event proposals, module state and evidence-backed operational timeline"
+    },
+    {
+      "source": "src/app/page.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/app/pricing-agent/inventory/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/app/pricing-agent/long-term-risks/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/app/pricing-agent/market-signals/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/app/pricing-agent/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/app/pricing-agent/supply-chain/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/app/reports/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "one-page cash-position PDF; T1 generation, consent-bound T3 sharing"
+    },
+    {
+      "source": "src/app/revenue-intelligence/page.tsx",
+      "decision": "BRIDGE",
+      "cash_mapping": "optional labelled revenue signal from bundled data or deterministic fallback, not authoritative cash"
+    },
+    {
+      "source": "src/app/sales-agent/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "confirmed sales order to EXPECTED_RECEIVABLE, mission state and owner confirmation"
+    },
+    {
+      "source": "src/app/supplier-agent/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "purchase invoices/documents and approved PO payable, supplier comparisons and sandbox RFQs"
+    },
+    {
+      "source": "src/app/what-if-simulator/page.tsx",
+      "decision": "PORT",
+      "cash_mapping": "same-seed cash scenarios"
+    },
+    {
+      "source": "src/components/AIAnalystChat.tsx",
+      "decision": "PORT",
+      "cash_mapping": "read-only computed facts with source links; no action authority"
+    },
+    {
+      "source": "src/components/CustomerIntelligence.tsx",
+      "decision": "PORT",
+      "cash_mapping": "switchable payment-delay history, customer concentration and same-seed scenarios"
+    },
+    {
+      "source": "src/components/DashboardLayout.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/ExecutiveRecommendation.tsx",
+      "decision": "PORT",
+      "cash_mapping": "cash summary, pending decisions and read-only linked recommendations"
+    },
+    {
+      "source": "src/components/KPISection.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/PillarCard.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/RevenueIntelligence.tsx",
+      "decision": "BRIDGE",
+      "cash_mapping": "optional labelled revenue signal from bundled data or deterministic fallback, not authoritative cash"
+    },
+    {
+      "source": "src/components/ScenarioSimulator.tsx",
+      "decision": "PORT",
+      "cash_mapping": "same-seed cash scenarios"
+    },
+    {
+      "source": "src/components/Sidebar.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/ThemeToggle.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/TierSelector.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/TopHeader.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/beginner/BeginnerHome.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/briefing/AgentCollaborationBadge.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/briefing/BusinessSnapshotBar.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/briefing/CriticalDecisionsSection.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/briefing/ExecutiveBriefing.tsx",
+      "decision": "PORT",
+      "cash_mapping": "cash summary, pending decisions and read-only linked recommendations"
+    },
+    {
+      "source": "src/components/chat/ContinueOnWhatsAppButton.tsx",
+      "decision": "BRIDGE",
+      "cash_mapping": "disabled unofficial transport; persisted sandbox messages via Stage 4 only"
+    },
+    {
+      "source": "src/components/chat/WhatsAppContinuationBanner.tsx",
+      "decision": "BRIDGE",
+      "cash_mapping": "disabled unofficial transport; persisted sandbox messages via Stage 4 only"
+    },
+    {
+      "source": "src/components/control-room/BusinessHealthMeter.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/control-room/ExecutiveControlRoom.tsx",
+      "decision": "PORT",
+      "cash_mapping": "cash summary, pending decisions and read-only linked recommendations"
+    },
+    {
+      "source": "src/components/control-room/MorningBriefingCard.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/cto/BusinessTimelineFeed.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/cto/WhatsAppSimulatorModal.tsx",
+      "decision": "BRIDGE",
+      "cash_mapping": "disabled unofficial transport; persisted sandbox messages via Stage 4 only"
+    },
+    {
+      "source": "src/components/demo/DemoModeController.tsx",
+      "decision": "PORT",
+      "cash_mapping": "deterministic sandbox proposals, never autonomous execution"
+    },
+    {
+      "source": "src/components/onboarding/OnboardingWizardModal.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/operations-board/LiveOperationsBoard.tsx",
+      "decision": "PORT",
+      "cash_mapping": "cash-event proposals, module state and evidence-backed operational timeline"
+    },
+    {
+      "source": "src/components/operations/OperationsHub.tsx",
+      "decision": "PORT",
+      "cash_mapping": "cash-event proposals, module state and evidence-backed operational timeline"
+    },
+    {
+      "source": "src/components/pricing/CncInventory.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/components/pricing/DataImportPanel.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/components/pricing/MarketSignals.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/components/pricing/PricingDashboardWidgets.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/components/pricing/PricingRecommendations.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/components/pricing/StructuralRisk.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/components/pricing/SupplyChainTracker.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/components/timeline/ExecutiveTimelineFeed.tsx",
+      "decision": "PORT",
+      "cash_mapping": "cash summary, pending decisions and read-only linked recommendations"
+    },
+    {
+      "source": "src/components/ui/stat-card.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/workers/DigitalEmployeeRoster.tsx",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/components/workflows/LiveWorkflowVisualizer.tsx",
+      "decision": "BRIDGE",
+      "cash_mapping": "seller-scoped persisted proposals/execution timeline, approved Kosh actions only"
+    },
+    {
+      "source": "src/features/customer/components/CustomerConcentrationChart.tsx",
+      "decision": "PORT",
+      "cash_mapping": "switchable payment-delay history, customer concentration and same-seed scenarios"
+    },
+    {
+      "source": "src/features/pricing/components/SurchargePassThroughSimulator.tsx",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/features/procurement/components/AiProcurementEmployeeHeader.tsx",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/components/InventoryIntelligenceCards.tsx",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/components/ProcurementBusinessStoryFeed.tsx",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/components/ProcurementMissionDashboard.tsx",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/components/ProcurementMissionDetail.tsx",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/components/ProcurementMissionTimeline.tsx",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/components/ShipmentNodeTracker.tsx",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/components/StockQuantityAdjuster.tsx",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/components/SupplierComparisonMatrix.tsx",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/connectors/WhatsAppGatewayConnector.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/index.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/repositories/InventoryRepository.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/repositories/PORepository.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/repositories/ProcurementMissionRepository.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/repositories/QuotationRepository.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/repositories/RFQRepository.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/repositories/ShipmentRepository.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/repositories/SupplierRepository.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/InventoryMonitor.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/MessageFormatter.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/MissionPlanner.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/MissionResolver.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/MissionTimeline.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/ProcurementCommunicationGateway.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/ProcurementMissionService.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/PurchaseOrderManager.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/QuotationAnalyzer.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/QuotationExtractor.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/ShipmentTracker.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/SupplierFinder.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/SupplierLearning.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/services/SupplierResolver.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/types/inventory.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/types/mission.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/types/quotation.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/types/rfq.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/procurement/types/supplier.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/features/sales/repositories/CustomerRepository.ts",
+      "decision": "PORT",
+      "cash_mapping": "switchable payment-delay history, customer concentration and same-seed scenarios"
+    },
+    {
+      "source": "src/features/sales/repositories/SalesMissionRepository.ts",
+      "decision": "PORT",
+      "cash_mapping": "confirmed sales order to EXPECTED_RECEIVABLE, mission state and owner confirmation"
+    },
+    {
+      "source": "src/features/sales/repositories/SalesOrderRepository.ts",
+      "decision": "PORT",
+      "cash_mapping": "confirmed sales order to EXPECTED_RECEIVABLE, mission state and owner confirmation"
+    },
+    {
+      "source": "src/features/sales/services/SalesMissionService.ts",
+      "decision": "PORT",
+      "cash_mapping": "confirmed sales order to EXPECTED_RECEIVABLE, mission state and owner confirmation"
+    },
+    {
+      "source": "src/lib/agents/ExecutiveCTOAgent.ts",
+      "decision": "PORT",
+      "cash_mapping": "cash summary, pending decisions and read-only linked recommendations"
+    },
+    {
+      "source": "src/lib/agents/workers/CollectionsWorker.ts",
+      "decision": "PORT",
+      "cash_mapping": "overdue invoice evidence, T1 outreach drafts, T2 approved reminders and monthly-rest MSMED interest"
+    },
+    {
+      "source": "src/lib/agents/workers/CustomerSuccessWorker.ts",
+      "decision": "PORT",
+      "cash_mapping": "switchable payment-delay history, customer concentration and same-seed scenarios"
+    },
+    {
+      "source": "src/lib/agents/workers/MarketWorker.ts",
+      "decision": "PORT",
+      "cash_mapping": "offline bundled market signals to proposed COST_CHANGE; no live crawler"
+    },
+    {
+      "source": "src/lib/agents/workers/PricingWorker.ts",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/lib/agents/workers/ProcurementWorker.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/lib/agents/workers/ReportingWorker.ts",
+      "decision": "PORT",
+      "cash_mapping": "one-page cash-position PDF; T1 generation, consent-bound T3 sharing"
+    },
+    {
+      "source": "src/lib/agents/workers/RevenueWorker.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "optional labelled revenue signal from bundled data or deterministic fallback, not authoritative cash"
+    },
+    {
+      "source": "src/lib/agents/workers/SupplierWorker.ts",
+      "decision": "PORT",
+      "cash_mapping": "purchase invoices/documents and approved PO payable, supplier comparisons and sandbox RFQs"
+    },
+    {
+      "source": "src/lib/ai.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/config/trustedContacts.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/connectors/ConnectorRegistry.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/connectors/types.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/demo/ExecutiveDemoSimulator.ts",
+      "decision": "PORT",
+      "cash_mapping": "cash summary, pending decisions and read-only linked recommendations"
+    },
+    {
+      "source": "src/lib/domain/ActionCenterService.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/domain/AdvisoryParserService.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/domain/BusinessContextService.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/domain/BusinessInputService.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/domain/CommunicationService.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/domain/ConversationService.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/domain/TaskService.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/domain/TimelineService.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/events/BusinessEventBus.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/graphs/CollectionsMsmeGraph.ts",
+      "decision": "PORT",
+      "cash_mapping": "overdue invoice evidence, T1 outreach drafts, T2 approved reminders and monthly-rest MSMED interest"
+    },
+    {
+      "source": "src/lib/graphs/ExecutiveCTOGraph.ts",
+      "decision": "PORT",
+      "cash_mapping": "cash summary, pending decisions and read-only linked recommendations"
+    },
+    {
+      "source": "src/lib/graphs/ProcurementMissionGraph.ts",
+      "decision": "PORT",
+      "cash_mapping": "approved purchase order to SCHEDULED_PAYABLE, supplier quotes, RFQ drafts and approved sandbox messages"
+    },
+    {
+      "source": "src/lib/graphs/SalesMissionGraph.ts",
+      "decision": "PORT",
+      "cash_mapping": "confirmed sales order to EXPECTED_RECEIVABLE, mission state and owner confirmation"
+    },
+    {
+      "source": "src/lib/graphs/checkpointer.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/graphs/index.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/graphs/state.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/graphs/toolsAdapter.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/knowledge/KnowledgeBaseService.ts",
+      "decision": "PORT",
+      "cash_mapping": "seller-scoped evidence/document references; untrusted data never commands"
+    },
+    {
+      "source": "src/lib/memory/SharedBusinessMemory.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/operations/Operation.ts",
+      "decision": "PORT",
+      "cash_mapping": "cash-event proposals, module state and evidence-backed operational timeline"
+    },
+    {
+      "source": "src/lib/operations/OperationRegistry.ts",
+      "decision": "PORT",
+      "cash_mapping": "cash-event proposals, module state and evidence-backed operational timeline"
+    },
+    {
+      "source": "src/lib/operations/OperationService.ts",
+      "decision": "PORT",
+      "cash_mapping": "cash-event proposals, module state and evidence-backed operational timeline"
+    },
+    {
+      "source": "src/lib/operations/types.ts",
+      "decision": "PORT",
+      "cash_mapping": "cash-event proposals, module state and evidence-backed operational timeline"
+    },
+    {
+      "source": "src/lib/prisma-client.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/python.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/revenue-orchestrator.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "optional labelled revenue signal from bundled data or deterministic fallback, not authoritative cash"
+    },
+    {
+      "source": "src/lib/story/BusinessStoryEngine.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/supabase-prisma-adapter.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/supabase.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/tools/BaseTool.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/tools/collectionsTools.ts",
+      "decision": "PORT",
+      "cash_mapping": "overdue invoice evidence, T1 outreach drafts, T2 approved reminders and monthly-rest MSMED interest"
+    },
+    {
+      "source": "src/lib/tools/commsTools.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/tools/index.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/tools/inventoryTools.ts",
+      "decision": "PORT",
+      "cash_mapping": "planned purchases and cost changes with confirmed evidence"
+    },
+    {
+      "source": "src/lib/tools/pricingTools.ts",
+      "decision": "PORT",
+      "cash_mapping": "bundled material signals, inventory/BOM cost assumptions to COST_CHANGE"
+    },
+    {
+      "source": "src/lib/tools/registry.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/tools/reportTools.ts",
+      "decision": "PORT",
+      "cash_mapping": "one-page cash-position PDF; T1 generation, consent-bound T3 sharing"
+    },
+    {
+      "source": "src/lib/tools/revenueTools.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "optional labelled revenue signal from bundled data or deterministic fallback, not authoritative cash"
+    },
+    {
+      "source": "src/lib/tools/supplierTools.ts",
+      "decision": "PORT",
+      "cash_mapping": "purchase invoices/documents and approved PO payable, supplier comparisons and sandbox RFQs"
+    },
+    {
+      "source": "src/lib/tools/types.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/tools/workflowTools.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "seller-scoped persisted proposals/execution timeline, approved Kosh actions only"
+    },
+    {
+      "source": "src/lib/verifier/ExecutionVerifier.ts",
+      "decision": "EMBED",
+      "cash_mapping": "retained presentation or supporting source; linked to seller-scoped cash module data and Kosh audit"
+    },
+    {
+      "source": "src/lib/workflows/WorkflowEngine.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "seller-scoped persisted proposals/execution timeline, approved Kosh actions only"
+    },
+    {
+      "source": "src/lib/workflows/WorkflowService.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "seller-scoped persisted proposals/execution timeline, approved Kosh actions only"
+    },
+    {
+      "source": "src/lib/workflows/types.ts",
+      "decision": "BRIDGE",
+      "cash_mapping": "seller-scoped persisted proposals/execution timeline, approved Kosh actions only"
+    }
+  ]
+}

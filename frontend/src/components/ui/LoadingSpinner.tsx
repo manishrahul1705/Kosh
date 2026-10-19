@@ -2,6 +2,7 @@ import React from 'react'
 
 export const LoadingSpinner: React.FC<{ size?: number; className?: string }> = ({ size = 20, className = '' }) => (
   <svg
+    role="status"
     className={`animate-spin ${className}`}
     width={size}
     height={size}

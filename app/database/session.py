@@ -82,6 +82,8 @@ def reserve_sqlite_writer(session: Session, *, renew_read: bool = False) -> None
     if session.in_transaction():
         if not renew_read or session.new or session.dirty or session.deleted:
             return
+        if session.connection().get_execution_options().get("sqlite_write_intent"):
+            return
         session.commit()
     session.connection(execution_options={"sqlite_write_intent": True})
 

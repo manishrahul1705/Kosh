@@ -1,6 +1,6 @@
 """Generate the canonical demonstration numbers for Kosh seed 42 and write docs/kosh/demo_numbers.md."""
 from __future__ import annotations
-import os, sys, shutil, gc
+import os, sys, shutil, gc, re
 from datetime import date, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
@@ -50,7 +50,20 @@ from scripts.kosh_generate_demo import generate, create_attack_invoice
 from scripts.kosh_seed_demo import seed
 
 
-def run_demo(db_path: Path, out_md_path: Path):
+def indian_rupees(text: str) -> str:
+    """Regroup only already-rendered rupee amounts without changing numeric values."""
+    def regroup(match):
+        sign, whole, fraction = match.group(1), match.group(2).replace(",", ""), match.group(3)
+        tail, head = whole[-3:], whole[:-3]
+        groups = []
+        while head:
+            groups.insert(0, head[-2:])
+            head = head[:-2]
+        return "₹" + sign + ",".join(groups + [tail]) + fraction
+    return re.sub(r"₹([+-]?)([0-9][0-9,]*)(\.[0-9]{2})", regroup, text)
+
+
+def run_demo(db_path: Path, out_md_path: Path, *, work_root: Path | None = None, evidence_dir: Path | None = None):
     as_of = date(2026, 10, 13)
 
     if db_path.exists():
@@ -62,8 +75,8 @@ def run_demo(db_path: Path, out_md_path: Path):
     db_url = f"sqlite:///{db_path.as_posix()}"
     run_migrations(db_url)
 
-    demo_data_dir = ROOT / "demo_data"
-    storage_dir = ROOT / "private_storage"
+    demo_data_dir = (work_root or ROOT) / "demo_data"
+    storage_dir = (work_root or ROOT) / "private_storage"
     print("[1/10] Generating demo data and seeding database...", flush=True)
     generate(seed=42, out=demo_data_dir, as_of=as_of)
     seed(database_url=db_url, data_dir=demo_data_dir, storage=storage_dir)
@@ -695,7 +708,10 @@ def run_demo(db_path: Path, out_md_path: Path):
         ])
 
         out_md_path.parent.mkdir(parents=True, exist_ok=True)
-        out_md_path.write_text("\n".join(md) + "\n", encoding="utf-8")
+        out_md_path.write_text(indian_rupees("\n".join(md) + "\n"), encoding="utf-8")
+        if evidence_dir is not None:
+            from scripts.kosh_export_evidence import export_evidence
+            export_evidence(session, evidence_dir, sim_res, post_weeks, security_results)
         print(f"Canonical demo numbers successfully written to {out_md_path}")
 
     finally:

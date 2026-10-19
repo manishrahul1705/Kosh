@@ -12,7 +12,7 @@ py -3.11 -m venv .venv
 Push-Location frontend
 npm.cmd ci
 Pop-Location
-.\start.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
 On macOS/Linux use `python3 -m venv .venv`, `.venv/bin/python -m pip install -r requirements.txt`, `(cd frontend && npm ci)`, then `bash start.sh`.

@@ -45,18 +45,18 @@ Starting the app prepares the complete fictional Meenakshi Precision Components 
 
 ## Final verification — 2026-10-19
 
-Verified offline with all scheduler, startup collection, recovery and automatic migration flags disabled (`APP_ENV=development`, `KOSH_AS_OF_DATE=2026-10-13`). These are the current results:
+Verified offline with seed 42 and as-of `2026-10-13`. These results cover automatic startup and the populated business workspace:
 
 | Check | Actual result |
 |---|---|
-| Kosh suite (`tests/test_kosh_*.py`) | **337 passed, 1 skipped** (optional SciPy unavailable) |
-| Frontend tests / build | **54 passed across 8 files**; production build passed |
-| Submission evidence checks (included in Kosh count) | **12 passed** on a separate final rerun |
-| Canonical demo regeneration | Passed; all **125 rupee values unchanged**, with Indian grouping |
-| Sandbox execution evidence | All six generated artifacts committed under [`docs/kosh/evidence/`](docs/kosh/evidence/) |
-| Audit verifier | **VALID, 73 entries**, zero broken links |
+| Kosh suite (`tests/test_kosh_*.py`) | **342 passed, 1 skipped** (optional SciPy unavailable) |
+| Frontend tests / production build | **55 passed across 9 files**; build passed |
+| Automatic startup | Missing database populated before requests; restart preserves data; concurrent starts seed once; production never bootstraps |
+| Fresh local clone | Dependencies installed from local caches; `start.ps1` started both servers with **no `.env` and no setup/seed command**; **49 page/API reads populated**; temporary checkout removed |
+| Canonical financial figures | All **125 rupee values unchanged**; auto-start plan principal/cost, NBFC baseline and week-6 **6.25%** independently checked |
+| Execution evidence / audit verifier | Regenerated [`docs/kosh/evidence/`](docs/kosh/evidence/); **VALID, 73 entries**, zero broken links |
 
-The evidence exporter runs `scripts/verify_audit_chain.py` against its throwaway database before deleting it and saves the actual output. Its additional approved reminder and blocked-action checks explain why this 73-entry export has more audit entries than the separate canonical numbers run. The reminder creates no cash receipt. Test/build logs remain local under `private_notes/logs/final_*`; private databases, delivery credentials and storage are excluded from Git. Media delivery status is tracked separately in the submission checklist.
+The page/read contract is maintained in [`scripts/kosh_data_coverage.py`](scripts/kosh_data_coverage.py). The full local inventory is `private_notes/DATA_COVERAGE.md` (all yes). Logs remain under `private_notes/logs/data_*` and are excluded from Git. Source/commit-message hygiene and private-file checks are clean. PowerShell/shell launchers and Compose configuration passed syntax checks; a Docker runtime was unavailable for a container execution check. Media delivery status remains separate in the submission checklist.
 
 ### Judge quick start
 
@@ -71,7 +71,7 @@ py -3.11 -m venv .venv
 Push-Location frontend
 npm.cmd ci
 Pop-Location
-.\start.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
 ```bash
@@ -117,9 +117,9 @@ FastAPI serves authenticated APIs, SQLAlchemy manages persistence and Alembic ma
 
 See [PROJECT_ARCHITECTURE.md](docs/gem/PROJECT_ARCHITECTURE.md) for the tender pipeline and [PROJECT_DEMO_GUIDE.md](docs/gem/PROJECT_DEMO_GUIDE.md) for the optional snapshot-based demo.
 
-## Local setup
+## Advanced: explicit database and external sign-in
 
-Use Python 3.11 and a Node/npm version supported by the frontend lockfile. Run these commands from the repository root. Do not overwrite an existing `.env` or start the application against a real database unintentionally.
+This optional path is for an explicitly managed database and external identity. Normal local use needs only the launcher above. Use Python 3.11 and a Node/npm version supported by the frontend lockfile. Run these commands from the repository root. Do not overwrite an existing `.env` or start the application against a real database unintentionally.
 
 ```powershell
 python -m venv .venv

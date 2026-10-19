@@ -6,18 +6,18 @@ Comprehensive breakdown of automated tests, reproduction commands, and mathemati
 
 ## Final verification — 2026-10-19
 
-This checkout is **not ready for submission**. Verification used offline-safe settings and no network. Current results supersede earlier counts:
+Verified offline with all scheduler, startup collection, recovery and automatic migration flags disabled (`APP_ENV=development`, `KOSH_AS_OF_DATE=2026-10-13`). These are the current results:
 
 | Check | Actual result |
 |---|---|
-| Kosh suite (`tests/test_kosh_*.py`) | 34 collection errors; no suite pass count established |
-| Isolated submission evidence tests (`--noconftest`) | 7 passed, 1 failed (required exports absent) |
-| Frontend tests / build | Blocked: dependencies unavailable; `vitest` / `tsc` missing |
-| Canonical demo regeneration / evidence export | Blocked: `cryptography` unavailable |
-| Rupee presentation check | All 125 rupee amounts retain identical numeric values |
-| Audit verifier | Blocked: no migrated demo database; no verified audit entry count |
+| Kosh suite (`tests/test_kosh_*.py`) | **337 passed, 1 skipped** (optional SciPy unavailable) |
+| Frontend tests / build | **54 passed across 8 files**; production build passed |
+| Submission evidence checks (included in Kosh count) | **12 passed** on a separate final rerun |
+| Canonical demo regeneration | Passed; all **125 rupee values unchanged**, with Indian grouping |
+| Sandbox execution evidence | All six generated artifacts committed under [`evidence/`](evidence/) |
+| Audit verifier | **VALID, 73 entries**, zero broken links |
 
-Offline dependency installation was attempted. The cache does not contain the pinned `reportlab==5.0.1`; other missing runtime imports include `PyJWT`, `pdfminer` and `pdfplumber`. Logs are local under `private_notes/logs/final_*` and are excluded from Git. Generated evidence, a verified audit count, passing complete checks, deck and recorded video remain required.
+The evidence exporter runs `scripts/verify_audit_chain.py` against its throwaway database before deleting it and saves the actual output. Its additional approved reminder and blocked-action checks explain why this 73-entry export has more audit entries than the separate canonical numbers run. The reminder creates no cash receipt. Test/build logs remain local under `private_notes/logs/final_*`; private databases, delivery credentials and storage are excluded from Git. Media delivery status is tracked separately in the submission checklist.
 
 ---
 
@@ -39,7 +39,7 @@ Offline dependency installation was attempted. The cache does not contain the pi
 ### Run Focused Kosh Suite
 ```powershell
 # Windows PowerShell
-.\.venv\Scripts\pytest.exe -q --tb=line -p no:warnings (Get-ChildItem tests\test_kosh_*.py)
+.\.venv\Scripts\pytest.exe -q --tb=line -p no:warnings --basetemp private_notes/final_pytest_run (Get-ChildItem tests\test_kosh_*.py)
 ```
 ```bash
 # macOS / Linux Bash
@@ -67,18 +67,18 @@ pytest -q --tb=line -p no:warnings
 
 ## 3. What Key Test Suites Prove
 
-| Test File | Key Test Names | What the Test Proves |
-| :--- | :--- | :--- |
-| **`tests/test_kosh_demo_walkthrough.py`** | `test_full_demo_walkthrough_api` | Proves the entire 5-minute judge walkthrough via API: dev login, document quarantine, verified ledger, 13-week forecast, catalogue evaluation, least-cost plan creation, four-eyes segregation of duties, OTP step-up, sandbox settlement, re-forecast, attack injection rejection, kill switch, and audit chain verification. |
-| **`tests/test_kosh_stage5_4_security.py`** | `test_security_headers_present_on_api_responses`<br>`test_cors_production_guards_against_wildcard`<br>`test_dev_login_rate_limiting`<br>`test_approval_rate_limiting` | Proves presence of `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Content-Security-Policy`; verifies production startup rejects wildcard CORS `*`; proves in-memory rate limiting stops brute-force attempts on dev login and approval endpoints. |
-| **`tests/test_kosh_stage5_4_demo_snapshot.py`** | `test_dev_login_refused_in_production`<br>`test_dev_login_grants_access_to_meenakshi_demo_seller`<br>`test_ledger_excludes_review_payables_and_matches_forecast` | Proves `DEV_LOGIN_ENABLED` is refused when `APP_ENV=production`; verifies dev sign-in with any email receives `OWNER` access to Meenakshi Precision Components; proves open payables exclude poisoned invoices in review. |
-| **`tests/test_kosh_stage4_attack_demo.py`** | `test_poisoned_document_flagged_for_review`<br>`test_blocked_document_payment_fails_execution` | Proves adversarial instruction text in PDFs (`INSTRUCTION_TEXT_DETECTED`) quarantines invoices into `REVIEW` and blocks automated payment execution (T4 policy violation). |
-| **`tests/test_kosh_stage4_approvals.py`** | `test_t3_creator_needs_other_approver_when_one_exists`<br>`test_single_use_token_and_signature_and_parameter_tampering`<br>`test_token_expiry_and_rejection_revoke_token` | Proves four-eyes control (intent creator cannot self-approve T3 disbursements); proves approval tokens are single-use, 5-minute expiring, and bound cryptographically to `params_hash`. |
-| **`tests/test_kosh_stage4_step_up.py`** | `test_otp_hash_encrypted_delivery_success_single_use_and_no_audit_plaintext`<br>`test_three_attempt_limit_and_delivery_rate_limit` | Proves simulated OTP challenges are hashed (HMAC-SHA256), delivered encrypted in the sandbox outbox, lock after 3 invalid attempts, and never expose raw codes in audit logs. |
-| **`tests/test_kosh_stage4_hash_chain.py`** | `test_audit_chain_contiguous_and_valid`<br>`test_tampered_audit_chain_fails_verification` | Proves cryptographic SHA-256 hash chaining of all corporate events; verifies that modifying an event payload breaks the audit chain (`PAYLOAD_HASH_MISMATCH`). |
-| **`tests/test_kosh_stage5_plan.py`** | `test_plan_orders_by_cost_per_net_rupee`<br>`test_same_seed_proof_verifies_horizon_safety`<br>`test_guaranteed_vs_expected_collections_separation` | Proves greedy least-cost optimization based on cost per net rupee; proves that with `ALL_WEEKS` every horizon week's probability is $\le 0.20$; proves separation between guaranteed and expected plans. |
-| **`tests/test_kosh_stage5_2_collections.py`** | `test_msmed_interest_matches_statutory_formula`<br>`test_collections_status_consistency` | Proves MSMED Act Section 15 (45-day cap) and Section 16 penal compound interest calculation (3x RBI bank rate); proves collections push lever consistency between product and invoice levels. |
-| **`tests/test_kosh_stage3_reproducibility.py`** | `test_monte_carlo_crn_seed_reproducibility` | Proves that 2,000 Monte Carlo paths generated with Common Random Numbers (`seed=42`) produce 100% bit-exact probabilities and shortfall amounts across runs. |
+| Test file | Named checks | What they prove |
+|---|---|---|
+| `tests/test_kosh_demo_walkthrough.py` | `test_full_demo_walkthrough_api` | End-to-end API walkthrough: forecast, eligibility, planning, approval, OTP, settlement, security denials and audit integrity. |
+| `tests/test_kosh_stage5_4_security.py` | `test_security_headers_present_on_api_responses`<br>`test_cors_production_guards_against_wildcard`<br>`test_dev_login_rate_limiting`<br>`test_approval_rate_limiting` | Security headers, production CORS guards and bounded login/approval attempts. |
+| `tests/test_kosh_stage4_attack_demo.py` | `test_seeded_payment_injection_is_data_and_forced_action_is_blocked` | Instruction-bearing invoices remain review data; document-origin payments receive a T4 denial. |
+| `tests/test_kosh_stage4_approvals.py` | `test_t3_creator_needs_other_approver_when_one_exists`<br>`test_single_use_token_and_signature_and_parameter_tampering` | Another approver is required when available; exact-parameter, signed approvals reject tampering and replay. |
+| `tests/test_kosh_stage4_step_up.py` | `test_otp_hash_encrypted_delivery_success_single_use_and_no_audit_plaintext`<br>`test_three_attempt_limit_and_delivery_rate_limit` | Hashed OTPs, encrypted delivery, single use and attempt/rate limits. |
+| `tests/test_kosh_stage4_audit_export.py` | `test_export_preserves_chain_links_without_foreign_payloads`<br>`test_cli_verifies_scoped_export_against_same_database` | Tenant-private exports preserve chain anchors and the audit verification CLI accepts a valid scoped snapshot. |
+| `tests/test_kosh_stage3_2.py` | `test_target_is_inclusive_threshold_is_strict_and_every_week_is_checked`<br>`test_collection_and_discount_caps_cannot_double_finance_same_invoice` | All-weeks safety constraints and prevention of duplicate financing of the same receivable. |
+| `tests/test_kosh_stage5_collections.py` | `test_payment_period_and_due_boundary`<br>`test_monthly_rests_and_unknown_evidence`<br>`test_native_reminder_needs_t2_approval_before_outbox` | MSMED term caps and monthly compounding; reminders require approval and produce no invented cash receipt. |
+| `tests/test_kosh_stage2.py` | `test_determinism_and_fingerprint_changes`<br>`test_historical_inputs_treat_future_payment_as_unknown` | Seed reproducibility, changed-input fingerprints and historical forecast boundaries. |
+| `tests/test_kosh_submission_evidence.py` | `test_committed_evidence_is_complete_and_has_no_secrets`<br>`test_committed_audit_chain_and_walkthrough_results`<br>`test_evidence_scanner_rejects_credentials` | Required committed files, independent chain hashing, lifecycle and 403 evidence, safe forecasts and credential scanning. |
 
 ---
 
@@ -93,7 +93,7 @@ pytest -q --tb=line -p no:warnings
    ```bash
    python scripts/verify_audit_chain.py
    ```
-   Re-computes the SHA-256 digest across all sequential audit entries from genesis, verifying 0 broken links and checking security counters.
+   Recomputes payload digests and chained event hashes from genesis. The evidence exporter runs this CLI against its throwaway database before cleanup and commits the actual output in `evidence/audit_verify.txt`.
 3. **Instant Demo Reset Script** (`scripts/kosh_demo_reset.py`):
    ```bash
    python scripts/kosh_demo_reset.py

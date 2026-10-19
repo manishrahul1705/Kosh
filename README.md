@@ -55,18 +55,18 @@ The generated data and private storage are ignored. Keep all worker and collecti
 
 ## Final verification — 2026-10-19
 
-This checkout is **not ready for submission**. Verification used offline-safe settings and no network. Current results supersede earlier counts:
+Verified offline with all scheduler, startup collection, recovery and automatic migration flags disabled (`APP_ENV=development`, `KOSH_AS_OF_DATE=2026-10-13`). These are the current results:
 
 | Check | Actual result |
 |---|---|
-| Kosh suite (`tests/test_kosh_*.py`) | 34 collection errors; no suite pass count established |
-| Isolated submission evidence tests (`--noconftest`) | 7 passed, 1 failed (required exports absent) |
-| Frontend tests / build | Blocked: dependencies unavailable; `vitest` / `tsc` missing |
-| Canonical demo regeneration / evidence export | Blocked: `cryptography` unavailable |
-| Rupee presentation check | All 125 rupee amounts retain identical numeric values |
-| Audit verifier | Blocked: no migrated demo database; no verified audit entry count |
+| Kosh suite (`tests/test_kosh_*.py`) | **337 passed, 1 skipped** (optional SciPy unavailable) |
+| Frontend tests / build | **54 passed across 8 files**; production build passed |
+| Submission evidence checks (included in Kosh count) | **12 passed** on a separate final rerun |
+| Canonical demo regeneration | Passed; all **125 rupee values unchanged**, with Indian grouping |
+| Sandbox execution evidence | All six generated artifacts committed under [`docs/kosh/evidence/`](docs/kosh/evidence/) |
+| Audit verifier | **VALID, 73 entries**, zero broken links |
 
-Offline dependency installation was attempted. The cache does not contain the pinned `reportlab==5.0.1`; other missing runtime imports include `PyJWT`, `pdfminer` and `pdfplumber`. Logs are local under `private_notes/logs/final_*` and are excluded from Git. Generated evidence, a verified audit count, passing complete checks, deck and recorded video remain required.
+The evidence exporter runs `scripts/verify_audit_chain.py` against its throwaway database before deleting it and saves the actual output. Its additional approved reminder and blocked-action checks explain why this 73-entry export has more audit entries than the separate canonical numbers run. The reminder creates no cash receipt. Test/build logs remain local under `private_notes/logs/final_*`; private databases, delivery credentials and storage are excluded from Git. Media delivery status is tracked separately in the submission checklist.
 
 ### Judge quick start
 
@@ -245,7 +245,7 @@ Public GeM -> discovery -> immutable documents -> text/tables/OCR
 
 FastAPI serves authenticated APIs, SQLAlchemy manages persistence and Alembic manages migrations. Database-backed jobs and APScheduler drive optional bounded workers. React, TypeScript, TanStack Query and Tailwind provide the portal. SQLite WAL is supported for local development and allows one writer at a time. Use one scheduler owner and shared absolute lock paths for a deployment.
 
-See [PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md) for the tender pipeline and [PROJECT_DEMO_GUIDE.md](PROJECT_DEMO_GUIDE.md) for the optional snapshot-based demo.
+See [PROJECT_ARCHITECTURE.md](docs/gem/PROJECT_ARCHITECTURE.md) for the tender pipeline and [PROJECT_DEMO_GUIDE.md](docs/gem/PROJECT_DEMO_GUIDE.md) for the optional snapshot-based demo.
 
 ## Local setup
 
@@ -271,7 +271,7 @@ $env:AI_ANALYSIS_AUTO_QUEUE = 'false'
 
 & .\.venv\Scripts\python.exe scripts/migrate.py
 & .\.venv\Scripts\python.exe scripts/migrate.py --check
-& .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+& .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8010
 ```
 
 Migrations write only the explicitly selected development database. Normal startup can migrate, recover or schedule when enabled. Configure `SUPABASE_URL` for backend JWT verification and frontend `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` for account login. Identity provisioning does not grant seller membership or operator permissions automatically. Environment secrets are local and ignored.
@@ -284,7 +284,7 @@ npm.cmd ci
 npm.cmd run dev -- --host 127.0.0.1
 ```
 
-Vite serves port 5173 and proxies `/api` and `/health` to port 8000. Native OCR is optional (`OCR_ENABLED=false` by default). When disabled, intake processes text-layer PDFs directly, and image-only pages remain `REVIEW_REQUIRED`. When enabled (`OCR_ENABLED=true`), local Tesseract CLI is used if present on PATH or `OCR_EXECUTABLE`; if Tesseract is missing or unavailable, the system records `OCR_DEPENDENCY_UNAVAILABLE` and image pages stay `REVIEW_REQUIRED` without halting ingestion. Optional live WhatsApp QR device pairing remains blocked offline (`BLOCKED_OFFLINE`) as live delivery requires authorized external sessions. Low confidence, unsupported scripts and complex scanned tables remain review. Do not enable collection, paid providers or broad workers merely to start an empty workspace.
+Vite serves port 5180 and proxies `/api` and `/health` to port 8010. Native OCR is optional (`OCR_ENABLED=false` by default). When disabled, intake processes text-layer PDFs directly, and image-only pages remain `REVIEW_REQUIRED`. When enabled (`OCR_ENABLED=true`), local Tesseract CLI is used if present on PATH or `OCR_EXECUTABLE`; if Tesseract is missing or unavailable, the system records `OCR_DEPENDENCY_UNAVAILABLE` and image pages stay `REVIEW_REQUIRED` without halting ingestion. Optional live WhatsApp QR device pairing remains blocked offline (`BLOCKED_OFFLINE`) as live delivery requires authorized external sessions. Low confidence, unsupported scripts and complex scanned tables remain review. Do not enable collection, paid providers or broad workers merely to start an empty workspace.
 
 ## Tests
 

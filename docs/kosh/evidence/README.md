@@ -2,17 +2,19 @@
 
 Run `python scripts/kosh_export_evidence.py` from the repository root after installing the backend requirements. The exporter resets a throwaway database, seeds the fictional business and executes the complete canonical Stage 4 walkthrough. Its temporary database, borrower documents and private inbox are removed afterward.
 
-The following generated artifacts are required before this folder is submission-ready:
+The committed artifacts record the fictional seed-42 business as of `2026-10-13`:
 
 | File | Meaning |
 |---|---|
 | `sandbox_outbox.jsonl` | Collections reminders and masked OTP delivery metadata; no decrypted codes |
 | `sandbox_ledger.jsonl` | Simulated TReDS settlement and receivable reduction, in integer paise |
-| `action_intents.jsonl` | Proposal, approval, execution and security denials; pure policy checks are explicitly labelled |
+| `action_intents.jsonl` | Proposal, approval, execution and security denials, including their actual 403 reasons; pure policy checks are explicitly labelled |
 | `audit_chain.jsonl` | Original ordered chain rows, including canonical payload digests and parent hashes |
 | `audit_verify.txt` | Verification result and actual chain entry count |
 | `forecast_before_after.json` | Same-seed 13-week baseline and post-execution probabilities and balances |
 
-Export is currently blocked on missing offline runtime dependencies. No generated execution artifacts are claimed or substituted. `tests/test_kosh_submission_evidence.py` scans every generated file for credential fields, unmasked OTPs and JWTs, and fails if required artifacts are absent.
+The least-cost canonical plan funds TReDS and does not send collection reminders. This exporter additionally drafts, approves and sends one T2 reminder through the sandbox, and checks that it changes no cash probabilities. It proves the kill switch blocks that valid approved action, then restores policy, rechecks and reapproves it before sending. It also invokes the proposal route for document-origin and kill-switch attempts and records its real 403 exceptions. These extra actions add audit entries beyond the canonical numbers report. The forecast file preserves the canonical before/after settlement snapshot, before the separate operational add-on demonstration.
+
+The exporter runs `scripts/verify_audit_chain.py` against the same temporary database and saves its actual output in `audit_verify.txt` before cleanup. `tests/test_kosh_submission_evidence.py` independently verifies the exported chain hashes and walkthrough results, scans every generated file for credentials, unmasked OTPs and signed approval strings, and fails if required artifacts are absent.
 
 Amounts and business identities are fictional sandbox fixtures. Approval identifiers and digests are audit references, not executable approval tokens. OTP ciphertext, OTP hashes and private delivery payloads are never exported. Audit verification applies to the original records; payloads must not be edited after export.

@@ -34,7 +34,9 @@ export const SellerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const sellers = useMemo(() => data ?? [], [data])
 
   useEffect(() => {
-    if (sellers.length && !sellers.some((s) => s.id === activeSellerId)) setActive(sellers[0].id)
+    if (sellers.length && !sellers.some((s) => s.id === activeSellerId)) {
+      setActive((sellers.find(s => s.name === 'Meenakshi Precision Components') ?? sellers[0]).id)
+    }
   }, [sellers, activeSellerId])
 
   const setActiveSellerId = (id: number) => {

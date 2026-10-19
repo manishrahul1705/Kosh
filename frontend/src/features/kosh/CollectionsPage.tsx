@@ -131,20 +131,20 @@ export const CollectionsPage = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-primary-100 dark:border-primary-900 pb-2.5">
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-primary-600" />
-              <h3 className="font-bold text-primary-950 dark:text-primary-200 text-sm tracking-tight">{fixture.label}</h3>
+              <h3 className="font-bold text-primary-950 dark:text-primary-200 text-sm tracking-tight">Interest calculation reference</h3>
             </div>
             <span className="self-start sm:self-auto rounded-full bg-primary-200/80 dark:bg-primary-900/60 text-primary-900 dark:text-primary-200 px-3 py-0.5 text-xs font-bold border border-primary-300 dark:border-primary-700">
-              Sample data · Statutory interest demonstration (Demonstration Only)
+              Section 16 · monthly compounding
             </span>
           </div>
 
-          <p className="text-xs text-primary-800 dark:text-primary-300 leading-relaxed">{fixture.note}</p>
+          <p className="text-xs text-primary-800 dark:text-primary-300 leading-relaxed">Reference calculation shown separately from business receivables. Record acceptance and credit terms against an open invoice to calculate its interest.</p>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs pt-1">
             <div className="card p-3 border-primary-100 dark:border-primary-900/50">
               <span className="text-metal-500 text-[10px] uppercase font-bold tracking-wider block">Invoice / Buyer</span>
-              <strong className="text-metal-900 dark:text-white block mt-0.5 text-xs sm:text-sm">{fixture.invoice_number}</strong>
-              <div className="text-metal-600 dark:text-metal-400 text-xs truncate">{fixture.party}</div>
+              <strong className="text-metal-900 dark:text-white block mt-0.5 text-xs sm:text-sm">REFERENCE-001</strong>
+              <div className="text-metal-600 dark:text-metal-400 text-xs truncate">Reference buyer</div>
             </div>
 
             <div className="card p-3 border-primary-100 dark:border-primary-900/50">

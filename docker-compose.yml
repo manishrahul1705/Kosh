@@ -1,19 +1,42 @@
 services:
   api:
     build: .
-    image: gem-tender-intelligence:stage1
+    image: kosh-api:local
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8010:8010"
+      - "127.0.0.1:5180:5180"
     env_file:
       - path: .env
         required: false
     environment:
-      DATABASE_URL: sqlite:////app/data/gem.db
+      APP_ENV: development
+      DATABASE_URL: sqlite:////app/data/kosh_work.db
+      DEV_LOGIN_ENABLED: "true"
+      KOSH_AUTO_BOOTSTRAP: "true"
+      KOSH_AS_OF_DATE: "2026-10-13"
+      AUTO_MIGRATE: "false"
+      SCHEDULER_ENABLED: "false"
+      COLLECT_ON_STARTUP: "false"
+      STARTUP_RECOVERY_ENABLED: "false"
     volumes:
       - ./data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8010/health').status==200 else 1)"]
       interval: 60s
       timeout: 10s
       retries: 3
+      start_period: 600s
+  frontend:
+    build:
+      context: ./frontend
+    # Shared loopback keeps development sign-in local to the API. Both host
+    # ports are bound above; the frontend still runs in its own container.
+    network_mode: service:api
+    environment:
+      VITE_DEV_LOGIN: "true"
+      VITE_API_PROXY_TARGET: http://127.0.0.1:8010
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

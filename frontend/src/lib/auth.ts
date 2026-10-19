@@ -10,7 +10,7 @@ const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ?? ''
 const STORAGE_KEY = 'gem.session'
 /** Local test sign-in (development only): needs DEV_LOGIN_ENABLED=true on the backend. */
-export const DEV_LOGIN = import.meta.env.DEV && import.meta.env.VITE_DEV_LOGIN === 'true'
+export const DEV_LOGIN = import.meta.env.DEV && import.meta.env.VITE_DEV_LOGIN !== 'false'
 
 export interface Session {
   accessToken: string

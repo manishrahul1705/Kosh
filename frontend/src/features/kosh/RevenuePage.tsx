@@ -44,6 +44,12 @@ export const RevenuePage = () => {
       </div>
 
       {/* Revenue Signal Summary Metrics */}
+      {query.data?.history && query.data.history.length > 0 && <Card>
+        <h3 className="font-semibold text-sm mb-2">Signal history</h3>
+        <div className="flex gap-6 text-xs">{query.data.history.map(point => <p key={point.as_of}>
+          <span className="block">{point.as_of}</span><strong>{formatPaiseINR(point.total_paise)}</strong>
+        </p>)}</div>
+      </Card>}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-4 rounded-xl border border-metal-200/80 dark:border-metal-800 bg-white dark:bg-metal-900 shadow-2xs space-y-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-metal-400">

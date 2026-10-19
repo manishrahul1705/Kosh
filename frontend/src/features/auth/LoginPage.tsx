@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card'
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(DEV_LOGIN ? 'judge@kosh.local' : '')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -19,7 +19,8 @@ export const LoginPage: React.FC = () => {
     setBusy(true)
     try {
       await signIn(email, password)
-      const from = (location.state as { from?: string } | null)?.from ?? '/'
+      if (DEV_LOGIN) { try { localStorage.removeItem('gem.activeSeller') } catch { /* storage is optional */ } }
+      const from = (location.state as { from?: string } | null)?.from ?? '/cash'
       navigate(from, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-in failed.')
@@ -50,7 +51,7 @@ export const LoginPage: React.FC = () => {
 
           {DEV_LOGIN && (
             <p className="text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3 font-medium">
-              Local test sign-in: enter any email, no password. For use on this computer only.
+              Local sign-in: enter any email, no password. For use on this computer only.
             </p>
           )}
           {!authConfigured() && (

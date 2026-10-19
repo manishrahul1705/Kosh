@@ -365,7 +365,7 @@ export const OperationsPage = () => {
               <span className="w-1.5 h-4 rounded-full bg-primary-500 shrink-0" />
               <div>
                 <h3 className="text-base font-bold text-metal-900 dark:text-white tracking-tight">
-                  Bundled offline market sample · illustrative
+                  Procurement price reference · offline
                 </h3>
                 <p className="text-xs text-metal-500 dark:text-metal-400 mt-0.5">
                   Observed price movement across key industrial raw materials and power tariffs.

@@ -4,3 +4,10 @@ __pycache__
 .pytest_cache
 data/*
 .env
+frontend/node_modules
+frontend/dist
+private_storage
+demo_data
+private_notes
+.kosh_bootstrap
+*.db

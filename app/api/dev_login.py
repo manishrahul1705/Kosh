@@ -98,6 +98,24 @@ def _ensure_demo_seller(db: Session, user, email: str) -> None:
         ).first()
         if mem is None:
             db.add(SellerMembership(user_id=user.id, seller_id=demo_seller.id, role="OWNER", status="ACTIVE"))
+        # A populated local workspace may show a per-user verification notice.
+        # This is not an OTP or evidence of approval; codes remain requester-only.
+        from sqlalchemy import select
+        from app.database.kosh_models import KoshOperationRecord, KoshActionIntent, KoshSandboxInbox
+        ready=db.scalar(select(KoshOperationRecord.id).where(KoshOperationRecord.seller_id==demo_seller.id,
+                        KoshOperationRecord.kind=="SETUP"))
+        pending=db.scalar(select(KoshActionIntent).where(KoshActionIntent.seller_id==demo_seller.id,
+                          KoshActionIntent.tier=="T3",KoshActionIntent.status=="PROPOSED")) if ready else None
+        if pending:
+            import json
+            from app.actions.step_up import cipher
+            notice=db.scalar(select(KoshSandboxInbox).where(KoshSandboxInbox.seller_id==demo_seller.id,
+                             KoshSandboxInbox.recipient_user_id==user.id,KoshSandboxInbox.kind=="NOTICE"))
+            if notice is None:
+                notice=KoshSandboxInbox(id=str(uuid.uuid4()),seller_id=demo_seller.id,recipient_user_id=user.id,
+                                        kind="NOTICE",intent_id=pending.id,encrypted_payload="")
+                db.add(notice)
+            notice.encrypted_payload=cipher().encrypt(json.dumps({"message":"A financing proposal awaits review. Request your own verification code before approving money or data sharing."}).encode()).decode()
         return
 
     if db.query(SellerMembership).filter(SellerMembership.user_id == user.id).first() is not None:

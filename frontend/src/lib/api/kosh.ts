@@ -246,6 +246,7 @@ export interface CollectionsResponse {
   fixture?: CollectionFixture
 }
 export const koshApi = {
+  chatHistory:(id:number)=>apiClient.get<{items:{id:number;question:string;answer:{facts:{id:string;text:string;href:string}[]}}[]}>(`/kosh/sellers/${id}/chat/history`).then(r=>r.data),
   messagingStatus:(id:number)=>apiClient.get<{transport:string;device_pairing:string;reason:string;owner_command:string}>(`/kosh/sellers/${id}/operations/messaging-status`).then(r=>r.data),
   knowledgeSearch:(id:number,q:string)=>apiClient.get<{items:{id:number;status:string;evidence_ref:string;data:Record<string,unknown>}[]}>(`/kosh/sellers/${id}/operations/knowledge/search`,{params:{q}}).then(r=>r.data),
   orderDocument:(id:number,record:number)=>apiClient.get<{body:string}>(`/kosh/sellers/${id}/operations/orders/${record}/document`).then(r=>r.data),
@@ -276,7 +277,7 @@ export const koshApi = {
   shareReport:(id:number,report:number,recipient:string)=>apiClient.post(`/kosh/sellers/${id}/reports/${report}/share`,{recipient_id:recipient}).then(r=>r.data),
   grantSharingConsent:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/consents/sharing`,payload).then(r=>r.data),
   chat:(id:number,question:string)=>apiClient.post<{status:string;reason:string;facts:{id:string;text:string;href:string}[]}>(`/kosh/sellers/${id}/chat`,{question}).then(r=>r.data),
-  revenueSignal:(id:number)=>apiClient.get<{model:string;reason:string;explainability:string;cash_timing:string;source:string;available_packages:Record<string,boolean>;weeks:{week_index:number;predicted_revenue_paise:number;level_contribution_paise:number;trend_contribution_paise:number}[]}>(`/kosh/sellers/${id}/revenue`).then(r=>r.data),
+  revenueSignal:(id:number)=>apiClient.get<{history?:{as_of:string;total_paise:number}[];model:string;reason:string;explainability:string;cash_timing:string;source:string;available_packages:Record<string,boolean>;weeks:{week_index:number;predicted_revenue_paise:number;level_contribution_paise:number;trend_contribution_paise:number}[]}>(`/kosh/sellers/${id}/revenue`).then(r=>r.data),
   intelligence:(id:number)=>apiClient.get<{role:string;items:{counterparty_id:number;name:string;open_receivables_paise:number;median_delay_days:number|null;credit_signal:string;concentration_share:string|null}[];history:{id:number;status:string;evidence_ref:string}[]}>(`/kosh/sellers/${id}/intelligence`).then(r=>r.data),
   proposeHistory:(id:number,payload:Record<string,unknown>)=>apiClient.post(`/kosh/sellers/${id}/intelligence/history`,payload).then(r=>r.data),
   confirmHistory:(id:number,record:number)=>apiClient.post(`/kosh/sellers/${id}/intelligence/history/${record}/confirm`).then(r=>r.data),

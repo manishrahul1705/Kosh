@@ -16,6 +16,17 @@ export const ChatDrawer = () => {
     facts: { id: string; text: string; href: string }[]
   } | null>(null)
   const [error, setError] = useState('')
+  const [history, setHistory] = useState<{id:number;question:string;answer:{facts:{id:string;text:string;href:string}[]}}[]>([])
+
+  useEffect(() => {
+    let active = true
+    setHistory([])
+    if (open && activeSellerId !== null) {
+      koshApi.chatHistory(activeSellerId).then(data => { if (active) setHistory(data.items) })
+        .catch(() => { if (active) setError('Unable to load conversation history.') })
+    }
+    return () => { active = false }
+  }, [activeSellerId, open])
 
   useEffect(() => {
     setResult(null)
@@ -74,6 +85,12 @@ export const ChatDrawer = () => {
           </div>
 
           {/* Form */}
+          {history.length > 0 && <div aria-label="Conversation history" className="max-h-48 overflow-y-auto space-y-3 text-xs">
+            {history.map(entry => <article key={entry.id} className="rounded-lg border border-metal-200 p-2">
+              <p className="font-semibold">{entry.question}</p>
+              {entry.answer.facts.slice(0,2).map(fact => <p key={fact.id}><Link to={fact.href}>{fact.text}</Link></p>)}
+            </article>)}
+          </div>}
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label htmlFor="kosh-chat-input" className="block text-xs font-semibold text-metal-700 dark:text-metal-300 mb-1.5">

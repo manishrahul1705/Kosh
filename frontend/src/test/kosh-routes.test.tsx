@@ -16,6 +16,7 @@ vi.mock('@/lib/api/kosh', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/lib/api/kosh')>(),
   koshApi: {
     messagingStatus:vi.fn().mockResolvedValue({transport:'SANDBOX_ONLY',device_pairing:'BLOCKED_OFFLINE',reason:'No external account linking',owner_command:''}),
+    chatHistory:vi.fn().mockResolvedValue({items:[]}),
     chat:vi.fn().mockResolvedValue({status:'REFUSED',reason:'Read-only cash chat cannot send payments.',facts:[]}),
     operations:vi.fn().mockResolvedValue({role:'OWNER',items:[],counterparties:[],drafts:[],market_sample:[]}),operationDashboard:vi.fn().mockResolvedValue({inventory:[],workflows:[],timeline:[]}),
     collections:vi.fn().mockResolvedValue({
@@ -270,9 +271,9 @@ describe('Kosh protected routes', () => {
     render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>)
 
     // 1. Fictional fixture demonstrated
-    expect(await screen.findByText('Fictional Overdue Statutory Interest Demonstration Fixture')).toBeInTheDocument()
-    expect(screen.getByText(/Demonstration Only/i)).toBeInTheDocument()
-    expect(screen.getByText(/FICT-DEMO-001/i)).toBeInTheDocument()
+    expect(await screen.findByText('Interest calculation reference')).toBeInTheDocument()
+    expect(screen.getByText(/Section 16.*monthly compounding/i)).toBeInTheDocument()
+    expect(screen.getByText(/REFERENCE-001/i)).toBeInTheDocument()
 
     // 2. Calculation as-of date badge
     expect(screen.getByText('2026-10-13')).toBeInTheDocument()
@@ -348,7 +349,7 @@ describe('Kosh protected routes', () => {
     })
 
     // Test demonstration fixture selection
-    const fixtureSelect = screen.getByRole('combobox', { name: 'Select demonstration fixture' })
+    const fixtureSelect = screen.getByRole('combobox', { name: 'Select eligibility scenario' })
     fireEvent.change(fixtureSelect, { target: { value: 'FICT-MATCH-001' } })
 
     await waitFor(() => {

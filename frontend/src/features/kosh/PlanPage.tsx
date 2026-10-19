@@ -466,29 +466,29 @@ export const PlanPage = () => {
         <div className="rounded-2xl border border-primary-200 dark:border-primary-800 bg-gradient-to-r from-primary-50/70 to-metal-50/50 dark:from-primary-950/30 dark:to-metal-900/40 p-4 space-y-2.5 min-w-0">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 min-w-0">
             <div className="min-w-0 flex-1">
-              <span className="text-xs font-bold text-primary-950 dark:text-primary-200 uppercase tracking-wider">Sample data demonstration fixtures</span>
+              <span className="text-xs font-bold text-primary-950 dark:text-primary-200 uppercase tracking-wider">Eligibility scenarios</span>
               <p className="text-xs text-primary-800 dark:text-primary-300 mt-0.5">
-                Test eligibility re-evaluations with labelled sample fixtures. Demonstrates outcomes without modifying real business profiles.
+                Apply an eligibility scenario to review the recorded business evidence. Owner confirmation is required.
               </p>
             </div>
             <select
-              aria-label="Select demonstration fixture"
+              aria-label="Select eligibility scenario"
               value={selectedFixture}
               onChange={(e) => handleApplyFixture(e.target.value)}
               disabled={!isOwner || saveEvidenceMutation.isPending}
               className="rounded-xl border border-primary-300 dark:border-primary-700 bg-white dark:bg-metal-800 px-3 py-1.5 text-xs font-semibold text-metal-800 dark:text-white shadow-xs focus:ring-2 focus:ring-primary-500 w-full lg:w-auto max-w-full truncate min-w-0"
             >
-              <option value="">-- Apply a sample demonstration fixture --</option>
+              <option value="">-- Apply an eligibility scenario --</option>
               {evidenceQuery.data?.fixtures?.map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.label} ({f.id})
+                  {f.label}
                 </option>
               ))}
             </select>
           </div>
           {selectedFixture && (
             <p className="text-xs text-primary-900 dark:text-primary-200 bg-white/80 dark:bg-metal-900/80 p-2.5 rounded-xl border border-primary-200 dark:border-primary-800 font-medium">
-              {evidenceQuery.data?.fixtures.find((f) => f.id === selectedFixture)?.description}
+              Review the scenario evidence before relying on eligibility outcomes.
             </p>
           )}
         </div>

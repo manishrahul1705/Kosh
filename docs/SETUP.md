@@ -20,11 +20,11 @@ Ensure the following runtimes and tools are installed before setting up Kosh:
 
 ## 2. Clone and Checkout
 
-Clone the repository and switch to the `kosh` branch:
+Clone the repository and use the default `main` branch:
 
 ### Windows (PowerShell) / macOS / Linux
 ```bash
-git clone -b kosh https://github.com/manishrahul1705/Kosh.git
+git clone https://github.com/manishrahul1705/Kosh.git
 cd Kosh
 ```
 
@@ -91,7 +91,7 @@ COLLECT_ON_STARTUP=false
 STARTUP_RECOVERY_ENABLED=false
 
 # CORS & Server Settings
-CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:5180,http://127.0.0.1:5180
+CORS_ORIGINS=http://localhost:5180,http://127.0.0.1:5180,http://localhost:5180,http://127.0.0.1:5180
 SECRET_KEY=kosh-local-showcase-dev-secret-key-32chars-min
 ```
 
@@ -143,7 +143,7 @@ python scripts/verify_audit_chain.py
 
 You will need **two terminal tabs/windows**: one for the FastAPI backend and one for the Vite frontend dev server.
 
-### Terminal 1: Backend Server (FastAPI on Port 8000)
+### Terminal 1: Backend Server (FastAPI on Port 8010)
 
 #### Windows (PowerShell)
 ```powershell
@@ -158,7 +158,7 @@ $env:STARTUP_RECOVERY_ENABLED = "false"
 $env:APP_ENV = "development"
 $env:KOSH_AS_OF_DATE = "2026-10-13"
 
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8010 --reload
 ```
 
 #### macOS / Linux
@@ -174,31 +174,31 @@ export STARTUP_RECOVERY_ENABLED="false"
 export APP_ENV="development"
 export KOSH_AS_OF_DATE="2026-10-13"
 
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8010 --reload
 ```
 
-*Verification*: Open `http://127.0.0.1:8000/health` in your browser. It should return `{"status":"ok"}`.
+*Verification*: Open `http://127.0.0.1:8010/health` in your browser. It should return `{"status":"ok"}`.
 
 ---
 
-### Terminal 2: Frontend Server (Vite on Port 5173)
+### Terminal 2: Frontend Server (Vite on Port 5180)
 
 ```bash
 cd frontend
-npm run dev -- --host 127.0.0.1 --port 5173
+npm run dev -- --host 127.0.0.1 --port 5180
 ```
 
-*Verification*: Open `http://127.0.0.1:5173/` in your browser.
+*Verification*: Open `http://127.0.0.1:5180/` in your browser.
 
 ---
 
 ## 6. Accessing the Showcase & Demo Credentials
 
-1. Open your browser to `http://127.0.0.1:5173/`.
+1. Open your browser to `http://127.0.0.1:5180/`.
 2. In development mode with `DEV_LOGIN_ENABLED=true`, a **"Quick Dev Login"** card appears on the login screen.
 3. Select **Meenakshi Precision Components** (or click **"Sign in as Meenakshi Precision Components"**).
-4. You will land on the **Cash Forecast & Copilot** dashboard (`/cash`).
-5. **Interactive Tour**: Click the **"Product Tour"** button in the top navigation header at any time to launch the step-by-step guided tour explaining the 7-step closed-loop financial copilot.
+4. You will land on the **Cash Forecast** dashboard (`/cash`).
+5. **Interactive Tour**: Click the **"Product Tour"** button in the top navigation header at any time to launch the step-by-step guided tour explaining the 7-step closed-loop cash-gap workflow.
 
 ---
 
@@ -245,27 +245,19 @@ cd ..
 
 ## 9. Troubleshooting & FAQ
 
-### A. Port 8000 or 5173 is already in use
+### A. Port 8010 or 5180 is already in use
 
 - **Find and stop the conflicting process on Windows**:
   ```powershell
-  Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue | Select-Object OwningProcess
+  Get-NetTCPConnection -LocalPort 8010 -ErrorAction SilentlyContinue | Select-Object OwningProcess
   Stop-Process -Id <PID> -Force
   ```
 - **Find and stop on macOS / Linux**:
   ```bash
-  lsof -i :8000
+  lsof -i :8010
   kill -9 <PID>
   ```
-- **Alternative Ports**:
-  If you choose to run the backend on port `8010`:
-  ```bash
-  python -m uvicorn app.main:app --host 127.0.0.1 --port 8010
-  ```
-  Update `frontend/vite.config.ts` proxy target to `http://localhost:8010` and start Vite:
-  ```bash
-  npm run dev -- --host 127.0.0.1 --port 5180
-  ```
+- **Alternative ports**: If you change the backend port, set `VITE_API_PROXY_TARGET` to its URL before starting Vite. The default proxy already targets `http://127.0.0.1:8010`.
 
 ### B. SQLite file locked error (`kosh_work.db`)
 

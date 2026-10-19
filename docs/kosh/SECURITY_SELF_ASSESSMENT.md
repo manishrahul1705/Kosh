@@ -49,7 +49,7 @@ Comprehensive threat model, regulatory control mapping, attack verification evid
 | :--- | :--- | :--- | :--- | :--- |
 | **LLM01: Prompt Injection** | Adversarial text hidden in vendor invoices attempting to force automated wire transfers. | Ingested PDF/text is scanned for payment instruction directives (`INSTRUCTION_TEXT_DETECTED`). Documents flagged `REVIEW` are quarantined and barred from intent generation. | `app/finance/intake/service.py:34-45` | `tests/test_kosh_stage4_attack_demo.py::test_poisoned_document_flagged_for_review` |
 | **LLM02: Sensitive Information Disclosure** | Leaking full bank account numbers, JWT tokens, or OTP codes in logs or error messages. | Bank accounts are permanently masked (`_mask()` -> `****1234`). OTP codes are stored as HMAC-SHA256 hashes and delivered via encrypted payloads. Logging redacts secrets. | `app/finance/intake/bank_statement.py:10`, `app/actions/step_up.py:15` | `tests/test_kosh_stage4_step_up.py::test_otp_hash_encrypted_delivery_success_single_use_and_no_audit_plaintext` |
-| **LLM06: Excessive Agency** | Autonomous AI agent executing irreversible financial movements without human authorization. | **Zero autonomous execution**: LLMs only draft text suggestions or extract fields. Every financial disbursement (`T3`) strictly requires human OTP verification and dual-control sign-off. | `app/actions/approvals.py:55-80`, `app/policy/rules.py:25` | `tests/test_kosh_stage4_approvals.py::test_t3_creator_needs_other_approver_when_one_exists` |
+| **LLM06: Excessive Agency** | Autonomous AI agent executing irreversible financial movements without human authorization. | **Zero autonomous execution**: LLMs only draft text suggestions or extract fields. Every financial disbursement (`T3`) requires human OTP verification and a second approver when another eligible approver exists. | `app/actions/approvals.py:55-80`, `app/policy/rules.py:25` | `tests/test_kosh_stage4_approvals.py::test_t3_creator_needs_other_approver_when_one_exists` |
 
 ---
 
@@ -67,9 +67,9 @@ Comprehensive threat model, regulatory control mapping, attack verification evid
 
 | Mandate | Requirement | Kosh Control Implementation | File Reference | Test Proof |
 | :--- | :--- | :--- | :--- | :--- |
-| **Unbiased Comparison** | Aggregator or marketplace may not accept paid placement or biased ranking. | Objective mathematical ranking: catalogue options sorted strictly by *cost per net rupee delivered* ($paise / paise \cdot day$). Zero paid promotion or sponsored placement. | `app/finance/plan.py:180-210` | `tests/test_kosh_stage5_plan.py::test_plan_orders_by_cost_per_net_rupee` |
+| **Unbiased Comparison** | Aggregator or marketplace may not accept paid placement or biased ranking. | Objective mathematical ranking: catalogue options sorted strictly by *cost per net rupee delivered* ($paise / paise \cdot day$). Zero paid promotion or sponsored placement. | `app/finance/plan.py:180-210` | `tests/test_kosh_stage3_2.py::test_plan_orders_by_cost_per_net_rupee` |
 | **Borrower Consent for Sharing** | Borrower must explicitly approve sharing of specific financial fields with lending entities. | Data sharing consent explicitly binds permissible field lists (`invoice_id`, `amount_paise`, `due_date`). | `app/consent/sharing.py:20-35` | `tests/test_kosh_stage4_step_up.py::test_otp_routes_and_private_inbox_roles_and_cross_tenant` |
-| **Key Fact Statement (KFS)** | Transparent disclosure of all fees, interest rates, and APR prior to commitment. | Every plan line provides an immutable quote detailing `amount_paise`, `cost_paise`, `effective_annual_rate`, `days`, and repayment obligations. | `app/finance/costs.py:15-60`, `app/finance/plan.py:80` | `tests/test_kosh_stage5_plan.py::test_plan_quotes_match_catalogue_rules` |
+| **Key Fact Statement (KFS)** | Transparent disclosure of all fees, interest rates, and APR prior to commitment. | Every plan line provides an immutable quote detailing `amount_paise`, `cost_paise`, `effective_annual_rate`, `days`, and repayment obligations. | `app/finance/costs.py:15-60`, `app/finance/plan.py:80` | `tests/test_kosh_stage3_2.py::test_plan_quotes_match_catalogue_rules` |
 
 ---
 
@@ -77,7 +77,7 @@ Comprehensive threat model, regulatory control mapping, attack verification evid
 
 | FREE-AI Pillar | Description | Kosh Technical Control | Evidence |
 | :--- | :--- | :--- | :--- |
-| **Fairness** | Non-discriminatory financial assessment. | Deterministic rule-based evaluation (`app/lending/rules/`) applied uniformly to entity facts without subjective black-box scoring. | `tests/test_kosh_stage2_evaluation.py` |
+| **Fairness** | Non-discriminatory financial assessment. | Deterministic rule-based evaluation (`app/lending/rules/`) applied uniformly to entity facts without subjective black-box scoring. | `tests/test_kosh_stage3.py` |
 | **Reliability** | Consistent and reproducible output. | Deterministic Monte Carlo simulation using Common Random Numbers (CRN, `seed=42`). 100% reproducible probability distributions. | `tests/test_kosh_stage3_reproducibility.py` |
 | **Explainability** | Plain-language rationale for every financial decision. | Every evaluated product outputs explicit criteria explanations (`why_this_plan`, criteria met or missing). | `docs/kosh/demo_numbers.md` (Product table) |
 | **Auditability** | Complete forensic traceability of model outcomes and actions. | Sequential SHA-256 hash chaining of every forecast run, policy check, OTP grant, and execution. | `app/audit/verify.py`, `scripts/verify_audit_chain.py` |
@@ -103,7 +103,7 @@ Kosh incorporates adversarial penetration tests directly within its regression s
 
 ---
 
-## 4. Honest Known Risks & Operational Disclosures
+## 4. Known-risk list
 
 In accordance with strict technical rigor and transparency for hackathon evaluation:
 
@@ -129,3 +129,16 @@ In accordance with strict technical rigor and transparency for hackathon evaluat
     Production deployment requires periodic secret rotation (`KOSH_APPROVAL_SECRET`), external penetration testing, and formal legal review of DPDP consent artifacts.
 11. **Content Security Policy `unsafe-inline`**:
     The backend middleware (`app/main.py`) sets `script-src 'self' 'unsafe-inline'` and `style-src 'self' 'unsafe-inline'` in the Content-Security-Policy header. `unsafe-inline` for `script-src` weakens XSS protection by permitting inline `<script>` tags to execute; for `style-src` it permits inline `<style>` elements and `style` attributes. The current prototype frontend relies on inline styles emitted by the build tooling. Production deployments must migrate to nonce-based or hash-based CSP (`script-src 'nonce-…'`; `style-src 'nonce-…'`), removing `unsafe-inline` from both directives once the frontend build pipeline supports CSP nonce injection.
+
+
+## Permission-tier implementation
+
+| Tier | Allows | Approval | OTP | Enforcement | Test proof |
+|---|---|---|---|---|---|
+| T0 | Read, forecast, match, compute | Automatic internal operation; authenticated tenant access | No | `app/policy/rules.py::evaluate`, API membership checks | `tests/test_kosh_stage4_policy.py::test_tier_mapping` |
+| T1 | Internal reminder/application drafts | Automatic internal operation | No | `app/policy/rules.py::evaluate` | `tests/test_kosh_stage4_policy.py::test_tier_mapping` |
+| T2 | Allowlisted communications, reminders, supplier requests | OWNER or APPROVER; single-use approval | No | `app/actions/approvals.py::approve/consume`, `app/policy/rules.py` | `tests/test_kosh_stage4_approvals.py` |
+| T3 | Sandbox financing and consent-scoped data sharing | OWNER or APPROVER; another approver if available | Yes | `app/actions/approvals.py`, `app/actions/step_up.py`, `app/consent/sharing.py` | `tests/test_kosh_stage4_approvals.py::test_t3_creator_needs_other_approver_when_one_exists`, `tests/test_kosh_stage4_step_up.py` |
+| T4 | No execution: unknown actions, bank changes, document parameters | Cannot be approved | Not applicable | `app/policy/rules.py::evaluate` | `tests/test_kosh_stage4_policy.py::test_document_parameters_bank_changes_unknown_action_and_unknown_payee_block` |
+
+Global and seller kill switches deny every tier (`test_kill_switch_blocks_every_tier`). The seeded single-owner sandbox permits that owner to approve T3 after OTP; it does not demonstrate mandatory two-person approval for a sole-owner business. Production money movement remains outside the sandbox adapter scope.

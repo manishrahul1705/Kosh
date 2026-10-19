@@ -22,14 +22,14 @@ export default defineConfig({
     testTimeout: 30000,
   },
   server: {
-    port: 5173,
+    port: 5180,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8010',
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:8000',
+        target: process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8010',
         changeOrigin: true,
       },
     },

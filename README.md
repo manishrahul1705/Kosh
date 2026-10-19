@@ -1,6 +1,21 @@
 # Kosh
 
-Kosh is an SME cash-flow and financing workspace built around source-backed business information and deterministic decisions. Its Tender-to-Cash module discovers public GeM tenders, extracts requirements, checks document coverage and explains seller matches. Stage 1 adds consent-controlled private intake, deterministic invoice and bank extraction, an integer-paise ledger and an append-only audit chain. Forecasts, financing recommendations and external actions remain later stages.
+Kosh is an agentic cash-gap treasurer for Indian MSMEs (Topic E: SME Finance Copilot).
+All seven steps work end to end in a sandbox: Connect → Understand → Forecast → Alert → Match → Plan & approve → Act & prove.
+The seed-42 demo reduces week-6 risk from 79.95% to 6.25%, keeps every week ≤ 20%, and costs ₹15,407.10 versus NBFC ₹84,128.14 (81.7% cheaper).
+Every external action needs human approval; money and data-sharing actions need OTP, and all transitions are audited.
+Tender-to-Cash and the rebuilt operations modules are add-ons.
+
+## Submission checklist
+
+01. [Technical documentation](docs/kosh/ARCHITECTURE.md)
+02. [Deck delivery status](docs/kosh/submission/README.md#02-deck)
+03. [Demo video delivery status](docs/kosh/submission/README.md#03-demo-video)
+04. [Public source](https://github.com/manishrahul1705/Kosh), [setup and deployment](docs/SETUP.md), [test cases](tests/)
+05. [Security self-assessment](docs/kosh/SECURITY_SELF_ASSESSMENT.md)
+06. [Execution evidence](docs/kosh/evidence/) and [demo walkthrough](docs/kosh/demo_walkthrough.md)
+
+Full installation instructions: [Setup guide](docs/SETUP.md).
 
 ## Features
 
@@ -14,7 +29,7 @@ Kosh is an SME cash-flow and financing workspace built around source-backed busi
 6. **Plan & Approve** - gap-closing plans with explicit approvals.
 7. **Act & Prove** - authorized sandbox actions and auditable evidence.
 
-Stage 1 keeps public tender documents separate from private borrower files. Connect manages consent and validated uploads; Ledger shows source-backed receivables, payables, obligations and bank balances; Audit verifies the persisted hash chain.
+Kosh keeps public tender documents separate from private borrower files. Connect manages consent and validated uploads; Ledger shows source-backed receivables, payables, obligations and bank balances; Audit verifies the persisted hash chain.
 
 Generate and seed the deterministic fictional demo only against an explicitly selected development database:
 
@@ -35,8 +50,23 @@ The generated data and private storage are ignored. Keep all worker and collecti
 - **[Canonical Demo Numbers](docs/kosh/demo_numbers.md)**: Deterministic figures for Meenakshi Precision Components (seed 42, as-of `2026-10-13`).
 - **[Security Self-Assessment](docs/kosh/SECURITY_SELF_ASSESSMENT.md)**: Threat model, OWASP Top 10 for LLMs, DPDP Act 2023, RBI Digital Lending Directions 2025, FREE-AI controls, penetration attack test results, and known risks.
 - **[Statutory Compliance Map](docs/kosh/COMPLIANCE_MAP.md)**: Direct mapping from regulations (MSMED Act Sections 15/16, PMMY caps, TReDS mandate) to Kosh implementations and automated tests.
-- **[Automated Test Evidence](docs/kosh/TEST_EVIDENCE.md)**: Test counts (315 Kosh, 1359 backend, 30 frontend), reproduction instructions, and proof mapping.
+- **[Automated Test Evidence](docs/kosh/TEST_EVIDENCE.md)**: Current verification status, reproduction instructions, and proof mapping.
 - **[Financing Product Catalogue](docs/kosh/financing_catalogue.md)**: Comprehensive specification of all 8 evaluated credit products.
+
+## Final verification — 2026-10-19
+
+This checkout is **not ready for submission**. Verification used offline-safe settings and no network. Current results supersede earlier counts:
+
+| Check | Actual result |
+|---|---|
+| Kosh suite (`tests/test_kosh_*.py`) | 34 collection errors; no suite pass count established |
+| Isolated submission evidence tests (`--noconftest`) | 7 passed, 1 failed (required exports absent) |
+| Frontend tests / build | Blocked: dependencies unavailable; `vitest` / `tsc` missing |
+| Canonical demo regeneration / evidence export | Blocked: `cryptography` unavailable |
+| Rupee presentation check | All 125 rupee amounts retain identical numeric values |
+| Audit verifier | Blocked: no migrated demo database; no verified audit entry count |
+
+Offline dependency installation was attempted. The cache does not contain the pinned `reportlab==5.0.1`; other missing runtime imports include `PyJWT`, `pdfminer` and `pdfplumber`. Logs are local under `private_notes/logs/final_*` and are excluded from Git. Generated evidence, a verified audit count, passing complete checks, deck and recorded video remain required.
 
 ### Judge quick start
 
@@ -51,7 +81,7 @@ To run the complete Kosh demo end-to-end (seed 42, as-of `2026-10-13`, forecast,
 
 ```powershell
 # 1. Clone repository
-git clone -b kosh https://github.com/manishrahul1705/Kosh.git
+git clone https://github.com/manishrahul1705/Kosh.git
 Set-Location Kosh
 
 # 2. Create and activate Python 3.11 virtual environment
@@ -109,7 +139,7 @@ Pop-Location
 
 ```bash
 # 1. Clone repository
-git clone -b kosh https://github.com/manishrahul1705/Kosh.git
+git clone https://github.com/manishrahul1705/Kosh.git
 cd Kosh
 
 # 2. Create and activate Python 3.11 virtual environment
@@ -187,11 +217,12 @@ python scripts/verify_audit_chain.py
 - **Port already in use**: If port 8010 or 5180 is taken by another service, change `--port <port>` (if changing backend port, update Vite's proxy in `frontend/vite.config.ts`).
 - **Wrong Python version**: Ensure Python 3.11 is used (`python --version` or `py -3.11`). Python 3.12+ may encounter package compatibility issues.
 - **Tesseract missing**: Tesseract is entirely optional. If missing from `PATH`, OCR fields remain honestly marked as `REVIEW_REQUIRED` without halting ingestion.
-- **Private repository access**: If cloning prompts for GitHub credentials, ensure your account has collaborator access or clone via SSH (`git clone git@github.com:manishrahul1705/Kosh.git`).
 - **PowerShell Execution Policy**: If `.venv\Scripts\Activate.ps1` gives an execution policy error, run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`, or execute Python directly via `& .\.venv\Scripts\python.exe`.
 
 
 ### Tender-to-Cash
+
+Separate GeM module: [Demo guide](docs/gem/PROJECT_DEMO_GUIDE.md) and [architecture](docs/gem/PROJECT_ARCHITECTURE.md).
 
 - Public GeM listing discovery, bid identity, changes and deadline/status history.
 - Regular bids, reverse auctions, linked main bids and supporting documents.

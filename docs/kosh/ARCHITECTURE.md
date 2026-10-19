@@ -4,7 +4,7 @@ Technical architecture and engineering specification for Kosh, the deterministic
 
 ---
 
-## 1. System Overview
+## 1. System architecture
 
 ```mermaid
 graph TD
@@ -58,7 +58,7 @@ Kosh continuously guides an enterprise through a deterministic seven-step decisi
    Action intents can ONLY be spawned from trusted plan lines. The policy engine assigns strict tiers:
    - `T1` Draft: Non-financial parameter edits.
    - `T2` Operational: Collections reminders to allowlisted counterparties.
-   - `T3` Capital Disbursement: Financial obligations requiring four-eyes segregation of duties (creator cannot self-approve) and 6-digit OTP step-up verification.
+   - `T3` Capital Disbursement: Financial obligations requiring OTP and another approver when one exists and 6-digit OTP step-up verification.
    - `T4` Blocked: Unstructured free-text payment orders or poisoned document instructions are rejected immediately.
 7. **Sandbox Execution & Verifiable Audit** (`app/sandbox/`, `app/audit/`):
    Simulated settlement runs through local sandbox adapters, respecting virtual clock cool-offs (e.g. 24-hour beneficiary addition delay). All transitions, approvals, and outcomes are permanently appended to an immutable SHA-256 hash chain (`KoshAuditEntry`).
@@ -91,7 +91,7 @@ All models are defined in `app/database/kosh_models.py` using SQLAlchemy Declara
 
 ---
 
-## 4. Forecasting & Optimization Methodology
+## 4. Core algorithms
 
 ### Monte Carlo Simulation with Common Random Numbers (CRN)
 - **Empirical Delay Modeling** (`app/finance/forecast.py:145-175`):
@@ -102,8 +102,8 @@ All models are defined in `app/database/kosh_models.py` using SQLAlchemy Declara
   Inputs are hashed via SHA-256 (`input_fingerprint`). If invoices or bank transactions change between plan creation and action proposal, the plan is marked `STALE` and refused execution.
 
 ### Least-Cost Optimization Algorithm
-- **Metric**: Effective annual cost per net rupee delivered:
-  $$\text{Unit Cost} = \frac{\text{Cost (paise)}}{\text{Net Cash (paise)} \times (\text{Tenor Days} / 365)}$$
+- **Metric**: Cost per net rupee delivered over the quoted tenor:
+  $$\text{Unit Cost} = \frac{\text{Cost (paise)}}{\text{Net Cash (paise)}}$$
 - **Horizon-Wide Safety Target (`ALL_WEEKS`)** (`app/finance/plan.py:220-310`):
   Guaranteed levers (TReDS, Bank OD) are added greedily until **every horizon week** satisfies $P(\text{closing balance} < \text{buffer}) \le 0.20$.
 - **Guaranteed Plan vs Expected extra from Collections**:
@@ -112,7 +112,7 @@ All models are defined in `app/database/kosh_models.py` using SQLAlchemy Declara
 
 ---
 
-## 5. Security & Governance Architecture
+## 5. Security design
 
 ### Policy Engine & Segregation of Duties
 - **Four-Eyes Control (Dual-Control)** (`app/actions/approvals.py:55`):
@@ -125,3 +125,26 @@ All models are defined in `app/database/kosh_models.py` using SQLAlchemy Declara
   Every state modification records an event where:
   $$\text{entry\_hash} = \text{SHA256}(\text{prev\_hash} \,\|\, \text{sequence} \,\|\, \text{action} \,\|\, \text{params\_hash} \,\|\, \text{recorded\_at})$$
   Ensures tamper-evident traceability verifiable via `GET /api/kosh/sellers/{id}/audit/verify`.
+
+
+### Back-test and limits
+
+`app/finance/backtest.py::run_backtest` evaluates 12 rolling historical weekly origins with 500 paths each, comparing horizons 1–4 against recorded bank balances. Forecast inputs stop at the origin to avoid future-data leakage. Coverage uses the P10–P90 interval with a historical volatility margin. `mape_p50_inflow` is currently a placeholder, not measured accuracy; coverage on the fictional seed data is not production calibration. See `tests/test_kosh_stage2.py`.
+
+### Financing eligibility with evidence
+
+`app/lending/service.py` evaluates catalogue rules per entity and, where relevant, invoice scope. `MATCHED` means the recorded evidence satisfies criteria; `NOT_MATCHED` means a criterion fails; `REVIEW_REQUIRED` means evidence is missing or needs confirmation. Each result retains reasons and evidence references. Matching one invoice does not imply every invoice is eligible. Tests: `tests/test_kosh_stage3.py`, `tests/test_kosh_financing_evidence.py`.
+
+### Same-seed allocation and safety proof
+
+`app/finance/plan.py` orders usable matched levers by quoted cost divided by net proceeds, respects capacity and arrival/repayment dates, and simulates the resulting cash events using the baseline seed and paths. The `ALL_WEEKS` proof requires every one of 13 post-plan probabilities to meet the selected threshold; `app/actions/planner.py` rechecks the proof and forecast fingerprint before proposing an executable intent. This is a simulated safety constraint, not a guarantee about real cash arrivals or global optimality. Collections remain expected cash and do not fabricate guaranteed balances. Tests: `tests/test_kosh_stage3_2.py`, `tests/test_kosh_stage4_intents.py`.
+
+### MSMED Section 16 interest
+
+`app/finance/collections.py::msmed_interest` uses integer paise, three times the supplied RBI bank rate, monthly compounding rests and a remaining-day stub. Statutory terms and MSE eligibility must be evidenced before claims are asserted. The demonstration rate is a dated fixture. Tests: `tests/test_kosh_stage5_collections.py`.
+
+### Permission tiers and execution boundary
+
+`app/policy/rules.py` implements T0 read/compute and T1 internal drafts automatically, T2 communications with human approval, T3 money/data-sharing with human approval and OTP, and T4 forbidden actions. `app/actions/integrity.py` and `app/actions/planner.py` bind canonical parameters to trusted plan provenance. `app/actions/approvals.py` uses HMAC-SHA256 signatures, exact parameter binding, expiry and single-use consumption. `app/actions/step_up.py` enforces OTP expiry and attempt limits; `app/consent/sharing.py` checks purpose, recipient and fields.
+
+`app/sandbox/adapters.py` performs local simulated settlement and messaging. Global/tenant kill switches in `app/policy/controls.py` and `app/policy/rules.py` gate actions. Intake scanning in `app/finance/intake/service.py` quarantines instruction-bearing documents; document-origin payment parameters are denied. `app/audit/ledger.py` chains canonical payload digests and event metadata; `app/audit/verify.py` detects modification. Hash chaining is tamper evidence, not protection against a privileged administrator replacing the whole chain. Proof mapping: [Permission-tier implementation](SECURITY_SELF_ASSESSMENT.md#permission-tier-implementation).

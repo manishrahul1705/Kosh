@@ -1,26 +1,29 @@
 # Project demo guide
 
+This document describes the separate **GeM-only demo** on ports **8000/5173**, using **demo@gem.local**. For the Kosh cash-gap demo on 8010/5180, follow [the main quick start](../../README.md#judge-quick-start). The GeM-only snapshot under `validation/` is an optional local input, not a bundled submission artifact.
+
 This is a local GeM Tender Intelligence & Seller Matching demonstration. AI is optional and disabled in this demo. The source database and verified public documents are copied; only the disposable copy is reduced to three real packages and one labelled fixture.
 
 ## Start the backend
 
 ```powershell
-Set-Location 'C:\Users\Manish\Downloads\Gem-Final\gem-tender-intelligence'
-$demoPython = 'C:\Users\Manish\Downloads\gem-tender-intelligence-stage4-complete\.venv\Scripts\python.exe'
+# Run from the repository root
+$demoPython = '.\.venv\Scripts\python.exe'
 & $demoPython scripts/run_project_demo.py --prepare-only
 & $demoPython scripts/run_project_demo.py
 ```
 
-The server binds to 127.0.0.1:8000. Scheduling, startup recovery, migration, acquisition and broad workers are disabled. Its AI key is empty; no provider is called. The initial snapshot must exist at `validation/balanced-input/staging.db` with its documents; it is available in this verified workspace. Restarting preserves the demo. To create another untouched demo, use `--output validation/another-demo` on both commands.
+The server binds to 127.0.0.1:8000. Scheduling, startup recovery, migration, acquisition and broad workers are disabled. Its AI key is empty; no provider is called. The initial snapshot must exist at `validation/balanced-input/staging.db` with its documents; it must be supplied locally. Restarting preserves the demo. To create another untouched demo, use `--output validation/another-demo` on both commands.
 
 ## Start the frontend
 
 In a second terminal:
 
 ```powershell
-Set-Location 'C:\Users\Manish\Downloads\Gem-Final\gem-tender-intelligence\frontend'
+Set-Location frontend
 $env:VITE_DEV_LOGIN = 'true'
-npm.cmd run dev -- --host 127.0.0.1
+$env:VITE_API_PROXY_TARGET = 'http://127.0.0.1:8000'
+npm.cmd run dev -- --host 127.0.0.1 --port 5173
 ```
 
 Open **http://localhost:5173**. Sign in with **demo@gem.local**; this local development flow needs no password/Supabase account. Tokens are process-local and normal seller membership authorization still applies. The production frontend build does not permit this development login.
@@ -79,7 +82,7 @@ Its one known mandatory threshold is 7 lakh annual turnover. This fixture proves
 Use Ctrl+C in the two task-owned terminals, or stop the backend gracefully:
 
 ```powershell
-Set-Location 'C:\Users\Manish\Downloads\Gem-Final\gem-tender-intelligence'
+# Run from the repository root
 New-Item -ItemType File -Path validation/project-demo-final/STOP -Force | Out-Null
 ```
 

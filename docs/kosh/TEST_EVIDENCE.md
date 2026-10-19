@@ -4,15 +4,20 @@ Comprehensive breakdown of automated tests, reproduction commands, and mathemati
 
 ---
 
-## 1. Test Suite Summary & Pass Counts
+## Final verification — 2026-10-19
 
-| Test Area | Scope | Test Count | Pass Rate | Execution Time |
-| :--- | :--- | :--- | :--- | :--- |
-| **Kosh Core Financial Suite** | Ingestion, Monte Carlo, alerts, catalogue, plan optimization, policy engine, hash chain, walkthrough | **315 passed**, 1 skipped | **100%** | ~3.0 min |
-| **Full Monolithic Backend Suite** | GeM discovery, Stage 2 documents, Stage 3 extraction, portal, auth, Kosh | **1,359 passed**, 2 skipped | **100%** | ~11.7 min |
-| **Frontend UI Suite (Vitest)** | Labels, money formatting, status indicators, plan picker, approvals, sandbox banner | **30 passed** (6 files) | **100%** | ~5.3 sec |
+This checkout is **not ready for submission**. Verification used offline-safe settings and no network. Current results supersede earlier counts:
 
-*(Skipped tests reflect optional host capabilities: 1 SciPy test gracefully skips when SciPy is uninstalled; 1 filesystem symlink test skips on Windows).*
+| Check | Actual result |
+|---|---|
+| Kosh suite (`tests/test_kosh_*.py`) | 34 collection errors; no suite pass count established |
+| Isolated submission evidence tests (`--noconftest`) | 7 passed, 1 failed (required exports absent) |
+| Frontend tests / build | Blocked: dependencies unavailable; `vitest` / `tsc` missing |
+| Canonical demo regeneration / evidence export | Blocked: `cryptography` unavailable |
+| Rupee presentation check | All 125 rupee amounts retain identical numeric values |
+| Audit verifier | Blocked: no migrated demo database; no verified audit entry count |
+
+Offline dependency installation was attempted. The cache does not contain the pinned `reportlab==5.0.1`; other missing runtime imports include `PyJWT`, `pdfminer` and `pdfplumber`. Logs are local under `private_notes/logs/final_*` and are excluded from Git. Generated evidence, a verified audit count, passing complete checks, deck and recorded video remain required.
 
 ---
 
